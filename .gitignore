@@ -1,0 +1,4 @@
+.DS_Store
+*.session.jsonl
+node_modules/
+.env*
