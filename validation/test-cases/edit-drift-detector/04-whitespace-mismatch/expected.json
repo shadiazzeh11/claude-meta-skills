@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["doesn't"],
+  "description": "old_string has 4-space indent where file has tab indent (real whitespace drift, not trailing-whitespace-only)",
+  "category": "should-block"
+}

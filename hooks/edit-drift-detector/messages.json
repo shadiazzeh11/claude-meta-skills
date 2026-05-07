@@ -1,0 +1,11 @@
+{
+  "default": "constructive",
+
+  "_comment_versions": "Two feedback message versions for A/B testing in Phase 2+. The hook uses the version named in 'default' field. Switch by changing 'default' to 'punitive' or 'constructive'.",
+
+  "constructive": "The old_str doesn't match the file at lines {line_range} (closest match similarity: {similarity}). Here's what the file actually contains at that location:\n\n{actual_content}\n\nThe mismatch likely means the file changed since you last read it, or the old_str was drafted from memory rather than fresh read. Re-read the file with Read at offset {line_range}, then retry the Edit with the exact string from the file.",
+
+  "punitive": "ERROR: BLOCKED. The old_str does not match file content at {file_path}. You failed to verify before editing. Re-read the file before retrying.",
+
+  "no_close_match": "The old_str doesn't appear in {file_path} and no similar content was found in the file. The file may have been completely rewritten since the last read, or the old_str may be from a different file. Re-read the file with Read to see current content."
+}

@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stderr_contains": [],
+  "description": "old_string is a single line matching exactly (degenerate single-line case)",
+  "category": "should-pass"
+}

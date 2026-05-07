@@ -1,0 +1,11 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Edit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp",
+  "tool_input": {
+    "file_path": "{{FIXTURE_PATH}}",
+    "old_string": "quick brown fox",
+    "new_string": "slow green turtle"
+  }
+}

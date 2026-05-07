@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stderr_contains": [],
+  "description": "fixture has trailing spaces in line 1; old_string doesn't. After trailing-whitespace normalization, content matches. Design decision: pass.",
+  "category": "should-pass"
+}

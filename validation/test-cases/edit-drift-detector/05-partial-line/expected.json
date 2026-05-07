@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["doesn't"],
+  "description": "old_string is a one-line version of a two-line definition (cuts mid-expression in a way the file structure doesn't have)",
+  "category": "should-block"
+}

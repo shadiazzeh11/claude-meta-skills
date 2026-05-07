@@ -2,3 +2,8 @@
 *.session.jsonl
 node_modules/
 .env*
+
+# Validation output (regenerated per run)
+validation/results/*.json
+!validation/results/.gitkeep
+

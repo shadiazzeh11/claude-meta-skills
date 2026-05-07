@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stderr_contains": [],
+  "description": "old_string matches in middle of 1500-line file (performance test; should complete in well under 500ms)",
+  "category": "should-pass"
+}

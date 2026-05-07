@@ -1,0 +1,11 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Edit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp",
+  "tool_input": {
+    "file_path": "{{FIXTURE_PATH}}",
+    "old_string": "def calculate_total(items):\n    return sum(item.cost for item in items)",
+    "new_string": "def calculate_total(items):\n    return sum(item.price * item.quantity for item in items)"
+  }
+}

@@ -1,0 +1,4 @@
+## Changelog
+
+v2: Added new error handling for malformed input.
+v3: Refactored validation pipeline.

@@ -1,0 +1,11 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Edit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp",
+  "tool_input": {
+    "file_path": "{{FIXTURE_PATH}}",
+    "old_string": "v1: Initial implementation with basic feature set.",
+    "new_string": "v1: Initial implementation, deprecated."
+  }
+}

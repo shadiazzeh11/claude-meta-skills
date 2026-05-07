@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["doesn't", "Re-read"],
+  "description": "old_string totally unrelated to file content (hits no_close_match path)",
+  "category": "should-block"
+}

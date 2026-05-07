@@ -1,0 +1,11 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Edit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp",
+  "tool_input": {
+    "file_path": "{{FIXTURE_PATH}}",
+    "old_string": "line 750\nline 751\nline 752",
+    "new_string": "line 750\nline 751-modified\nline 752"
+  }
+}

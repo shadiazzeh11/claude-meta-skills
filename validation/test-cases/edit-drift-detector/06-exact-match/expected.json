@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stderr_contains": [],
+  "description": "old_string is an exact substring of file content",
+  "category": "should-pass"
+}
