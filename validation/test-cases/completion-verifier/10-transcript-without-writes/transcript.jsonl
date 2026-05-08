@@ -1,0 +1,4 @@
+{"message": {"role": "user", "content": "Show me the project structure"}}
+{"message": {"role": "assistant", "content": [{"type": "text", "text": "Let me explore."}, {"type": "tool_use", "id": "toolu_01", "name": "Read", "input": {"file_path": "/tmp/foo.py"}}]}}
+{"message": {"role": "assistant", "content": [{"type": "tool_use", "id": "toolu_02", "name": "Bash", "input": {"command": "ls -la"}}]}}
+{"message": {"role": "assistant", "content": [{"type": "tool_use", "id": "toolu_03", "name": "Glob", "input": {"pattern": "**/*.py"}}]}}

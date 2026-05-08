@@ -60,7 +60,8 @@ def main():
 
     tool_name = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {})
-    file_path = tool_input.get("file_path", "")
+    # Write/Edit/MultiEdit use file_path; NotebookEdit uses notebook_path.
+    file_path = tool_input.get("file_path") or tool_input.get("notebook_path", "")
 
     if not file_path:
         return 0

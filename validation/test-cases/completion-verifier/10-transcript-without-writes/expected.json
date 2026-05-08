@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "description": "Critical: transcript shows only Read/Bash/Glob (no writes); tests would FAIL if run, but hook must skip them (exploration session) and exit silently",
+  "category": "should-pass"
+}

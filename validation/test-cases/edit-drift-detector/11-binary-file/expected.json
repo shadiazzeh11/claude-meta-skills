@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["doesn't"],
+  "description": "Binary file (PNG header bytes); hook reads with errors='replace', no match, must not crash; blocking is fine since the text old_string genuinely isn't in the binary",
+  "category": "should-block"
+}

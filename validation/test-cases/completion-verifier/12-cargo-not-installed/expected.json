@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["additionalContext", "not found"],
+  "description": "Cargo project but cargo not installed in PATH; hook should emit command-not-found warning and allow stop (FileNotFoundError handler)",
+  "category": "should-pass"
+}

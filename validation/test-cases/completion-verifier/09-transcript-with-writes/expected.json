@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block"],
+  "description": "Transcript shows Edit tool_use; failing tests; hook should run tests and block",
+  "category": "should-block"
+}

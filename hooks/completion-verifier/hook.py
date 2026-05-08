@@ -49,21 +49,34 @@ def detect_project_type(cwd):
     return None, None
 
 
+FILE_MODIFYING_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
+
+
 def transcript_has_writes(transcript_path):
     """
-    Inspect the JSONL transcript for Write or Edit tool_use entries.
-    Returns True if writes found, False if confirmed no writes,
-    None if transcript is unreadable (caller decides default behavior).
+    Inspect the JSONL transcript for file-modifying tool_use entries.
+    Returns:
+      True  - at least one Write/Edit/MultiEdit/NotebookEdit found
+      False - transcript was parseable but no file-modifying tools observed
+      None  - transcript missing, IO error, or no valid JSON lines (unreadable)
+
+    The None return signals the caller to fall back to running tests
+    (per spec: accept the false-positive risk when transcript unreliable).
     """
     if not transcript_path or not os.path.exists(transcript_path):
         return None
     try:
+        valid_lines = 0
         with open(transcript_path, "r", errors="replace") as f:
             for line in f:
+                line = line.strip()
+                if not line:
+                    continue
                 try:
                     entry = json.loads(line)
                 except (json.JSONDecodeError, ValueError):
                     continue
+                valid_lines += 1
                 # Transcript format: each line is a message; content can be
                 # a list of blocks including tool_use entries.
                 msg = entry.get("message") or entry
@@ -72,9 +85,13 @@ def transcript_has_writes(transcript_path):
                     for block in content:
                         if not isinstance(block, dict):
                             continue
-                        if block.get("type") == "tool_use" and block.get("name") in ("Write", "Edit"):
+                        if block.get("type") == "tool_use" and block.get("name") in FILE_MODIFYING_TOOLS:
                             return True
-        return False
+        # Parseable transcript with no file-modifying tools observed.
+        if valid_lines > 0:
+            return False
+        # No valid JSON lines parsed — treat as unreadable.
+        return None
     except (IOError, OSError):
         return None
 
@@ -133,6 +150,14 @@ def main():
 
     cwd = payload.get("cwd") or os.getcwd()
     transcript_path = payload.get("transcript_path", "")
+
+    # If cwd doesn't exist, can't run tests. Allow stop with a distinct warning
+    # (separate from command-not-found, which is a different failure mode).
+    if not os.path.isdir(cwd):
+        emit_warning(
+            "Working directory '{cwd}' does not exist. Skipping completion check.".format(cwd=cwd)
+        )
+        return 0
 
     # Project type detection
     config, cmd = detect_project_type(cwd)

@@ -77,6 +77,22 @@ Requires Python 3.7+ in PATH. Uses stdlib only — no external dependencies.
 
 - **Large files (10K+ lines)** — sliding-window comparison is O(file_lines × old_lines × line_chars). For very large files with multi-line `old_string`, latency may exceed the 500ms target. Performance test in `validation/test-cases/edit-drift-detector/10-large-file-match/` covers up to 1500 lines.
 
+## Coexistence with other hooks
+
+When this hook is installed alongside `silent-file-verifier` and `completion-verifier`:
+
+- This hook fires PreToolUse on Edit. If it blocks (exit 2), the Edit is cancelled and silent-file-verifier's PostToolUse does NOT fire (correct: there's nothing to verify when the Edit was prevented).
+- Stop hook (completion-verifier) is independent and fires after Claude finishes responding, regardless of any Edit blocks during the response.
+
+Behavior documented per Claude Code lifecycle docs; not validated by the harness (which tests each hook in isolation). Real-world coexistence worth a spot-check when all three hooks are installed in an actual Claude Code session.
+
+## Additional known limitations
+
+- **Relative paths untested.** All test fixtures use absolute paths via `{{FIXTURE_PATH}}` substitution. Real Claude Code sometimes provides relative paths; the hook calls `os.path.exists(file_path)` directly, which resolves relative to the hook process's cwd, not necessarily Claude's cwd. Behavior on relative paths is therefore uncertain. Workaround: callers passing relative paths should ensure the hook is invoked from the same cwd Claude sees.
+- **Line endings (`\r\n` vs `\n`) treated as real content differences.** A file with Windows line endings vs an `old_string` with Unix line endings will not match exactly and will not normalize. Design decision: line endings carry meaning in many codebases (config files, generated files, OS-specific scripts), so the hook blocks. If you want to ignore line-ending differences, normalize before passing to Edit.
+- **Large files (10K+ lines).** Sliding-window comparison is O(file_lines × old_lines) for similarity scoring. For very large files with multi-line `old_string`, latency may exceed the 500ms target. The included 1500-line test (case 10) completes well under target; 10K+ lines untested.
+- **Binary files: blocks rather than skips.** Test 11 confirms the hook reads binary content (with `errors="replace"`) without crashing, but a text `old_string` won't match binary content and the hook will block with a no-close-match message. This is correct behavior (binary files shouldn't be edited via Edit anyway), but the message could be improved to suggest "this file appears to be binary; use Write to replace it instead."
+
 ## Performance
 
 - Target: <500ms per invocation on files up to 1500 lines.

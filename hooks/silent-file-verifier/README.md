@@ -22,7 +22,7 @@ Add to `.claude/settings.json`:
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
@@ -66,6 +66,22 @@ Exit code 2 on PostToolUse shows error feedback to Claude but does not undo the 
 - **Symlinks.** `os.path.exists` follows symlinks. If Claude wrote to a path through a broken symlink, the hook will flag it (correct behavior).
 
 - **Permissions.** If the file exists but the hook lacks read permission to check size, hook exits 0 silently rather than warning. This is intentional — permission errors aren't "ghost file" problems.
+
+## Coexistence with other hooks
+
+When this hook is installed alongside `edit-drift-detector` and `completion-verifier`:
+
+- This hook fires PostToolUse on `Write|Edit|MultiEdit|NotebookEdit`. If edit-drift-detector blocked the Edit at PreToolUse, the tool didn't execute and this hook does NOT fire (per Claude Code lifecycle docs: PostToolUse fires only on successful tool execution).
+- This hook never blocks; its warnings via `additionalContext` are visible to Claude on subsequent turns. completion-verifier's Stop check is independent.
+
+Behavior documented per Claude Code lifecycle docs; not validated by the harness.
+
+## Additional known limitations
+
+- **Tool coverage extended in Phase 2.5: matcher is now `Write|Edit|MultiEdit|NotebookEdit`.** The hook's `file_path` extraction falls back to `notebook_path` if `file_path` is missing (NotebookEdit may use the latter). Test 07 verifies MultiEdit coverage; NotebookEdit is covered by code path but not by a dedicated test fixture (NotebookEdit operates on .ipynb files which are JSON; constructing a meaningful test requires a notebook fixture).
+- **No content correctness check.** This hook verifies the file exists and (for Write) that size is non-zero when content was non-empty. It does NOT verify that the file content matches what was supposed to be written. A Write could succeed, file size could be non-zero, but content could be wrong (e.g., wrong encoding, partial write, write to wrong path that happens to have an existing non-empty file). Out of scope; covered partially by Claude's own diff verification on subsequent reads.
+- **File-path-is-actually-a-directory edge case.** If `file_path` points to an existing directory (rather than a file), `os.path.exists` returns True and the hook passes silently. `os.path.getsize` on a directory returns the directory entry size, not file size. This is a degenerate case (Write to a directory shouldn't happen via Claude Code) but worth noting; the hook would not catch it.
+- **Networked filesystem race.** If the file path resolves to a remote mount with eventual consistency, the hook may fire its missing-file warning before the file fully syncs. PostToolUse fires synchronously after the tool reports complete, so this window is narrow but not zero.
 
 ## Performance
 

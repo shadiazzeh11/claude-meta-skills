@@ -79,9 +79,26 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 
 - **Project type ambiguity.** A repo with both `package.json` and `pyproject.toml` will use npm only. Workaround: Makefile target `test:` that runs both runners; the Makefile fallback is the lowest priority but always works as user-controlled override.
 
+## Coexistence with other hooks
+
+When this hook is installed alongside `edit-drift-detector` and `silent-file-verifier`:
+
+- This hook fires only at Stop (after Claude finishes responding). Independent of any PreToolUse/PostToolUse hooks during the response.
+- If edit-drift-detector blocked an Edit during the response, the corresponding tool_use entry would still appear in the transcript (PreToolUse fires after Claude proposes the tool call but before it executes; the proposal is visible in transcript regardless of block outcome). transcript_has_writes treats this as a write attempt and runs tests.
+- silent-file-verifier never blocks (PostToolUse can't undo); its `additionalContext` warnings are visible to Claude on subsequent turns but don't affect this hook's behavior.
+
+Behavior documented per Claude Code lifecycle docs; not validated by the harness.
+
+## Additional known limitations
+
+- **Subdirectory project detection: only checks immediate cwd.** If Claude is in `src/` but `package.json` is at the project root, this hook will not detect the project type and will pass through silently. npm and cargo themselves walk up parent directories to find their config files; this hook does not. Workaround: invoke Claude from project root, or define a `Makefile test:` target at every level. Phase 3 fix candidate: walk up parent directories until a config file is found or git root reached.
+- **Transcript schema drift risk.** `transcript_has_writes` parses the JSONL transcript by looking for `message.content[].type == "tool_use"` with `name in ("Write", "Edit", "MultiEdit", "NotebookEdit")`. If Claude Code changes the transcript format (e.g., to `tool_call` instead of `tool_use`, or wraps blocks differently), the function returns `False` (no writes found) and the hook silently skips test running on real edit sessions. This is a quiet failure mode worth monitoring; consider periodic spot-checks against actual session transcripts.
+- **Test command timeout truncates output capture.** When `subprocess.TimeoutExpired` fires, Python's subprocess returns no captured output for the truncated portion. The hook emits a "test timed out" warning but doesn't include the partial test output that ran before timeout. Future enhancement: capture partial output from `TimeoutExpired.stdout`.
+- **Anti-loop check only catches the documented loop pattern.** `stop_hook_active=true` is the documented signal Claude Code sends when forced-continuation is in progress. If a future Claude Code version changes this signal (e.g., to a different field name), the anti-loop protection silently degrades.
+
 ## Performance
 
-- Test command timeout: 30s (configurable via `TIMEOUT_SECS` constant).
+- Test command timeout: 30s (configurable via `COMPLETION_VERIFIER_TIMEOUT_SECS` env var).
 - Hook overhead (excluding test command): typically <100ms (Python startup + transcript scan).
 - Total wall-clock: dominated by the test suite itself.
 

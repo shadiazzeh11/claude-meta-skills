@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block"],
+  "description": "Malformed transcript (no valid JSON lines); hook must fall back to running tests (per spec, accept FP risk when transcript unreadable)",
+  "category": "should-block"
+}
