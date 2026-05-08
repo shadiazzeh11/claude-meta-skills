@@ -1,0 +1,14 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "{{FIXTURE_PATH}}",
+    "old_string": "world",
+    "new_string": "earth"
+  },
+  "tool_response": {
+    "filePath": "{{FIXTURE_PATH}}",
+    "success": true
+  }
+}

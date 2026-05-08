@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["additionalContext", "doesn't exist"],
+  "description": "Write reported success but file doesn't exist on disk (ghost-file problem)",
+  "category": "should-warn"
+}

@@ -1,0 +1,13 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{FIXTURE_PATH}}",
+    "content": "This file has actual content matching what Write would have produced.\nMulti-line content here.\n"
+  },
+  "tool_response": {
+    "filePath": "{{FIXTURE_PATH}}",
+    "success": true
+  }
+}

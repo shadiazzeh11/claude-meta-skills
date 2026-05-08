@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["additionalContext", "0 bytes"],
+  "description": "Write reported success but file is 0 bytes despite non-empty content provided",
+  "category": "should-warn"
+}

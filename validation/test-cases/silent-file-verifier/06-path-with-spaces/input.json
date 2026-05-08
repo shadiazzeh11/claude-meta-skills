@@ -1,0 +1,13 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{TEST_DIR}}/dir with spaces/file with spaces.txt",
+    "content": "content with spaces in path"
+  },
+  "tool_response": {
+    "filePath": "{{TEST_DIR}}/dir with spaces/file with spaces.txt",
+    "success": true
+  }
+}

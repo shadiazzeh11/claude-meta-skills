@@ -1,0 +1,13 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{TEST_DIR}}/never-created-file.txt",
+    "content": "This content was supposed to be written"
+  },
+  "tool_response": {
+    "filePath": "{{TEST_DIR}}/never-created-file.txt",
+    "success": true
+  }
+}

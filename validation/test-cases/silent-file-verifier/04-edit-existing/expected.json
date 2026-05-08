@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "description": "Edit succeeded; file exists; hook silently allows (no size check on Edit)",
+  "category": "should-pass"
+}

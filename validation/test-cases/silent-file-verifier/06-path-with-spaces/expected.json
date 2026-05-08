@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "description": "Path containing spaces; hook should handle correctly (no warning, file exists)",
+  "category": "should-pass"
+}

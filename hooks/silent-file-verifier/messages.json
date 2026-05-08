@@ -1,0 +1,11 @@
+{
+  "default": "constructive",
+
+  "_comment_versions": "A/B testing variants for Phase 2+. Switch via 'default'.",
+
+  "missing_file": "The {tool_name} reported success but {file_path} doesn't exist on disk. This is sometimes a path-resolution issue or a permissions problem. Verify the path with `ls`, then retry with the confirmed absolute path.",
+
+  "missing_file_punitive": "WARNING: File {file_path} does not exist after {tool_name} operation reported success.",
+
+  "empty_file": "The Write of {file_path} reported success but the file is 0 bytes (the content provided was non-empty, expected ~{expected_size} bytes). Verify the content was written and retry the Write if needed."
+}

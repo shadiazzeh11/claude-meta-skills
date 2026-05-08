@@ -1,0 +1,13 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "{{FIXTURE_PATH}}",
+    "content": "This content is non-empty but the file ended up at 0 bytes"
+  },
+  "tool_response": {
+    "filePath": "{{FIXTURE_PATH}}",
+    "success": true
+  }
+}

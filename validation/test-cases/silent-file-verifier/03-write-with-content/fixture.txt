@@ -1,0 +1,2 @@
+This file has actual content matching what Write would have produced.
+Multi-line content here.
