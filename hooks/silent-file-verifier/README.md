@@ -1,6 +1,6 @@
 # silent-file-verifier
 
-PostToolUse hook on Write and Edit that verifies the file actually materialized on disk after the operation. Catches the documented "ghost file" problem (Claude Code GitHub issues + community reports).
+PostToolUse hook on `Write|Edit|MultiEdit|NotebookEdit` that verifies the file actually materialized on disk after the operation. Catches the documented "ghost file" problem (Claude Code GitHub issues + community reports).
 
 ## What it catches
 
@@ -95,4 +95,4 @@ cd validation
 ./harness.sh silent-file-verifier
 ```
 
-6 test cases. See `validation/test-cases/silent-file-verifier/`.
+7 test cases. See `validation/test-cases/silent-file-verifier/`.

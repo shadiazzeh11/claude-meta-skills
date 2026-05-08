@@ -105,7 +105,7 @@ cd validation
 ./harness.sh edit-drift-detector
 ```
 
-10 test cases covering should-block (5) and should-pass (5). Fixtures and expected outcomes in `validation/test-cases/edit-drift-detector/`.
+11 test cases covering should-block (6) and should-pass (5). Fixtures and expected outcomes in `validation/test-cases/edit-drift-detector/`.
 
 ## Notes on prior art
 
