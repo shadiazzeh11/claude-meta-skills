@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block"],
+  "description": "Makefile-based project with simulated build failure (make test exits non-zero)",
+  "category": "should-block"
+}

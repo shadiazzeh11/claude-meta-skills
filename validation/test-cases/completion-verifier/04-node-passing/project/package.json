@@ -1,0 +1,7 @@
+{
+  "name": "test-fixture-node-passing",
+  "version": "0.0.1",
+  "scripts": {
+    "test": "echo 'all tests pass' && exit 0"
+  }
+}

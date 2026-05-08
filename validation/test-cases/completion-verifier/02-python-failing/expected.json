@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block"],
+  "description": "Python project with failing unittest (assertion fails)",
+  "category": "should-block"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "test-fixture-node-failing",
+  "version": "0.0.1",
+  "scripts": {
+    "test": "echo 'FAIL: simulated test failure' >&2; exit 1"
+  }
+}

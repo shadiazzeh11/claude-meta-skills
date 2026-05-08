@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "description": "Node project with passing tests (npm test exits 0); hook allows stop silently",
+  "category": "should-pass"
+}

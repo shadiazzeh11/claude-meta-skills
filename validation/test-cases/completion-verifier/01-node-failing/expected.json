@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block", "Tests are failing"],
+  "description": "Node project with failing test command (npm test exits non-zero)",
+  "category": "should-block"
+}

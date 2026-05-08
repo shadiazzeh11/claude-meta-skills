@@ -1,0 +1,13 @@
+{
+  "default": "constructive",
+
+  "_comment_versions": "Two feedback message versions for A/B testing in Phase 2+. Switch by changing 'default' to 'punitive' or 'constructive'.",
+
+  "constructive": "Tests are failing in the current project. Here's the relevant output:\n\n{output}\n\nAddress the failing tests, or if the failures are unrelated to your current task, note that explicitly in your response so the user can verify.",
+
+  "punitive": "Tests failing. Fix tests before completing.\n\n{output}",
+
+  "timeout": "Test command timed out after {timeout}s. Completion check could not finish; consider running tests manually before declaring done.",
+
+  "command_not_found": "Test command '{cmd}' not found in PATH. Skipping completion check; install the test runner or define a Makefile target if you want this hook to verify completion."
+}

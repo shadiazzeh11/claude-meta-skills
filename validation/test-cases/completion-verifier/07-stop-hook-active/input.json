@@ -1,0 +1,7 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "Stop",
+  "stop_hook_active": true,
+  "cwd": "/tmp",
+  "transcript_path": ""
+}

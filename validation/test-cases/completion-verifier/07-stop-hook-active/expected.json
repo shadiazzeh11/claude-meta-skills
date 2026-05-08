@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "description": "stop_hook_active=true must exit immediately to prevent infinite loop (issues #3573, #10205)",
+  "category": "should-pass"
+}
