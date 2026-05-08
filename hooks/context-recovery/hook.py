@@ -26,6 +26,31 @@ import tempfile
 from pathlib import Path
 from datetime import datetime, timezone
 
+
+def log_fire(hook_name, action, project, detail, session_id):
+    """Append one JSON line to ~/.claude/meta-skills-log.jsonl. Best-effort; never raises.
+    Detail is metadata only — no file content, no diff snippets, no test output."""
+    try:
+        log_dir = Path.home() / ".claude"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "hook": hook_name,
+            "action": action,
+            "project": project or "",
+            "detail": (detail or "")[:200],
+            "session_id": session_id or "",
+        }
+        line = json.dumps(entry, separators=(",", ":")) + "\n"
+        fd = os.open(str(log_dir / "meta-skills-log.jsonl"),
+                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+        try:
+            os.write(fd, line.encode("utf-8"))
+        finally:
+            os.close(fd)
+    except Exception:
+        pass
+
 # Delimiters: HTML comments. Standard markdown convention for invisible
 # markers. The hook reads/writes raw file content, so the delimiter
 # always works at the file level. Whether Claude sees them in rendered
@@ -263,9 +288,11 @@ def main():
         return 0
 
     cwd = payload.get("cwd") or os.getcwd()
+    session_id = payload.get("session_id", "")
     custom_instructions = payload.get("custom_instructions", "") or ""
 
     claude_md_path = resolve_claude_md_path(cwd)
+    project = os.environ.get("CLAUDE_PROJECT_DIR") or cwd
 
     git_context = gather_git_context(cwd)
     reminders = load_reminders()
@@ -273,12 +300,25 @@ def main():
         git_context, reminders, custom_instructions
     )
 
+    branch = git_context.get("branch") or "no-git"
+    modified = git_context.get("modified_files") or ""
+    modified_count = len([f for f in modified.split("\n") if f.strip()]) if modified else 0
+    detail_base = f"branch={branch} modified_files={modified_count}"
+
     # Read existing CLAUDE.md if present
-    if claude_md_path.exists():
+    pre_existing = claude_md_path.exists()
+    if pre_existing:
         try:
             with open(claude_md_path, "r", errors="replace") as f:
                 existing_content = f.read()
-        except (PermissionError, IOError, OSError):
+        except (PermissionError, IOError, OSError) as e:
+            log_fire(
+                hook_name="context-recovery",
+                action="skip-readonly",
+                project=project,
+                detail=f"path={claude_md_path} error={type(e).__name__}",
+                session_id=session_id,
+            )
             return 0  # Read-only or permission issue; skip silently
         new_content = merge_into_claude_md(existing_content, recovery_section)
     else:
@@ -288,9 +328,23 @@ def main():
     # leave original CLAUDE.md untouched.
     try:
         atomic_write(claude_md_path, new_content)
-    except (PermissionError, OSError, IOError):
+    except (PermissionError, OSError, IOError) as e:
+        log_fire(
+            hook_name="context-recovery",
+            action="skip-error",
+            project=project,
+            detail=f"path={claude_md_path} error={type(e).__name__}",
+            session_id=session_id,
+        )
         return 0
 
+    log_fire(
+        hook_name="context-recovery",
+        action="modify" if pre_existing else "create",
+        project=project,
+        detail=detail_base,
+        session_id=session_id,
+    )
     return 0
 
 

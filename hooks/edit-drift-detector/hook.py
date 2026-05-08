@@ -19,6 +19,32 @@ import sys
 import os
 import difflib
 from pathlib import Path
+from datetime import datetime, timezone
+
+
+def log_fire(hook_name, action, project, detail, session_id):
+    """Append one JSON line to ~/.claude/meta-skills-log.jsonl. Best-effort; never raises.
+    Detail is metadata only — no file content, no diff snippets, no test output."""
+    try:
+        log_dir = Path.home() / ".claude"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "hook": hook_name,
+            "action": action,
+            "project": project or "",
+            "detail": (detail or "")[:200],
+            "session_id": session_id or "",
+        }
+        line = json.dumps(entry, separators=(",", ":")) + "\n"
+        fd = os.open(str(log_dir / "meta-skills-log.jsonl"),
+                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+        try:
+            os.write(fd, line.encode("utf-8"))
+        finally:
+            os.close(fd)
+    except Exception:
+        pass
 
 
 def normalize_trailing_whitespace(text):
@@ -152,14 +178,25 @@ def main():
             )
         except (KeyError, IndexError):
             message = template
+        log_action = "block-fuzzy"
+        log_detail = f"file={file_path} lines={line_range} similarity={ratio:.2f}"
     else:
         no_match_template = messages.get("no_close_match", "")
         try:
             message = no_match_template.format(file_path=file_path)
         except (KeyError, IndexError):
             message = no_match_template
+        log_action = "block-no-match"
+        log_detail = f"file={file_path} best_ratio={ratio:.2f}"
 
     sys.stderr.write(message + "\n")
+    log_fire(
+        hook_name="edit-drift-detector",
+        action=log_action,
+        project=os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd", ""),
+        detail=log_detail,
+        session_id=payload.get("session_id", ""),
+    )
     return 2
 
 

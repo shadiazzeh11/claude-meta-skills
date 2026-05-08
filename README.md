@@ -76,6 +76,18 @@ Per-hook baseline results live in each hook directory's `BASELINE-RESULTS.md`. P
 
 **The harness is generic.** It tests against assertions on exit code, stdout patterns, stderr patterns, file content, and file pattern counts — applicable to any Claude Code hook, not just ours. See [VALIDATION.md](VALIDATION.md) for how to validate your own hooks against the harness.
 
+## Self-deployment data
+
+Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 45/45 tests prove the hooks fire correctly on constructed inputs; the auto-log is what tells you whether they're catching real issues during normal use.
+
+```bash
+./testing/analyze-log.py             # last 7 days summary
+./testing/analyze-log.py --days 30   # longer window
+./testing/analyze-log.py --redact    # rewrite home prefix to ~ for safer sharing
+```
+
+The `detail` field carries metadata only — paths, pattern names, line ranges, exit codes, similarity ratios. No file content, no diff snippets, no test output. See [testing/README.md](testing/README.md) for the full action enum, privacy boundaries, and what to look for after a week of dogfood usage.
+
 ## Configuration
 
 Each hook is configurable without modifying its source code:

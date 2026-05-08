@@ -24,6 +24,33 @@ import sys
 import os
 import subprocess
 from pathlib import Path
+from datetime import datetime, timezone
+
+
+def log_fire(hook_name, action, project, detail, session_id):
+    """Append one JSON line to ~/.claude/meta-skills-log.jsonl. Best-effort; never raises.
+    Detail is metadata only — no file content, no diff snippets, no test output."""
+    try:
+        log_dir = Path.home() / ".claude"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "hook": hook_name,
+            "action": action,
+            "project": project or "",
+            "detail": (detail or "")[:200],
+            "session_id": session_id or "",
+        }
+        line = json.dumps(entry, separators=(",", ":")) + "\n"
+        fd = os.open(str(log_dir / "meta-skills-log.jsonl"),
+                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+        try:
+            os.write(fd, line.encode("utf-8"))
+        finally:
+            os.close(fd)
+    except Exception:
+        pass
+
 
 TIMEOUT_SECS = int(os.environ.get("COMPLETION_VERIFIER_TIMEOUT_SECS", "30"))
 LAST_N_LINES = 50
@@ -157,6 +184,13 @@ def main():
         emit_warning(
             "Working directory '{cwd}' does not exist. Skipping completion check.".format(cwd=cwd)
         )
+        log_fire(
+            hook_name="completion-verifier",
+            action="warn-cwd-missing",
+            project=cwd,
+            detail=f"cwd_missing={cwd}",
+            session_id=payload.get("session_id", ""),
+        )
         return 0
 
     # Project type detection
@@ -190,6 +224,13 @@ def main():
         except (KeyError, IndexError):
             msg = timeout_template
         emit_warning(msg)
+        log_fire(
+            hook_name="completion-verifier",
+            action="warn-timeout",
+            project=cwd,
+            detail=f"project_type={config} timeout={TIMEOUT_SECS}s",
+            session_id=payload.get("session_id", ""),
+        )
         return 0
     except FileNotFoundError:
         notfound_template = messages.get("command_not_found", "")
@@ -198,6 +239,13 @@ def main():
         except (KeyError, IndexError):
             msg = notfound_template
         emit_warning(msg)
+        log_fire(
+            hook_name="completion-verifier",
+            action="warn-cmd-missing",
+            project=cwd,
+            detail=f"project_type={config} cmd={' '.join(cmd)}",
+            session_id=payload.get("session_id", ""),
+        )
         return 0
     except (OSError, IOError):
         return 0
@@ -218,6 +266,13 @@ def main():
         message = template + "\n\n" + last_lines
 
     emit_block(message)
+    log_fire(
+        hook_name="completion-verifier",
+        action="block",
+        project=cwd,
+        detail=f"project_type={config} test_exit_code={result.returncode}",
+        session_id=payload.get("session_id", ""),
+    )
     return 0
 
 

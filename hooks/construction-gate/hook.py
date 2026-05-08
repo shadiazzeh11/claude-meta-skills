@@ -19,6 +19,33 @@ import sys
 import os
 import re
 from pathlib import Path
+from datetime import datetime, timezone
+
+
+def log_fire(hook_name, action, project, detail, session_id):
+    """Append one JSON line to ~/.claude/meta-skills-log.jsonl. Best-effort; never raises.
+    Detail is metadata only — no file content, no diff snippets, no test output."""
+    try:
+        log_dir = Path.home() / ".claude"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "hook": hook_name,
+            "action": action,
+            "project": project or "",
+            "detail": (detail or "")[:200],
+            "session_id": session_id or "",
+        }
+        line = json.dumps(entry, separators=(",", ":")) + "\n"
+        # POSIX atomic append for writes < PIPE_BUF (4096 bytes).
+        fd = os.open(str(log_dir / "meta-skills-log.jsonl"),
+                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+        try:
+            os.write(fd, line.encode("utf-8"))
+        finally:
+            os.close(fd)
+    except Exception:
+        pass
 
 
 DEFAULT_PATTERNS = [
@@ -120,6 +147,14 @@ def main():
         message = template
 
     sys.stderr.write(message + "\n")
+
+    log_fire(
+        hook_name="construction-gate",
+        action="block",
+        project=os.environ.get("CLAUDE_PROJECT_DIR") or payload.get("cwd", ""),
+        detail=f"pattern={matched} file={file_path}",
+        session_id=payload.get("session_id", ""),
+    )
     return 2
 
 
