@@ -7,3 +7,8 @@ node_modules/
 validation/results/*.json
 !validation/results/.gitkeep
 
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
