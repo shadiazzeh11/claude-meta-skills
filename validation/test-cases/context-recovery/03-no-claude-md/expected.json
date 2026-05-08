@@ -1,0 +1,10 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Session Recovery", "post-compact-recovery-start", "Hook generated"]
+  },
+  "description": "No CLAUDE.md exists; hook creates one with recovery section",
+  "category": "should-write"
+}

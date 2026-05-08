@@ -1,0 +1,10 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Session Recovery", "Branch:", "Recent commits:", "Modified files", "post-compact-recovery-start", "post-compact-recovery-end", "This is the original CLAUDE.md content"]
+  },
+  "description": "Git repo with CLAUDE.md; recovery section gets git state appended; original content preserved",
+  "category": "should-write"
+}

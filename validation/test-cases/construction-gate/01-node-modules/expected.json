@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "node_modules"],
+  "description": "Write to node_modules path → blocked (matches node_modules/ pattern)",
+  "category": "should-block"
+}

@@ -1,0 +1,14 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["This content must not be modified"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Session Recovery", "post-compact-recovery-start"]
+  },
+  "description": "Read-only CLAUDE.md; hook exits 0 silently without crashing; original file unchanged",
+  "category": "should-pass-silently"
+}

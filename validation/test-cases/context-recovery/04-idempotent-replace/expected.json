@@ -1,0 +1,19 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Session Recovery", "Original project content", "More content after"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["old-branch", "2026-01-01 00:00:00"]
+  },
+  "expected_file_pattern_count": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "pattern": "post-compact-recovery-start",
+    "count": 1
+  },
+  "description": "Idempotent replace: existing recovery section replaced, not duplicated. Original content preserved.",
+  "category": "should-write"
+}

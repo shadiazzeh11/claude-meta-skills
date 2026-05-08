@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stderr_contains": [],
+  "description": "Write to /tmp scratch file → allowed",
+  "category": "should-pass"
+}

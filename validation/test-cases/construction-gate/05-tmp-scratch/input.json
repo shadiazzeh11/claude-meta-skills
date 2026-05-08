@@ -1,0 +1,10 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Write",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp",
+  "tool_input": {
+    "file_path": "/tmp/scratch.txt",
+    "content": "experimentation"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "_description": "Static reminders to include in the recovery section after each compaction. Project-specific. Add or remove entries to match your project's conventions. Keep brief — total recovery section is capped at ~500 tokens (~2000 chars).",
+  "reminders": [
+    "Verify the file content before claiming an edit is done",
+    "Run tests before declaring task complete",
+    "Re-read CLAUDE.md if you're unsure of project conventions"
+  ]
+}

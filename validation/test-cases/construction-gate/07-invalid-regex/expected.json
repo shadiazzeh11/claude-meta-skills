@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "node_modules"],
+  "description": "rules.json contains an invalid regex; hook skips it gracefully and still enforces the valid 'node_modules/' pattern. Doesn't crash on bad regex.",
+  "category": "should-block"
+}

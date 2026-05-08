@@ -1,0 +1,14 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Session Recovery", "Project reminders:", "Hook generated"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Branch:", "Recent commits:"]
+  },
+  "description": "Non-git directory; recovery section has reminders + timestamp but no git fields",
+  "category": "should-write"
+}

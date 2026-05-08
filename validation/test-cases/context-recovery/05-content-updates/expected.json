@@ -1,0 +1,14 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["actual-current-branch", "Real commit message"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["stale-branch", "Stale commit"]
+  },
+  "description": "Content updates between runs: new recovery section reflects current git state, replacing stale data",
+  "category": "should-write"
+}

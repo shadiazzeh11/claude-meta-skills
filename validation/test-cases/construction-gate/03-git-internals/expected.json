@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "git"],
+  "description": "Write deep into .git/ internals → blocked (matches \\.git/ pattern); confirms regex matches anywhere in path",
+  "category": "should-block"
+}

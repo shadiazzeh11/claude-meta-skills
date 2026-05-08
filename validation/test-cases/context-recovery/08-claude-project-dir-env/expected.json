@@ -1,0 +1,17 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/other-dir/CLAUDE.md",
+    "patterns": ["Session Recovery", "post-compact-recovery-start"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Session Recovery", "post-compact-recovery-start"]
+  },
+  "description": "CLAUDE_PROJECT_DIR env var override: hook writes to env path, not cwd",
+  "category": "should-write",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "{{TEST_DIR}}/other-dir"
+  }
+}

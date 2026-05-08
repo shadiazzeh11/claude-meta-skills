@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stderr_contains": [],
+  "description": "Filename contains 'node_modules' substring but NOT as a directory path; pattern 'node_modules/' should NOT match (boundary test)",
+  "category": "should-pass"
+}

@@ -92,10 +92,18 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
   description="$(jq -r '.description' "$expected")"
   category="$(jq -r '.category' "$expected")"
 
-  # Build env var prefix from optional .env field in expected.json
+  # Build env var prefix from optional .env field in expected.json.
+  # Env values support same placeholders as input.json.
   env_args=()
   while IFS= read -r kv; do
     [ -z "$kv" ] && continue
+    kv="${kv//\{\{TEST_DIR\}\}/$case_dir}"
+    if [ -f "$case_dir/fixture.txt" ]; then
+      kv="${kv//\{\{FIXTURE_PATH\}\}/$case_dir/fixture.txt}"
+    fi
+    if [ -d "$case_dir/project" ]; then
+      kv="${kv//\{\{PROJECT_PATH\}\}/$case_dir/project}"
+    fi
     env_args+=("$kv")
   done < <(jq -r '.env // {} | to_entries[]? | "\(.key)=\(.value)"' "$expected" 2>/dev/null)
 
@@ -155,6 +163,75 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
       failure_reasons+=("stdout missing pattern: '$pattern'")
     fi
   done < <(jq -r '.expected_stdout_contains[]?' "$expected")
+
+  # Verify expected_file_contains (if specified)
+  # Format: { "path": "...", "patterns": ["pattern1", "pattern2"] }
+  # Path supports the same placeholders as input.json substitution.
+  expected_file_path="$(jq -r '.expected_file_contains.path // empty' "$expected" 2>/dev/null)"
+  if [ -n "$expected_file_path" ]; then
+    expected_file_path="${expected_file_path//\{\{TEST_DIR\}\}/$case_dir}"
+    if [ -f "$case_dir/fixture.txt" ]; then
+      expected_file_path="${expected_file_path//\{\{FIXTURE_PATH\}\}/$case_dir/fixture.txt}"
+    fi
+    if [ -d "$case_dir/project" ]; then
+      expected_file_path="${expected_file_path//\{\{PROJECT_PATH\}\}/$case_dir/project}"
+    fi
+    if [ ! -f "$expected_file_path" ]; then
+      passed=false
+      failure_reasons+=("expected_file_contains: file not found at $expected_file_path")
+    else
+      file_content="$(cat "$expected_file_path")"
+      while IFS= read -r pattern; do
+        [ -z "$pattern" ] && continue
+        if ! echo "$file_content" | grep -q -- "$pattern"; then
+          passed=false
+          failure_reasons+=("file '$expected_file_path' missing pattern: '$pattern'")
+        fi
+      done < <(jq -r '.expected_file_contains.patterns[]?' "$expected")
+    fi
+  fi
+
+  # Verify expected_file_not_contains (if specified)
+  not_file_path="$(jq -r '.expected_file_not_contains.path // empty' "$expected" 2>/dev/null)"
+  if [ -n "$not_file_path" ]; then
+    not_file_path="${not_file_path//\{\{TEST_DIR\}\}/$case_dir}"
+    if [ -f "$case_dir/fixture.txt" ]; then
+      not_file_path="${not_file_path//\{\{FIXTURE_PATH\}\}/$case_dir/fixture.txt}"
+    fi
+    if [ -d "$case_dir/project" ]; then
+      not_file_path="${not_file_path//\{\{PROJECT_PATH\}\}/$case_dir/project}"
+    fi
+    if [ -f "$not_file_path" ]; then
+      file_content="$(cat "$not_file_path")"
+      while IFS= read -r pattern; do
+        [ -z "$pattern" ] && continue
+        if echo "$file_content" | grep -q -- "$pattern"; then
+          passed=false
+          failure_reasons+=("file '$not_file_path' should NOT contain pattern: '$pattern'")
+        fi
+      done < <(jq -r '.expected_file_not_contains.patterns[]?' "$expected")
+    fi
+    # If file doesn't exist, "not contains" is trivially satisfied.
+  fi
+
+  # Verify expected_file_pattern_count (if specified)
+  # Format: { "path": "...", "pattern": "...", "count": N }
+  count_file_path="$(jq -r '.expected_file_pattern_count.path // empty' "$expected" 2>/dev/null)"
+  if [ -n "$count_file_path" ]; then
+    count_file_path="${count_file_path//\{\{TEST_DIR\}\}/$case_dir}"
+    count_pattern="$(jq -r '.expected_file_pattern_count.pattern' "$expected")"
+    expected_count="$(jq -r '.expected_file_pattern_count.count' "$expected")"
+    if [ -f "$count_file_path" ]; then
+      actual_count="$(grep -c -- "$count_pattern" "$count_file_path" || echo 0)"
+      if [ "$actual_count" != "$expected_count" ]; then
+        passed=false
+        failure_reasons+=("file '$count_file_path' has $actual_count occurrences of '$count_pattern', expected $expected_count")
+      fi
+    else
+      passed=false
+      failure_reasons+=("expected_file_pattern_count: file not found at $count_file_path")
+    fi
+  fi
 
   if $passed; then
     PASS=$((PASS + 1))
