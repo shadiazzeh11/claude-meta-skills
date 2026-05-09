@@ -1,12 +1,13 @@
 HOOKS := edit-drift-detector construction-gate silent-file-verifier completion-verifier context-recovery
 
-.PHONY: test test-stop-env test-installer test-% clean install help
+.PHONY: test test-stop-env test-installer test-analyzer test-% clean install help
 
 help:
 	@echo "claude-meta-skills make targets:"
 	@echo "  make test            - run validation harness for all 5 hooks"
 	@echo "  make test-stop-env   - run validation harness with CLAUDE_PROJECT_DIR set (simulates Stop-hook env)"
 	@echo "  make test-installer  - run installer idempotency tests (does not invoke hooks)"
+	@echo "  make test-analyzer   - run analyzer regression test (uses temp JSONL log; does not touch ~/.claude)"
 	@echo "  make test-<hook>     - run validation harness for one hook"
 	@echo "                         (e.g., make test-edit-drift-detector)"
 	@echo "  make clean           - remove validation/results/"
@@ -32,6 +33,9 @@ test-stop-env:
 
 test-installer:
 	@bash testing/test-installer-idempotency.sh
+
+test-analyzer:
+	@bash testing/test-analyze-log.sh
 
 test-%:
 	@cd validation && ./harness.sh $*
