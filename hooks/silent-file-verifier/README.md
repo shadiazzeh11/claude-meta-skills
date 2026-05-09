@@ -43,6 +43,12 @@ Add to `.claude/settings.json`:
 4. If `tool_name == "Write"` AND `content` was non-empty AND file size is 0 → emit warning, exit 0.
 5. Otherwise → exit 0 silently (no stdout output).
 
+## Real-session coverage
+
+A controlled dogfood run on disposable projects observed normal successful Writes succeed silently — no warning, no log entry. That is consistent with the allow path running on real payloads, but PostToolUse's allow path is silent by design (no stdout, no log line), so positive evidence of the hook firing on the success path is absent rather than affirmative. The empty-content Write case (`tool_input.content == ""` producing a 0-byte file) also correctly stays silent because empty content matching an empty file is expected.
+
+The warning paths (`warn-missing` and `warn-empty`) are harness-validated through dedicated test cases (see `validation/test-cases/silent-file-verifier/`), but they have not yet been triggered by a real Claude Code session. A real anomaly requires either a reported-success tool call where the file is missing on disk or a non-empty Write that produces a 0-byte file — both are hard to force intentionally without manufacturing a hook or filesystem failure. Treat the warning paths as **logic-validated, not real-anomaly-proven**, until real ghost-write entries surface in `./testing/analyze-log.py --real-only` output.
+
 ## Important: PostToolUse can't block
 
 PostToolUse hooks fire AFTER the tool ran. Even if the hook detects a problem, the operation already completed. This hook provides feedback via `additionalContext` so Claude sees the discrepancy on the next turn and can correct (e.g., retry with verified path, investigate why file is empty).
