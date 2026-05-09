@@ -10,7 +10,9 @@
 # What it does:
 #   1. Copies all 5 hooks to <target>/.claude/hooks/meta-skills/
 #   2. Creates or merges <target>/.claude/settings.json (preserves any
-#      existing hooks the user already has)
+#      existing hooks the user already has). Idempotent: re-running the
+#      installer replaces prior meta-skills hook entries instead of
+#      appending duplicates.
 #   3. Optionally installs the CLAUDE.md template (--with-claude-md)
 #   4. Optionally runs validation against the source repo (--verify)
 #
@@ -137,17 +139,30 @@ if [ -f "$SETTINGS_FILE" ]; then
     cp "$SETTINGS_FILE" "$BACKUP"
     echo "  backup: $BACKUP"
 
-    # Deep-merge: keep user's existing settings, append our hooks within each
-    # event (don't overwrite user's other hooks). Drops our internal _comment_*
-    # keys since they're noise once installed.
+    # Idempotent merge: strip any prior meta-skills hook commands from each
+    # event (signature: command path contains "/.claude/hooks/meta-skills/"),
+    # preserving the user's unrelated hooks (including any commands that
+    # share an entry with a meta-skills command), then append the fresh
+    # meta-skills entries from the current template. Re-running install on
+    # the same target produces the same result as a single install.
     MERGED=$(jq -s '
+      def is_meta_skills_command:
+        (.command // "") | contains("/.claude/hooks/meta-skills/");
+
+      def strip_meta_skills_entry:
+        .hooks = ((.hooks // []) | map(select(is_meta_skills_command | not)));
+
+      def filter_existing_event:
+        map(strip_meta_skills_entry)
+        | map(select((.hooks // []) | length > 0));
+
       .[0] as $existing | .[1] as $ours |
       ($existing.hooks // {}) as $eh |
       ($ours.hooks // {}) as $oh |
       ($eh | keys + ($oh | keys) | unique) as $all_events |
       $existing * {hooks: (
         reduce $all_events[] as $ev ({};
-          .[$ev] = (($eh[$ev] // []) + ($oh[$ev] // []))
+          .[$ev] = (($eh[$ev] // [] | filter_existing_event) + ($oh[$ev] // []))
         )
       )}
     ' "$SETTINGS_FILE" <(echo "$NEW_SETTINGS"))
