@@ -60,6 +60,7 @@ This is enforced by inspection — each hook builds its own `detail` from a limi
 
 ```bash
 ./testing/analyze-log.py                  # summary, last 7 days
+./testing/analyze-log.py --real-only      # dogfood-only view; canonical for dogfood evidence
 ./testing/analyze-log.py --days 30        # last N days
 ./testing/analyze-log.py --redact         # rewrite /Users/<you>/ → ~/ for safer sharing
 ./testing/analyze-log.py --help
@@ -87,6 +88,17 @@ Projects:
   ...
 ```
 
+`analyze-log.py` classifies each entry into one of four buckets so validation runs do not pollute dogfood interpretation:
+
+| Bucket | What it means |
+|---|---|
+| `real dogfood` | UUID-shaped `session_id` from a live Claude Code session, project path outside `validation/test-cases/`. |
+| `manual/synthetic` | `session_id` is a manual marker (e.g. `manual-test`), used when piping payloads to a hook by hand. |
+| `harness/validation` | `session_id="test-session"` or project/file path under `validation/test-cases/` — typically produced by `make test` or `./validation/harness.sh`. |
+| `unknown` | Doesn't match any of the above. |
+
+Use `--real-only` when reporting dogfood evidence. Default output intentionally includes all buckets and prints classification totals so you can spot harness or manual noise at a glance. The raw JSONL is still useful when you need to inspect a specific session or correlate timestamps across mixed runs.
+
 Raw JSONL is at `~/.claude/meta-skills-log.jsonl` if you want to grep, jq, or feed into a different analyzer.
 
 ## What to look for after a week of usage
@@ -105,6 +117,18 @@ What the log can't tell you:
 
 - **Did Claude actually self-correct after the hook fired?** The log records the fire but not the next-turn outcome. That's qualitative — you have to remember whether the block-fuzzy on `auth.py` led to a clean retry or whether Claude got confused. Keep notes during the week if you want this signal.
 - **False positive rate in real use.** A `block-fuzzy` that suggested wrong content, or a `warn-missing` for a file that was about to materialize, are FPs but not visible in the log alone. Cross-reference with your memory of the session.
+
+## Avoiding harness pollution
+
+Running `make test` or `./validation/harness.sh` directly appends entries with `session_id="test-session"` to the active log. `analyze-log.py --real-only` filters those out, but if you'd rather keep the active log dogfood-only, run validation under a temp `HOME`:
+
+```bash
+TEST_HOME="$(mktemp -d /tmp/claude-meta-test-home.XXXXXX)" && \
+  HOME="$TEST_HOME" make test; rc=$?; \
+  rm -rf "$TEST_HOME"; exit $rc
+```
+
+The hooks resolve their log path via `Path.home()`, so redirecting `HOME` redirects the log writes. The temp directory is removed at the end of the run, leaving the real `~/.claude/meta-skills-log.jsonl` untouched.
 
 ## Log file management
 

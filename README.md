@@ -82,9 +82,12 @@ Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON lin
 
 ```bash
 ./testing/analyze-log.py             # last 7 days summary
+./testing/analyze-log.py --real-only # dogfood-only view (canonical for dogfood evidence)
 ./testing/analyze-log.py --days 30   # longer window
 ./testing/analyze-log.py --redact    # rewrite home prefix to ~ for safer sharing
 ```
+
+Current dogfood evidence should be read from `./testing/analyze-log.py --real-only`, because the raw log can also contain manual proof and harness/validation entries. In the current dogfood baseline, `construction-gate` and `completion-verifier` have real-session block evidence; `edit-drift-detector`, `silent-file-verifier`, and `context-recovery` remain logic-validated or normal-path-observed only. See each hook README for lifecycle caveats.
 
 The `detail` field carries metadata only — paths, pattern names, line ranges, exit codes, similarity ratios. No file content, no diff snippets, no test output. See [testing/README.md](testing/README.md) for the full action enum, privacy boundaries, and what to look for after a week of dogfood usage.
 
