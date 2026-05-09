@@ -10,7 +10,7 @@
 
 This project uses metacognitive verification hooks (claude-meta-skills):
 
-- **`edit-drift-detector`** (PreToolUse:Edit) — Blocks Edit when `old_str` doesn't match actual file content. Re-read the file if blocked.
+- **`edit-drift-detector`** (PreToolUse:Edit) — When the Edit payload reaches PreToolUse, surfaces fuzzy-match correction context if `old_string` doesn't match. Note: in current Claude Code, complete `old_string` mismatches are typically caught by the Edit tool's own validation first; this hook adds value mainly for cases where the Edit payload reaches PreToolUse. Re-read the file if blocked.
 - **`completion-verifier`** (Stop) — Blocks Stop when tests are failing. Fix tests or document why they're expected to fail.
 - **`silent-file-verifier`** (PostToolUse:Write|Edit|MultiEdit|NotebookEdit) — Warns when Write/Edit produces a ghost file. Verify path and retry.
 - **`construction-gate`** (PreToolUse:Write) — Blocks Write to protected paths (dependencies, lock files, env files). Check `hooks/construction-gate/rules.json` for the pattern list.
