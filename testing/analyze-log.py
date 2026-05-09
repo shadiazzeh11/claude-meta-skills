@@ -3,27 +3,60 @@
 analyze-log.py — summarize hook fires from ~/.claude/meta-skills-log.jsonl.
 
 Usage:
-  ./analyze-log.py                  # summary for last 7 days
-  ./analyze-log.py --days 14        # last N days
-  ./analyze-log.py --redact         # redact home prefix to ~ for safer sharing
+  ./analyze-log.py                   # summary for last 7 days
+  ./analyze-log.py --days 14         # last N days
+  ./analyze-log.py --real-only       # restrict summaries to real dogfood entries
+  ./analyze-log.py --log <path>      # read a different JSONL log (default: ~/.claude/meta-skills-log.jsonl)
+  ./analyze-log.py --redact          # redact home prefix to ~ for safer sharing
   ./analyze-log.py --help
 
 The log is a privacy-conscious append-only JSONL where each line records one
 hook fire (block, warn, modify, create, skip-*). It contains paths and pattern
 names but no file content, no diff snippets, and no test output.
+
+Each entry is classified so dogfood progress is not conflated with manual
+proof or harness/validation noise:
+
+  - real dogfood:       UUID-shaped session_id from a live Claude Code
+                        session, with no harness or manual indicators.
+  - manual/synthetic:   session_id == "manual-test" (manual stdin invocations
+                        used to prove hook logic outside Claude Code).
+  - harness/validation: session_id == "test-session", project or file path
+                        under validation/test-cases/, or project under the
+                        harness stub root /Users/test/project.
+  - unknown:            session_id missing/empty or not in any known shape.
+
+macOS /private/tmp paths are normalized to /tmp before grouping so the same
+disposable project does not appear under two project keys.
 """
 import json
+import os
+import re
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-LOG_PATH = Path.home() / ".claude" / "meta-skills-log.jsonl"
+DEFAULT_LOG_PATH = Path.home() / ".claude" / "meta-skills-log.jsonl"
+
+UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+
+CLASS_REAL = "real dogfood"
+CLASS_MANUAL = "manual/synthetic"
+CLASS_HARNESS = "harness/validation"
+CLASS_UNKNOWN = "unknown"
+
+CLASS_ORDER = [CLASS_REAL, CLASS_MANUAL, CLASS_HARNESS, CLASS_UNKNOWN]
 
 
 def parse_args():
     days = 7
     redact = False
+    real_only = False
+    log_path = None
     args = sys.argv[1:]
     i = 0
     while i < len(args):
@@ -41,6 +74,15 @@ def parse_args():
         elif a == "--redact":
             redact = True
             i += 1
+        elif a == "--real-only":
+            real_only = True
+            i += 1
+        elif a == "--log":
+            if i + 1 >= len(args):
+                print("Error: --log requires a path", file=sys.stderr)
+                sys.exit(1)
+            log_path = Path(args[i + 1])
+            i += 2
         elif a in ("-h", "--help"):
             print(__doc__)
             sys.exit(0)
@@ -48,13 +90,35 @@ def parse_args():
             print(f"Unknown argument: {a}", file=sys.stderr)
             print("Use --help for usage.", file=sys.stderr)
             sys.exit(1)
-    return days, redact
+    if log_path is None:
+        log_path = DEFAULT_LOG_PATH
+    return days, redact, real_only, log_path
 
 
 def redact_path(p, home):
     if p and p.startswith(home):
         return "~" + p[len(home):]
     return p
+
+
+def canonicalize_path(p):
+    """Normalize macOS /private/tmp paths to /tmp. No-op for other paths."""
+    if not p:
+        return p
+    if p == "/private/tmp":
+        return "/tmp"
+    if p.startswith("/private/tmp/"):
+        return "/tmp/" + p[len("/private/tmp/"):]
+    return p
+
+
+def canonicalize_file(p):
+    """Canonicalize absolute paths only; relative paths are returned unchanged."""
+    if not p:
+        return p
+    if not os.path.isabs(p):
+        return p
+    return canonicalize_path(p)
 
 
 def extract_file_from_detail(detail):
@@ -65,11 +129,32 @@ def extract_file_from_detail(detail):
     return None
 
 
-def main():
-    days, redact = parse_args()
+def classify(session_id, project, file_path):
+    """Classify a log entry. file_path may be None."""
+    sid = (session_id or "").strip()
 
-    if not LOG_PATH.exists():
-        print(f"No log file at {LOG_PATH}.")
+    if sid == "manual-test":
+        return CLASS_MANUAL
+
+    if (
+        sid == "test-session"
+        or "validation/test-cases" in (project or "")
+        or (file_path and "validation/test-cases" in file_path)
+        or (project or "").startswith("/Users/test/project")
+    ):
+        return CLASS_HARNESS
+
+    if not sid or not UUID_RE.match(sid):
+        return CLASS_UNKNOWN
+
+    return CLASS_REAL
+
+
+def main():
+    days, redact, real_only, log_path = parse_args()
+
+    if not log_path.exists():
+        print(f"No log file at {log_path}.")
         print("Logging activates the first time a hook fires after install.")
         return 0
 
@@ -80,10 +165,12 @@ def main():
     by_hook_action = defaultdict(lambda: defaultdict(int))
     by_project = defaultdict(int)
     by_file = defaultdict(lambda: defaultdict(int))
+    by_classification = defaultdict(int)
+    real_sessions = set()
     total = 0
     parse_errors = 0
 
-    with open(LOG_PATH, "r", errors="replace") as f:
+    with open(log_path, "r", errors="replace") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -96,19 +183,34 @@ def main():
             ts = entry.get("timestamp", "")
             if ts < cutoff_str:
                 continue
+
             hook = entry.get("hook", "unknown")
             action = entry.get("action", "unknown")
-            project = entry.get("project", "")
+            project = canonicalize_path(entry.get("project") or "")
             detail = entry.get("detail", "")
+            file_path = canonicalize_file(extract_file_from_detail(detail))
+
+            classification = classify(entry.get("session_id"), project, file_path)
+            by_classification[classification] += 1
+            if classification == CLASS_REAL:
+                sid = (entry.get("session_id") or "").strip()
+                if sid:
+                    real_sessions.add(sid)
+
+            if real_only and classification != CLASS_REAL:
+                continue
+
             by_hook_action[hook][action] += 1
             if project:
                 by_project[project] += 1
-            file_path = extract_file_from_detail(detail)
             if file_path:
                 by_file[file_path][hook] += 1
             total += 1
 
     print(f"Hook fire summary (last {days} days):")
+    if real_only:
+        print()
+        print("Filter: real dogfood only")
     print()
     if not by_hook_action:
         print("  (no fires in window)")
@@ -124,6 +226,12 @@ def main():
     print(f"Total: {total} fires across {len(by_hook_action)} hooks")
     if parse_errors:
         print(f"  (skipped {parse_errors} unparseable lines)")
+    print()
+
+    print("Classification totals (all matching log entries, before --real-only display filter):")
+    for label in CLASS_ORDER:
+        print(f"  {label}: {by_classification.get(label, 0)} fires")
+    print(f"  Real Claude Code sessions: {len(real_sessions)}")
     print()
 
     if by_file:
