@@ -1,6 +1,13 @@
 ---
 name: verification-before-recommend
-description: Apply verification discipline before recommending any state-changing action (install, marketplace add, file write, config change, command execution) or making any factual claim about tools, repos, packages, file paths, marketplace contents, or system state that hasn't been directly observed this session. Make sure to use this skill whenever the user is about to act on a recommendation, whenever an answer rests on what's installed / configured / documented somewhere, whenever you're recalling facts about external tools or repos from training data or prior sessions, or whenever you're disagreeing with someone about a factual question — even if the conversation feels casual or the claim seems obvious. The skill enforces five rules: verify-or-label, check current state before adding new state, distinguish verified facts from inferences, propose the smallest reversible test when stakes warrant, and resolve disagreements by verifying the load-bearing empirical claim rather than additional pushback. Skip when the conversation is pure explanation with no recommendation or factual claim, the load-bearing claim has been directly observed this session via a tool call, the user is asserting their own intent ("I did X") rather than a result, or the operation is in scratch space and you're not making claims about its effect.
+description: >-
+  Apply verification discipline before recommending state-changing actions
+  or making load-bearing claims about local or external state that has not
+  been directly observed this session. Use for installs, setup commands,
+  config/file changes, repo/tool/package claims, factual disagreements, and
+  next-step recommendations that depend on current state. Skip pure
+  explanation, already-observed facts, user intent claims, and scratch-only
+  operations with no claims about their effect.
 ---
 
 > **Source of truth for the five rules**: `~/.claude/CLAUDE.md` verification protocol. The rules are duplicated here for portability — the skill needs to function standalone if moved to another machine or shared. When changing the rules, update both files together. Single source of truth lives in CLAUDE.md; this is a synchronized copy.

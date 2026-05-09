@@ -12,11 +12,18 @@ help:
 	@echo "                                (use INSTALL_FLAGS=--with-claude-md for CLAUDE.md)"
 
 test:
-	@cd validation && for h in $(HOOKS); do \
+	@cd validation && fail=0; failed_hooks=""; for h in $(HOOKS); do \
 		echo "=== $$h ==="; \
-		./harness.sh $$h || true; \
+		if ! ./harness.sh $$h; then \
+			fail=1; \
+			failed_hooks="$$failed_hooks $$h"; \
+		fi; \
 		echo; \
-	done
+	done; \
+	if [ $$fail -ne 0 ]; then \
+		echo "FAILED hooks:$$failed_hooks" >&2; \
+		exit 1; \
+	fi
 
 test-%:
 	@cd validation && ./harness.sh $*

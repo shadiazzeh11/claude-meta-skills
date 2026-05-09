@@ -149,7 +149,7 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
   # Verify expected_stderr_contains
   while IFS= read -r pattern; do
     [ -z "$pattern" ] && continue
-    if ! echo "$actual_stderr" | grep -q -- "$pattern"; then
+    if ! echo "$actual_stderr" | grep -Fq -- "$pattern"; then
       passed=false
       failure_reasons+=("stderr missing pattern: '$pattern'")
     fi
@@ -158,7 +158,7 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
   # Verify expected_stdout_contains
   while IFS= read -r pattern; do
     [ -z "$pattern" ] && continue
-    if ! echo "$actual_stdout" | grep -q -- "$pattern"; then
+    if ! echo "$actual_stdout" | grep -Fq -- "$pattern"; then
       passed=false
       failure_reasons+=("stdout missing pattern: '$pattern'")
     fi
@@ -183,7 +183,7 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
       file_content="$(cat "$expected_file_path")"
       while IFS= read -r pattern; do
         [ -z "$pattern" ] && continue
-        if ! echo "$file_content" | grep -q -- "$pattern"; then
+        if ! echo "$file_content" | grep -Fq -- "$pattern"; then
           passed=false
           failure_reasons+=("file '$expected_file_path' missing pattern: '$pattern'")
         fi
@@ -205,7 +205,7 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
       file_content="$(cat "$not_file_path")"
       while IFS= read -r pattern; do
         [ -z "$pattern" ] && continue
-        if echo "$file_content" | grep -q -- "$pattern"; then
+        if echo "$file_content" | grep -Fq -- "$pattern"; then
           passed=false
           failure_reasons+=("file '$not_file_path' should NOT contain pattern: '$pattern'")
         fi
@@ -222,7 +222,11 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
     count_pattern="$(jq -r '.expected_file_pattern_count.pattern' "$expected")"
     expected_count="$(jq -r '.expected_file_pattern_count.count' "$expected")"
     if [ -f "$count_file_path" ]; then
-      actual_count="$(grep -c -- "$count_pattern" "$count_file_path" || echo 0)"
+      # grep -c always prints the count (including "0") to stdout; the ||
+      # only suppresses grep's nonzero exit on no-match. Using `|| echo 0`
+      # appends a second "0\n" and produces the literal string "0\n0",
+      # which then mis-compares against expected counts.
+      actual_count="$(grep -Fc -- "$count_pattern" "$count_file_path" || true)"
       if [ "$actual_count" != "$expected_count" ]; then
         passed=false
         failure_reasons+=("file '$count_file_path' has $actual_count occurrences of '$count_pattern', expected $expected_count")
