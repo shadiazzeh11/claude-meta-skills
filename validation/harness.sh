@@ -112,10 +112,13 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
   stderr_tmp="$(mktemp)"
   start_ms=$(python3 -c "import time; print(int(time.time()*1000))")
   set +e
+  # Isolate tests from Claude Code's parent CLAUDE_PROJECT_DIR so cwd-based
+  # fixture tests don't leak to the outer repo. Test-case .env assignments
+  # still override via env_args (env -u VAR VAR=val keeps the explicit value).
   if [ ${#env_args[@]} -gt 0 ]; then
-    echo "$input_json" | env "${env_args[@]}" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
+    echo "$input_json" | env -u CLAUDE_PROJECT_DIR "${env_args[@]}" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
   else
-    echo "$input_json" | python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
+    echo "$input_json" | env -u CLAUDE_PROJECT_DIR python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
   fi
   actual_exit=$?
   set -e
