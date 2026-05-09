@@ -17,7 +17,7 @@ cd claude-meta-skills
 ./install.sh /path/to/your/project --with-claude-md   # also installs CLAUDE.md template
 ```
 
-`install.sh` copies hooks to `.claude/hooks/meta-skills/` and creates or merges `.claude/settings.json` (preserves any hooks you already have). Requires `jq` for merging into existing settings.
+`install.sh` copies hooks to `.claude/hooks/meta-skills/` and creates or merges `.claude/settings.json` (preserves any hooks you already have). Re-running `install.sh` on the same project is idempotent: it replaces meta-skills hook entries instead of appending duplicates. Requires `jq` for merging into existing settings.
 
 Manual alternative: copy `hooks/` into your project, then merge `templates/settings.json` into `.claude/settings.json`.
 
