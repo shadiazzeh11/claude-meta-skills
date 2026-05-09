@@ -189,12 +189,25 @@ if [ "$VERIFY" = true ]; then
   echo
   echo "Verifying with source repo's validation harness..."
   cd "$REPO_DIR"
-  pass_total=0
+  verify_fail=0
+  verify_failed_hooks=""
   for h in "${HOOKS[@]}"; do
-    output="$(./validation/harness.sh "$h" 2>&1 || true)"
+    # Capture exit without aborting under set -e. Harness exits nonzero
+    # if any test case in the suite failed (failed-test count == its exit).
+    output="$(./validation/harness.sh "$h" 2>&1)" && hook_status=0 || hook_status=$?
     summary="$(echo "$output" | grep -E '^Total:' | head -1)"
-    echo "  $h: $summary"
+    if [ "$hook_status" -ne 0 ]; then
+      echo "  $h: $summary (FAIL exit=$hook_status)"
+      verify_fail=1
+      verify_failed_hooks="$verify_failed_hooks $h"
+    else
+      echo "  $h: $summary"
+    fi
   done
   echo
+  if [ "$verify_fail" -ne 0 ]; then
+    echo "Validation FAILED for hooks:$verify_failed_hooks" >&2
+    exit 1
+  fi
   echo "Run './install.sh --help' for usage details."
 fi
