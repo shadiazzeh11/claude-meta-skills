@@ -25,4 +25,7 @@ validation/test-cases/*/*/project/*.txt
 validation/test-cases/*/*/project/file_*.txt
 validation/test-cases/*/*/other-dir/CLAUDE.md
 validation/test-cases/*/*/project/CLAUDE.md
+validation/test-cases/*/*/project/**/*.txt
+validation/test-cases/*/*/project/**/*.js
+validation/test-cases/*/*/project/**/*.ipynb
 
