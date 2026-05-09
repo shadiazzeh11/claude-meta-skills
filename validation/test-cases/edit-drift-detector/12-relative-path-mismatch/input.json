@@ -1,0 +1,11 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Edit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "{{PROJECT_PATH}}",
+  "tool_input": {
+    "file_path": "src/app.js",
+    "old_string": "const cost = 10;",
+    "new_string": "irrelevant"
+  }
+}

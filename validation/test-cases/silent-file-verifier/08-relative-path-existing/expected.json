@@ -1,0 +1,7 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_stdout_empty": true,
+  "description": "Relative file_path resolved against payload cwd; file exists with non-empty content; hook silently allows (no missing-file warning)",
+  "category": "should-pass"
+}

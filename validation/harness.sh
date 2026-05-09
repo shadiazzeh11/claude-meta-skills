@@ -167,6 +167,15 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
     fi
   done < <(jq -r '.expected_stdout_contains[]?' "$expected")
 
+  # Verify expected_stdout_empty (if specified)
+  # Distinct from expected_stdout_contains: an empty array there asserts
+  # nothing about stdout. Use this field to require stdout be empty.
+  expected_stdout_empty="$(jq -r '.expected_stdout_empty // false' "$expected")"
+  if [ "$expected_stdout_empty" = "true" ] && [ -n "$actual_stdout" ]; then
+    passed=false
+    failure_reasons+=("stdout expected empty but was non-empty")
+  fi
+
   # Verify expected_file_contains (if specified)
   # Format: { "path": "...", "patterns": ["pattern1", "pattern2"] }
   # Path supports the same placeholders as input.json substitution.

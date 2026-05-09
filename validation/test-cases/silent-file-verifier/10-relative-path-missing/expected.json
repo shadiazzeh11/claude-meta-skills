@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["additionalContext", "doesn't exist"],
+  "description": "Relative file_path resolved against payload cwd; file genuinely missing under resolved project root; hook warns",
+  "category": "should-warn"
+}

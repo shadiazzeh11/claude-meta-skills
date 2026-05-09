@@ -48,6 +48,26 @@ def log_fire(hook_name, action, project, detail, session_id):
         pass
 
 
+def resolve_file_path(file_path, payload):
+    """Resolve a tool_input file_path/notebook_path against payload cwd when relative.
+
+    Absolute paths are returned as-is. Relative paths are joined onto
+    payload['cwd'] when that key is present and points to an existing
+    directory; otherwise the original (relative) path is returned and
+    will resolve against the hook process's cwd. The resolved path is
+    intended for filesystem operations only; the original path is
+    preserved for warnings and log details.
+    """
+    if not file_path:
+        return file_path
+    if os.path.isabs(file_path):
+        return file_path
+    cwd = payload.get("cwd", "")
+    if cwd and os.path.isdir(cwd):
+        return os.path.join(cwd, file_path)
+    return file_path
+
+
 def load_messages():
     """Load template messages from messages.json next to this script."""
     script_dir = Path(__file__).parent
@@ -92,11 +112,13 @@ def main():
     if not file_path:
         return 0
 
+    fs_path = resolve_file_path(file_path, payload)
+
     messages = load_messages()
     default_version = messages.get("default", "constructive")
 
     # Existence check
-    if not os.path.exists(file_path):
+    if not os.path.exists(fs_path):
         if default_version == "constructive":
             template = messages.get("missing_file", "")
         else:
@@ -120,7 +142,7 @@ def main():
         content = tool_input.get("content", "")
         if content:  # content was non-empty
             try:
-                actual_size = os.path.getsize(file_path)
+                actual_size = os.path.getsize(fs_path)
             except OSError:
                 return 0
             if actual_size == 0:

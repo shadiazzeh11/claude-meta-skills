@@ -1,0 +1,13 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "NotebookEdit",
+  "cwd": "{{PROJECT_PATH}}",
+  "tool_input": {
+    "notebook_path": "notebooks/demo.ipynb"
+  },
+  "tool_response": {
+    "filePath": "notebooks/demo.ipynb",
+    "success": true
+  }
+}

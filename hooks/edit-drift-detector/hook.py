@@ -88,6 +88,26 @@ def find_closest_match(file_lines, old_lines, min_ratio=0.6):
     return best_start + 1, best_start + block_size, best_ratio
 
 
+def resolve_file_path(file_path, payload):
+    """Resolve a tool_input file_path against the payload's cwd when relative.
+
+    Absolute paths are returned as-is. Relative paths are joined onto
+    payload['cwd'] when that key is present and points to an existing
+    directory; otherwise the original (relative) path is returned and
+    will resolve against the hook process's cwd. The resolved path is
+    intended for filesystem operations only; the original file_path is
+    preserved for user-facing messages and log details.
+    """
+    if not file_path:
+        return file_path
+    if os.path.isabs(file_path):
+        return file_path
+    cwd = payload.get("cwd", "")
+    if cwd and os.path.isdir(cwd):
+        return os.path.join(cwd, file_path)
+    return file_path
+
+
 def load_messages():
     """Load message templates from messages.json next to this script."""
     script_dir = Path(__file__).parent
@@ -130,15 +150,17 @@ def main():
     if not file_path or not old_string:
         return 0
 
+    fs_path = resolve_file_path(file_path, payload)
+
     # File must exist for comparison; otherwise let Edit's error handling catch it.
-    if not os.path.exists(file_path):
+    if not os.path.exists(fs_path):
         return 0
-    if not os.path.isfile(file_path):
+    if not os.path.isfile(fs_path):
         return 0
 
     # Read the file content.
     try:
-        with open(file_path, "r", errors="replace") as f:
+        with open(fs_path, "r", errors="replace") as f:
             file_content = f.read()
     except (IOError, OSError):
         return 0

@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["doesn't", "Re-read"],
+  "description": "Relative file_path resolved against payload cwd; old_string mismatches resolved file content; hook blocks",
+  "category": "should-block"
+}
