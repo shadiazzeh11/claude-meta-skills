@@ -1,0 +1,14 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PostToolUse",
+  "tool_name": "Write",
+  "cwd": "{{PROJECT_PATH}}",
+  "tool_input": {
+    "file_path": "src/missing.txt",
+    "content": "hello\n"
+  },
+  "tool_response": {
+    "filePath": "src/missing.txt",
+    "success": true
+  }
+}
