@@ -1,10 +1,11 @@
 HOOKS := edit-drift-detector construction-gate silent-file-verifier completion-verifier context-recovery
 
-.PHONY: test test-% clean install help
+.PHONY: test test-stop-env test-% clean install help
 
 help:
 	@echo "claude-meta-skills make targets:"
 	@echo "  make test            - run validation harness for all 5 hooks"
+	@echo "  make test-stop-env   - run validation harness with CLAUDE_PROJECT_DIR set (simulates Stop-hook env)"
 	@echo "  make test-<hook>     - run validation harness for one hook"
 	@echo "                         (e.g., make test-edit-drift-detector)"
 	@echo "  make clean           - remove validation/results/"
@@ -24,6 +25,9 @@ test:
 		echo "FAILED hooks:$$failed_hooks" >&2; \
 		exit 1; \
 	fi
+
+test-stop-env:
+	@CLAUDE_PROJECT_DIR="$$(pwd)" $(MAKE) test
 
 test-%:
 	@cd validation && ./harness.sh $*
