@@ -1,12 +1,14 @@
 # edit-drift-detector
 
-PreToolUse hook on Edit that catches recall-vs-observed failures: when Claude drafts an `old_string` from memory that doesn't match the actual file content, this hook blocks the edit and provides correction context.
+PreToolUse hook on Edit that adds fuzzy-match correction context for `old_string` mismatches: when an Edit payload reaches the hook and `old_string` doesn't appear in the file, the hook surfaces the closest matching content and a re-read suggestion.
 
-## What it catches
+> **Real-session coverage caveat.** In a current Claude Code dogfood session on macOS, the Edit tool's own input validation caught the simplest "old_string not found" case and returned `String to replace not found in file` *before* this hook produced any feedback — so complete mismatches surfaced Claude Code's built-in error rather than this hook's richer feedback. This hook is therefore best understood as a **correction layer for Edits whose payloads reach PreToolUse**, not as a replacement for Claude Code's built-in Edit validation. See [Real-session coverage](#real-session-coverage) below.
 
-- **Recall drift** — `old_string` close to actual content but with wrong words (e.g., variable name memorized incorrectly).
-- **Stale content** — `old_string` matches a previous version of the file but not the current state.
-- **Complete mismatch** — `old_string` from memory of a different file.
+## What it catches (when the Edit payload reaches the hook)
+
+- **Recall drift** — `old_string` close to actual content but with wrong words (e.g., variable name memorized incorrectly). The hook returns the closest matching block with a similarity score.
+- **Stale content** — `old_string` matches a previous version of the file but not the current state. Same fuzzy-match treatment.
+- **Complete mismatch** — `old_string` from memory of a different file. *In current Claude Code this is typically intercepted by Edit's built-in validation first; the hook only surfaces feedback for this case if the harness routes the payload through PreToolUse.*
 - **Indentation drift** — tabs vs spaces mismatches (similar scope to claude-tab-fix, but generalized).
 
 ## What it intentionally doesn't catch
@@ -85,6 +87,23 @@ When this hook is installed alongside `silent-file-verifier` and `completion-ver
 - Stop hook (completion-verifier) is independent and fires after Claude finishes responding, regardless of any Edit blocks during the response.
 
 Behavior documented per Claude Code lifecycle docs; not validated by the harness (which tests each hook in isolation). Real-world coexistence worth a spot-check when all three hooks are installed in an actual Claude Code session.
+
+## Real-session coverage
+
+A controlled dogfood run on a disposable project (current Claude Code on macOS) observed the following:
+
+- **Valid Edit (old_string present in file):** the Edit succeeded with no block or warning. Because the allow path is intentionally silent (no stderr, no log line), this is consistent with the hook allowing the edit, but it does not produce positive log evidence that PreToolUse fired.
+- **Invalid Edit (old_string not in file at all):** Claude Code's Edit tool returned its own `String to replace not found in file` error and the hook produced **no real-session log entry**. The hook itself was confirmed to work when the same payload was piped to its stdin manually — i.e., the hook's block-path logic is intact, but the payload didn't surface this hook's feedback in this session.
+
+For comparison, in the same dogfood run `construction-gate` (PreToolUse:Write to `.env.local`) and `completion-verifier` (Stop after `make test` failed) both produced real-session block entries — those hooks are real-dogfood proven; `edit-drift-detector`'s block path is currently logic-validated only.
+
+The practical implication: in current Claude Code, the hook's block path adds little for the canonical "complete mismatch" case, because Claude Code's built-in validation surfaces a clear error first. The hook's residual value comes from:
+
+- Whitespace-normalized matches (allow path) that prevent over-eager blocking when `old_string` differs only in trailing whitespace from the file content.
+- Edit payloads that *do* reach PreToolUse without being short-circuited (workflow shapes, Edit variants, or future Claude Code versions where validation order changes).
+- Forward compatibility: the hook is already installed and exercised by the harness, so a Claude Code change that exposes more payloads to PreToolUse would immediately benefit from the existing fuzzy-match feedback.
+
+The harness's 11/11 pass rate measures the hook's logic via direct stdin injection, **not** its in-session reachability. Treat it as logic-validated, not lifecycle-proven for every documented case. Future work could explore Read-time freshness tracking or a stale-read advisory if we want coverage for the complete-mismatch case before Claude Code's Edit validation runs; that is out of scope for this documentation update.
 
 ## Additional known limitations
 

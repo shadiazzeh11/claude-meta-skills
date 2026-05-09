@@ -25,7 +25,7 @@ Manual alternative: copy `hooks/` into your project, then merge `templates/setti
 
 | Hook | Layer | Event | What it catches | Tests |
 |---|---|---|---|---|
-| [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | `old_str` doesn't match actual file content; recall-vs-observed failures | 11 |
+| [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 11 |
 | [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write` | Writes to protected paths (`node_modules/`, `.git/`, `.env*`, lock files) | 7 |
 | [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 7 |
 | [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 12 |
@@ -52,7 +52,7 @@ Command-safety (`PreToolUse:Bash`) is deliberately not covered. See [Related wor
 
 ## Validation
 
-Every hook ships with its own test suite. Aggregate results from the latest validation run:
+Every hook ships with its own test suite. Aggregate results from the latest validation run. The counts below are **harness-measured** — each test case feeds an input payload directly to the hook's stdin, so the numbers reflect the hook's logic on constructed inputs, not in-session lifecycle reachability for every documented case (see each hook's README for real-session caveats — `edit-drift-detector` in particular notes that Claude Code's built-in Edit validation can intercept some payloads before PreToolUse hooks dispatch).
 
 | Hook | Tests | Pass | False positives | False negatives | Avg duration |
 |---|---|---|---|---|---|
