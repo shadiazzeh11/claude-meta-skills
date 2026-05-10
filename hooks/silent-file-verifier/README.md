@@ -47,7 +47,9 @@ Add to `.claude/settings.json`:
 
 A controlled dogfood run on disposable projects observed normal successful Writes succeed silently — no warning, no log entry. That is consistent with the allow path running on real payloads, but PostToolUse's allow path is silent by design (no stdout, no log line), so positive evidence of the hook firing on the success path is absent rather than affirmative. The empty-content Write case (`tool_input.content == ""` producing a 0-byte file) also correctly stays silent because empty content matching an empty file is expected.
 
-The warning paths (`warn-missing` and `warn-empty`) are harness-validated through dedicated test cases (see `validation/test-cases/silent-file-verifier/`), but they have not yet been triggered by a real Claude Code session. A real anomaly requires either a reported-success tool call where the file is missing on disk or a non-empty Write that produces a 0-byte file — both are hard to force intentionally without manufacturing a hook or filesystem failure. Treat the warning paths as **logic-validated, not real-anomaly-proven**, until real ghost-write entries surface in `./testing/analyze-log.py --real-only` output.
+The warning paths (`warn-missing` and `warn-empty`) are now both represented in real-session dogfood logs. The proof used a disposable project with a local fault watcher: one reported-success Write target was deleted before PostToolUse verification, and another non-empty Write target was truncated to 0 bytes. Treat this as controlled real-session evidence that the warning branches are reachable and visible to Claude, not as evidence that organic ghost writes are frequent.
+
+See [testing/DOGFOOD-BASELINE.md](../../testing/DOGFOOD-BASELINE.md) for the current aggregate dogfood baseline.
 
 ## Important: PostToolUse can't block
 
@@ -84,7 +86,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 ## Additional known limitations
 
-- **Tool coverage extended in Phase 2.5: matcher is now `Write|Edit|MultiEdit|NotebookEdit`.** The hook's `file_path` extraction falls back to `notebook_path` if `file_path` is missing (NotebookEdit may use the latter). Test 07 verifies MultiEdit coverage; NotebookEdit is covered by code path but not by a dedicated test fixture (NotebookEdit operates on .ipynb files which are JSON; constructing a meaningful test requires a notebook fixture).
+- **Tool coverage extended in Phase 2.5: matcher is now `Write|Edit|MultiEdit|NotebookEdit`.** The hook's `file_path` extraction falls back to `notebook_path` if `file_path` is missing (NotebookEdit may use the latter). Test 07 verifies MultiEdit coverage; test 09 verifies the relative `notebook_path` path-resolution branch.
 - **No content correctness check.** This hook verifies the file exists and (for Write) that size is non-zero when content was non-empty. It does NOT verify that the file content matches what was supposed to be written. A Write could succeed, file size could be non-zero, but content could be wrong (e.g., wrong encoding, partial write, write to wrong path that happens to have an existing non-empty file). Out of scope; covered partially by Claude's own diff verification on subsequent reads.
 - **File-path-is-actually-a-directory edge case.** If `file_path` points to an existing directory (rather than a file), `os.path.exists` returns True and the hook passes silently. `os.path.getsize` on a directory returns the directory entry size, not file size. This is a degenerate case (Write to a directory shouldn't happen via Claude Code) but worth noting; the hook would not catch it.
 - **Networked filesystem race.** If the file path resolves to a remote mount with eventual consistency, the hook may fire its missing-file warning before the file fully syncs. PostToolUse fires synchronously after the tool reports complete, so this window is narrow but not zero.
@@ -101,4 +103,4 @@ cd validation
 ./harness.sh silent-file-verifier
 ```
 
-7 test cases. See `validation/test-cases/silent-file-verifier/`.
+10 test cases. See `validation/test-cases/silent-file-verifier/`.

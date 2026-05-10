@@ -4,6 +4,8 @@
 >
 > **Goal of this review:** find problems. Logic bugs, security holes, design flaws, ecosystem-positioning blind spots, false-confidence claims, contradictions between docs and code, and anything that would embarrass us in a public audit.
 
+> **Historical snapshot warning.** This package is a stale external-review snapshot from an earlier phase. It is retained for audit history, not as the current source of truth. For current validation counts, CI status, and dogfood evidence, start with `README.md` and `testing/DOGFOOD-BASELINE.md`.
+
 ---
 
 ## Section 1: Project overview
