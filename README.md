@@ -90,7 +90,7 @@ Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON lin
 ./testing/analyze-log.py --redact    # rewrite home prefix to ~ for safer sharing
 ```
 
-Current dogfood evidence should be read from `./testing/analyze-log.py --real-only`, because the raw log can also contain manual proof and harness/validation entries. In the current dogfood baseline, `construction-gate` and `completion-verifier` have real-session block evidence; `edit-drift-detector`, `silent-file-verifier`, and `context-recovery` remain logic-validated or normal-path-observed only. See each hook README for lifecycle caveats.
+Current dogfood evidence should be read from `./testing/analyze-log.py --real-only`, because the raw log can also contain manual proof and historical harness/validation entries. The current dogfood baseline has real-session log evidence for all five hooks: `edit-drift-detector`, `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery`. Treat this as lifecycle evidence that each hook has fired in live Claude Code sessions, not as proof of production false-positive rate or exhaustive real-world coverage. See [testing/DOGFOOD-BASELINE.md](testing/DOGFOOD-BASELINE.md) and each hook README for caveats.
 
 The `detail` field carries metadata only — paths, pattern names, line ranges, exit codes, similarity ratios. No file content, no diff snippets, no test output. See [testing/README.md](testing/README.md) for the full action enum, privacy boundaries, and what to look for after a week of dogfood usage.
 
@@ -114,6 +114,7 @@ We focus on metacognitive verification — catching Claude's own mistakes during
 - **Persistent memory** ([Claude-Mem](https://docs.claude-mem.ai/) for cross-session memory with SQLite + vector search). Heavier than our PreCompact + CLAUDE.md approach; different problem class.
 - **Language-specific code quality** ([omerkaz/claude-code-ts-quality-hook](https://github.com/omerkaz/claude-code-ts-quality-hook) for TypeScript lint/type checks; [danielmiessler/PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure) for path protection plus TODO regex). We cover language-agnostic structural checks; these cover language-specific quality.
 - **Observability dashboards** ([disler/claude-code-hooks-multi-agent-observability](https://github.com/disler/claude-code-hooks-multi-agent-observability) for real-time agent monitoring with WebSocket UI). Different category.
+- **Marketplaces and directories** ([Claude Code Stack](https://www.claudecodestack.com/) and the [Claude plugin marketplace](https://claude.com/plugins)) help users discover hooks, skills, MCPs, agents, and plugins. Different distribution layer; this repo is still a local installable hook suite, with marketplace packaging left for future work.
 
 **Explicit non-goals:** command safety, agent workflow methodology, persistent cross-session memory, observability dashboards, and marketplace plugin distribution. We focus on a small, validated, locally-installable hook suite.
 

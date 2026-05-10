@@ -90,12 +90,13 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 ## Real-session coverage
 
-A controlled dogfood run on a disposable project (current Claude Code on macOS) observed the following:
+A controlled dogfood run on disposable projects (current Claude Code on macOS) observed the following:
 
 - **Valid Edit (old_string present in file):** the Edit succeeded with no block or warning. Because the allow path is intentionally silent (no stderr, no log line), this is consistent with the hook allowing the edit, but it does not produce positive log evidence that PreToolUse fired.
 - **Invalid Edit (old_string not in file at all):** Claude Code's Edit tool returned its own `String to replace not found in file` error and the hook produced **no real-session log entry**. The hook itself was confirmed to work when the same payload was piped to its stdin manually — i.e., the hook's block-path logic is intact, but the payload didn't surface this hook's feedback in this session.
+- **Injected drift after Edit payload acceptance:** a disposable wrapper changed `src/app.py` after Claude Code accepted a real Edit payload and before invoking the real installed hook. The hook blocked with `block-fuzzy`, logged a real UUID-shaped `session_id`, and analyzer `--real-only` classified it as real dogfood evidence.
 
-For comparison, in the same dogfood run `construction-gate` (PreToolUse:Write to `.env.local`) and `completion-verifier` (Stop after `make test` failed) both produced real-session block entries — those hooks are real-dogfood proven; `edit-drift-detector`'s block path is currently logic-validated only.
+For comparison, the broader dogfood baseline now has real-session log evidence for all five hooks. See [testing/DOGFOOD-BASELINE.md](../../testing/DOGFOOD-BASELINE.md) for the current aggregate baseline.
 
 The practical implication: in current Claude Code, the hook's block path adds little for the canonical "complete mismatch" case, because Claude Code's built-in validation surfaces a clear error first. The hook's residual value comes from:
 
@@ -103,7 +104,7 @@ The practical implication: in current Claude Code, the hook's block path adds li
 - Edit payloads that *do* reach PreToolUse without being short-circuited (workflow shapes, Edit variants, or future Claude Code versions where validation order changes).
 - Forward compatibility: the hook is already installed and exercised by the harness, so a Claude Code change that exposes more payloads to PreToolUse would immediately benefit from the existing fuzzy-match feedback.
 
-The harness's 11/11 pass rate measures the hook's logic via direct stdin injection, **not** its in-session reachability. Treat it as logic-validated, not lifecycle-proven for every documented case. Future work could explore Read-time freshness tracking or a stale-read advisory if we want coverage for the complete-mismatch case before Claude Code's Edit validation runs; that is out of scope for this documentation update.
+The harness's 12/12 pass rate measures the hook's logic via direct stdin injection, **not** its in-session reachability. Treat the dogfood entry as controlled lifecycle evidence for `block-fuzzy`, not proof that organic stale-edit failures are common. Future work could explore Read-time freshness tracking or a stale-read advisory if we want coverage for the complete-mismatch case before Claude Code's Edit validation runs; that is out of scope for this documentation update.
 
 ## Additional known limitations
 
@@ -124,7 +125,7 @@ cd validation
 ./harness.sh edit-drift-detector
 ```
 
-11 test cases covering should-block (6) and should-pass (5). Fixtures and expected outcomes in `validation/test-cases/edit-drift-detector/`.
+12 test cases covering should-block (7) and should-pass (5). Fixtures and expected outcomes in `validation/test-cases/edit-drift-detector/`.
 
 ## Notes on prior art
 

@@ -118,6 +118,8 @@ The analyzer also prints a real dogfood hook coverage section. This is the faste
 
 Raw JSONL is at `~/.claude/meta-skills-log.jsonl` if you want to grep, jq, or feed into a different analyzer.
 
+The current complete dogfood evidence snapshot is documented in [DOGFOOD-BASELINE.md](DOGFOOD-BASELINE.md). Keep that file narrow: it records live-session evidence and caveats, while this README documents the analyzer and log format.
+
 ## What to look for after a week of usage
 
 Three signal categories, in order of priority:
