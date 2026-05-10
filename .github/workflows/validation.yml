@@ -1,0 +1,59 @@
+name: Validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validation:
+    name: Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Show tool versions
+        run: |
+          python --version
+          python3 --version
+          jq --version
+          make --version
+
+      - name: Analyzer regression
+        run: make test-analyzer
+
+      - name: Installer idempotency regression
+        run: make test-installer
+
+      - name: Validation harness
+        run: |
+          TEST_HOME="$(mktemp -d)"
+          trap 'rm -rf "$TEST_HOME"' EXIT
+          HOME="$TEST_HOME" make test
+
+      - name: Stop-hook environment regression
+        run: |
+          TEST_HOME="$(mktemp -d)"
+          trap 'rm -rf "$TEST_HOME"' EXIT
+          HOME="$TEST_HOME" make test-stop-env

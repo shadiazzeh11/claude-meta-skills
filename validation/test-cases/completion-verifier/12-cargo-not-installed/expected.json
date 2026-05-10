@@ -1,6 +1,9 @@
 {
   "expected_exit_code": 0,
   "expected_stdout_contains": ["additionalContext", "not found"],
-  "description": "Cargo project but cargo not installed in PATH; hook should emit command-not-found warning and allow stop (FileNotFoundError handler)",
+  "env": {
+    "PATH": "/usr/bin:/bin"
+  },
+  "description": "Cargo project with Cargo intentionally hidden from PATH (env.PATH=/usr/bin:/bin). The hook tries to run `cargo test`, gets FileNotFoundError, and emits a command-not-found additionalContext warning. Deterministic locally and on CI runners that ship Cargo by default.",
   "category": "should-pass"
 }
