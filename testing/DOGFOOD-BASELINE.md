@@ -83,7 +83,7 @@ The project is not trying to beat broad workflow frameworks or hook collections 
 
 - Official Claude Code hooks support the lifecycle model this repo relies on: matchers for tool events, `$CLAUDE_PROJECT_DIR` for project-local scripts, plugin `hooks/hooks.json`, `${CLAUDE_PLUGIN_ROOT}` for plugin-bundled scripts, and exit-code blocking semantics for `PreToolUse`.
 - Superpowers is a broad skills/plugin framework for methodology: brainstorming, TDD, debugging, subagent development, code review, and skill authoring. It is complementary; this repo focuses on metacognitive verification hooks and analyzer evidence.
-- Community hook packs provide useful copy-paste hooks across many categories. This repo's narrower differentiation is measured validation, installer idempotency, CI, real-session dogfood classification, and per-hook caveats.
+- Community hook packs provide useful copy-paste hooks across many categories. This repo's narrower differentiation is measured validation, installer lifecycle tests, CI, real-session dogfood classification, and per-hook caveats.
 - Claude Code Stack and marketplace-style directories solve discovery. This repo still needs future packaging work before it should be presented as a polished marketplace artifact.
 
 ## Sources checked

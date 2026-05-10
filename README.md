@@ -2,7 +2,7 @@
 
 Claude Code hooks with harness-measured false-positive and false-negative results.
 
-Five focused hooks covering edit verification, completion gating, file checks, write protection, and post-compaction context recovery. Each ships with a test suite. The validation harness works for any Claude Code hook, not just ours.
+Five focused hooks covering edit verification, completion gating, file checks, write protection, and pre-compaction recovery-state capture. Each ships with a test suite. The validation harness works for any Claude Code hook, not just ours.
 
 | Hooks | Harness tests | Harness false positives | Harness false negatives | Crosley layers |
 |---|---|---|---|---|
@@ -34,9 +34,12 @@ git clone https://github.com/shadiazzeh11/claude-meta-skills.git
 cd claude-meta-skills
 ./install.sh /path/to/your/project          # adds 5 hooks + settings.json
 ./install.sh /path/to/your/project --with-claude-md   # also installs CLAUDE.md template
+./install.sh /path/to/your/project --uninstall         # removes local install entries/files
 ```
 
 `install.sh` copies hooks to `.claude/hooks/meta-skills/` and creates or merges `.claude/settings.json` (preserves any hooks you already have). Re-running `install.sh` on the same project is idempotent: it replaces meta-skills hook entries instead of appending duplicates. Requires `jq` for merging into existing settings.
+
+To remove the local install, run `./install.sh /path/to/your/project --uninstall` or `make uninstall TARGET=/path/to/your/project`. This removes only hook commands whose path contains `.claude/hooks/meta-skills/` and deletes `.claude/hooks/meta-skills/`; it preserves unrelated hooks, unrelated settings, and `CLAUDE.md`. If `.claude/settings.json` exists and cannot be parsed safely, uninstall stops before deleting hook files. For temporary broad disablement, set Claude Code's `disableAllHooks` setting in a local or project settings file. For plugin installs, use Claude Code's plugin marketplace tooling instead of `install.sh`.
 
 Manual alternative: copy `hooks/` into your project, then merge `templates/settings.json` into `.claude/settings.json`.
 
@@ -47,7 +50,7 @@ Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `
 | Hook | Layer | Event | What it catches | Tests |
 |---|---|---|---|---|
 | [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on non-protected Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 14 |
-| [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 20 |
+| [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 21 |
 | [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 10 |
 | [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 12 |
 | [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 10 |
@@ -96,7 +99,7 @@ make test
 
 Per-hook baseline results live in each hook directory's `BASELINE-RESULTS.md`. Per-run JSON output goes to `validation/results/` (gitignored, regenerated each run).
 
-GitHub Actions runs the plugin package regression, marketplace catalog regression, analyzer regression, installer idempotency regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` (see `.github/workflows/validation.yml`).
+GitHub Actions runs the plugin package regression, marketplace catalog regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` (see `.github/workflows/validation.yml`).
 
 **The harness is generic.** It tests against assertions on exit code, stdout patterns, stderr patterns, file content, and file pattern counts — applicable to any Claude Code hook, not just ours. See [VALIDATION.md](VALIDATION.md) for how to validate your own hooks against the harness.
 
@@ -154,7 +157,7 @@ For the current marketplace-readiness status, positioning, and pre-publish check
 - **Validation harness timing includes ~30-40 ms of Python startup overhead** per measurement. Real hook execution overhead when installed in Claude Code is approximately 30-45 ms lower than reported values.
 - **Subdirectory project detection in `completion-verifier`** only checks the immediate `cwd` for project config files (`package.json`, `Cargo.toml`, etc.) — doesn't walk up parent directories the way `npm` and `cargo` do. Workaround: ensure `cwd` is project root, or define a top-level `Makefile test:` target.
 - **Race condition window in `context-recovery`** when a user edits CLAUDE.md in another editor while the hook fires. Mitigated by atomic write (`tempfile.mkstemp` + `os.replace`); not eliminated.
-- **CI is limited to GitHub Actions validation on Ubuntu;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, marketplace catalog validation, analyzer regression, installer idempotency, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no multi-OS or multi-Python matrix.
+- **CI is limited to GitHub Actions validation on Ubuntu;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, marketplace catalog validation, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no multi-OS or multi-Python matrix.
 - **No public marketplace listing.** Install via `git clone` + `install.sh`. A plugin scaffold, marketplace catalog, isolated marketplace install regression, and marketplace-installed smoke evidence for four hooks exist, but public listing/release packaging is future work.
 
 ## License

@@ -70,7 +70,7 @@ Requires Python 3.7+. Uses stdlib only.
 - Order doesn't matter; first match wins
 - Invalid regexes are silently skipped (the hook doesn't crash)
 
-To add a pattern: edit `rules.json`. To temporarily disable: comment out or remove the pattern, or temporarily disable the hook in settings.json.
+To add a pattern: edit `rules.json`. To temporarily disable: comment out or remove the pattern, set Claude Code's `disableAllHooks` in a local/project settings file, or uninstall the local meta-skills hook entries with `./install.sh <target> --uninstall`. Because this hook protects `.claude/settings*` and `.claude/hooks/`, make those changes from a shell or editor outside an active hook-blocked Claude Code tool call.
 
 ## Design decisions
 

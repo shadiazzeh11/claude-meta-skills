@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **technical preview, local install recommended**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until release/uninstall docs and public marketplace packaging are finished.
+Current status: **technical preview, local install recommended**. The repo has a tested installer/uninstaller, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until release docs and public marketplace packaging are finished.
 
 ## Current distribution model
 
@@ -15,6 +15,14 @@ cd claude-meta-skills
 ```
 
 This copies hook files into the target project's `.claude/hooks/meta-skills/` directory and creates `.claude/settings.json`. When `jq` is available, it merges hook entries into an existing settings file; without `jq`, it prints manual merge instructions instead of modifying existing settings.
+
+To remove a local install, users run:
+
+```bash
+./install.sh /path/to/project --uninstall
+```
+
+The uninstaller removes only hook commands whose path contains `.claude/hooks/meta-skills/`, deletes `.claude/hooks/meta-skills/`, and preserves unrelated hooks, unrelated settings, and `CLAUDE.md`. If `.claude/settings.json` exists and cannot be parsed safely, uninstall stops before deleting copied hook files. Plugin installs remain separate from this local installer path; Claude Code marketplace removal/uninstall is handled by Claude Code's plugin tooling.
 
 This is a valid local distribution path for early users. It is not the same as marketplace distribution. Claude Code plugin docs distinguish standalone `.claude/` configuration from plugin packages; plugins add a `.claude-plugin/plugin.json` manifest and are the path for versioned team/community distribution and marketplace installation.
 
@@ -36,7 +44,7 @@ As of the first complete dogfood baseline:
 | Area | Evidence |
 |---|---|
 | Synthetic validation | `make test` and `make test-stop-env` pass 67/67. |
-| Installer idempotency | `make test-installer` passes repeat-install and merge scenarios. |
+| Installer lifecycle | `make test-installer` passes repeat-install, merge, uninstall, no-op uninstall, and preservation scenarios. |
 | CI | GitHub Actions runs plugin package checks, marketplace catalog checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
@@ -54,7 +62,7 @@ The baseline proves lifecycle reachability and observable behavior under control
 |---|---|---|
 | Official Claude Code hooks | Claude Code hooks reference and hooks guide | This repo builds on the official lifecycle model: `PreToolUse`, `PostToolUse`, `Stop`, and `PreCompact`. |
 | Workflow methodology | Superpowers | Complementary. Superpowers teaches structured development practices; this repo checks specific failure modes through hooks. |
-| Hook collections | Community hook packs and directories | Smaller scope. The value here is measured validation, installer idempotency, CI, dogfood classification, and explicit caveats. |
+| Hook collections | Community hook packs and directories | Smaller scope. The value here is measured validation, installer lifecycle tests, CI, dogfood classification, and explicit caveats. |
 | Command safety | Claude Code Auto Mode, claude-warden, Sidecar-style policy tools | Out of scope. This repo does not ship a `PreToolUse:Bash` guard or sandbox. |
 | Observability | Multi-agent observability dashboards | Complementary. This repo logs local hook fires and exports summaries, but does not run a server or dashboard. |
 | Marketplaces | Claude plugin marketplace, plugin marketplaces, Claude Code Stack | Future distribution layer. The repo has a plugin scaffold, local catalog, isolated CLI install validation, and marketplace-installed smoke evidence, but it is not published as a marketplace plugin. |
@@ -78,7 +86,7 @@ Safe claims:
 - "The marketplace catalog has isolated local CLI add/install/uninstall validation when Claude Code is available."
 - "Marketplace-installed smoke evidence covers construction-gate, silent-file-verifier, completion-verifier, and context-recovery; edit-drift-detector remains covered by non-marketplace controlled dogfood and harness validation."
 - "CI runs validation on pull requests and pushes to main."
-- "Install is idempotent and project-local."
+- "Install and uninstall are project-local; install is idempotent and uninstall preserves unrelated hooks/settings."
 - "Logs are local metadata only and can be redacted/exported."
 
 ## Pre-publish checklist
@@ -93,7 +101,7 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
 - Decide whether to add a marketplace-installed `edit-drift-detector` proof or keep the current non-marketplace live proof plus harness coverage as the documented caveat.
-- Add an uninstall or disable guide for removing meta-skills hook entries from `.claude/settings.json`.
+- Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
 - Add a release tag and changelog entry for the first public release.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
 - Keep GitHub Actions green on `main`.
