@@ -11,6 +11,8 @@
 #       {{PROJECT_PATH}} → absolute path of project/ directory (if present)
 #       {{TEST_DIR}}     → absolute path of the test case directory
 #   - Pipes the resulting JSON to the hook's hook.py via stdin
+#     (with HOME set to a per-run temp dir so hook logs don't pollute
+#      ~/.claude/meta-skills-log.jsonl)
 #   - Captures exit code, stdout, stderr, duration
 #   - Compares against expected.json fields:
 #       expected_exit_code (required)
@@ -53,10 +55,18 @@ TOTAL_DURATION_MS=0
 
 RESULTS_TMP="$(mktemp)"
 echo "[]" > "$RESULTS_TMP"
+HARNESS_HOME="$(mktemp -d /tmp/claude-meta-harness-home.XXXXXX)"
+
+cleanup() {
+  rm -f "$RESULTS_TMP" "${RESULTS_TMP}.new"
+  rm -rf "$HARNESS_HOME"
+}
+trap cleanup EXIT
 
 echo "Validation: $HOOK_NAME"
 echo "Hook: $HOOK_PATH"
 echo "Tests: $TEST_DIR_BASE"
+echo "Hook HOME: $HARNESS_HOME"
 echo "----------------------------------------"
 
 for case_dir in "$TEST_DIR_BASE"/*/; do
@@ -113,12 +123,14 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
   start_ms=$(python3 -c "import time; print(int(time.time()*1000))")
   set +e
   # Isolate tests from Claude Code's parent CLAUDE_PROJECT_DIR so cwd-based
-  # fixture tests don't leak to the outer repo. Test-case .env assignments
-  # still override via env_args (env -u VAR VAR=val keeps the explicit value).
+  # fixture tests don't leak to the outer repo. Also isolate HOME so hook
+  # auto-logs write to this run's temp directory instead of the active dogfood
+  # log at ~/.claude/meta-skills-log.jsonl. Test-case .env assignments still
+  # override via env_args (env -u VAR VAR=val keeps the explicit value).
   if [ ${#env_args[@]} -gt 0 ]; then
-    echo "$input_json" | env -u CLAUDE_PROJECT_DIR "${env_args[@]}" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
+    echo "$input_json" | env -u CLAUDE_PROJECT_DIR HOME="$HARNESS_HOME" "${env_args[@]}" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
   else
-    echo "$input_json" | env -u CLAUDE_PROJECT_DIR python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
+    echo "$input_json" | env -u CLAUDE_PROJECT_DIR HOME="$HARNESS_HOME" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
   fi
   actual_exit=$?
   set -e
@@ -315,7 +327,6 @@ jq -n \
   '{hook: $hook, timestamp: $ts, summary: {pass: $pass, fail: $fail, total: $total, false_positive: $fp, false_negative: $fn, total_duration_ms: $total_dur}, results: $results}' \
   > "$RESULTS_FILE"
 
-rm -f "$RESULTS_TMP"
 echo
 echo "Results: $RESULTS_FILE"
 
