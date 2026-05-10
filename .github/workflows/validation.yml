@@ -40,6 +40,9 @@ jobs:
           jq --version
           make --version
 
+      - name: Plugin package regression
+        run: make test-plugin
+
       - name: Analyzer regression
         run: make test-analyzer
 

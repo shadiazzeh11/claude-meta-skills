@@ -1,0 +1,19 @@
+{
+  "name": "claude-meta-skills",
+  "version": "0.1.0",
+  "description": "Claude Code reliability hooks with harness validation, local dogfood evidence, and a bundled verification discipline skill.",
+  "author": {
+    "name": "Shadi AL Azzeh and Caleb Mukasa"
+  },
+  "homepage": "https://github.com/shadiazzeh11/claude-meta-skills",
+  "repository": "https://github.com/shadiazzeh11/claude-meta-skills",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "hooks",
+    "validation",
+    "dogfood",
+    "reliability"
+  ],
+  "hooks": "./hooks/hooks.json"
+}
