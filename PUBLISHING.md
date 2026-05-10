@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **technical preview, local install recommended**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It is not yet listed in a marketplace, and marketplace installation still needs dedicated smoke testing before the plugin path replaces `install.sh` as the recommended path.
+Current status: **technical preview, local install recommended**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog and isolated marketplace CLI regression. It is not yet publicly listed in a marketplace, and marketplace-installed live hook smoke testing still needs to pass before the plugin path replaces `install.sh` as the recommended path.
 
 ## Current distribution model
 
@@ -18,13 +18,14 @@ This copies hook files into the target project's `.claude/hooks/meta-skills/` di
 
 This is a valid local distribution path for early users. It is not the same as marketplace distribution. Claude Code plugin docs distinguish standalone `.claude/` configuration from plugin packages; plugins add a `.claude-plugin/plugin.json` manifest and are the path for versioned team/community distribution and marketplace installation.
 
-The repository now also includes an experimental plugin scaffold:
+The repository now also includes an experimental plugin scaffold and local marketplace catalog:
 
 - `.claude-plugin/plugin.json` declares the plugin metadata.
+- `.claude-plugin/marketplace.json` declares a one-plugin marketplace catalog for `claude-meta-skills`.
 - `hooks/hooks.json` declares the same five hook entries using `${CLAUDE_PLUGIN_ROOT}` paths.
 - `skills/verification-before-recommend/` is discovered as a bundled plugin skill when the repo is loaded as a plugin.
 
-This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. The `install.sh` path remains the recommended user install path until marketplace install tests are documented and passing.
+This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. `make test-marketplace` validates the marketplace manifest and, when `claude` is available locally, exercises `plugin marketplace add`, `plugin list --available`, `plugin install`, `plugin uninstall`, and `plugin marketplace remove` inside isolated temp config/cache directories. The `install.sh` path remains the recommended user install path until marketplace-installed live hook tests are documented and passing.
 
 Expected validation caveat: `claude plugin validate .` warns that the repo-root `CLAUDE.md` is not loaded as plugin context. That is acceptable for this scaffold; plugin-shipped context should live in `skills/`, and this repo already has `skills/verification-before-recommend/`.
 
@@ -36,9 +37,10 @@ As of the first complete dogfood baseline:
 |---|---|
 | Synthetic validation | `make test` and `make test-stop-env` pass 61/61. |
 | Installer idempotency | `make test-installer` passes repeat-install and merge scenarios. |
-| CI | GitHub Actions runs plugin package checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
+| CI | GitHub Actions runs plugin package checks, marketplace catalog checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
+| Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
 
@@ -55,7 +57,7 @@ The baseline proves lifecycle reachability and observable behavior under control
 | Hook collections | Community hook packs and directories | Smaller scope. The value here is measured validation, installer idempotency, CI, dogfood classification, and explicit caveats. |
 | Command safety | Claude Code Auto Mode, claude-warden, Sidecar-style policy tools | Out of scope. This repo does not ship a `PreToolUse:Bash` guard or sandbox. |
 | Observability | Multi-agent observability dashboards | Complementary. This repo logs local hook fires and exports summaries, but does not run a server or dashboard. |
-| Marketplaces | Claude plugin marketplace, plugin marketplaces, Claude Code Stack | Future distribution layer. The repo has a plugin scaffold, but it is not published as a marketplace plugin. |
+| Marketplaces | Claude plugin marketplace, plugin marketplaces, Claude Code Stack | Future distribution layer. The repo has a plugin scaffold and local catalog, but it is not published as a marketplace plugin. |
 
 ## What not to claim
 
@@ -64,7 +66,7 @@ Do not claim:
 - "Production proven."
 - "Zero false positives in real use."
 - "Complete Claude Code safety."
-- "Marketplace-ready plugin."
+- "Published marketplace plugin."
 - "Covers every way Claude can modify a protected file."
 - "Replaces Superpowers, command-safety hooks, or observability tools."
 
@@ -73,6 +75,7 @@ Safe claims:
 - "61/61 synthetic validation tests pass."
 - "All five hooks have controlled live Claude Code session evidence."
 - "The plugin scaffold has local `--plugin-dir` smoke evidence for four of five hooks; `edit-drift-detector` remains covered by non-plugin controlled dogfood and harness validation."
+- "The marketplace catalog has isolated local CLI add/install/uninstall validation when Claude Code is available."
 - "CI runs validation on pull requests and pushes to main."
 - "Install is idempotent and project-local."
 - "Logs are local metadata only and can be redacted/exported."
@@ -85,8 +88,9 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 - Bump `.claude-plugin/plugin.json` `version` for every public plugin release.
 - Keep hook declarations in plugin format (`hooks/hooks.json`) and ensure bundled hook commands use `${CLAUDE_PLUGIN_ROOT}`.
 - Validate the plugin package with `make test-plugin` and `claude plugin validate .`.
+- Keep `.claude-plugin/marketplace.json` valid with `make test-marketplace`.
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
-- Test marketplace installation locally with `/plugin marketplace add` and `/plugin install` once a marketplace manifest exists.
+- Add marketplace-installed live hook smoke tests in a disposable project after the catalog lands on `main`.
 - Add an uninstall or disable guide for removing meta-skills hook entries from `.claude/settings.json`.
 - Add a release tag and changelog entry for the first public release.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
@@ -111,6 +115,8 @@ Sources checked on 2026-05-09:
 - Claude Code plugin docs: https://code.claude.com/docs/en/plugins
 - Claude Code plugins reference: https://code.claude.com/docs/en/plugins-reference
 - Claude Code plugin marketplace docs: https://code.claude.com/docs/en/plugin-marketplaces
+- Claude Code discover/install plugin docs: https://code.claude.com/docs/en/discover-plugins
+- Claude Code environment variables reference: https://code.claude.com/docs/en/env-vars
 - Claude Code Auto Mode: https://www.anthropic.com/engineering/claude-code-auto-mode
 - Official Superpowers plugin listing: https://claude.com/plugins/superpowers
 - Superpowers skills repository: https://github.com/obra/superpowers-skills
