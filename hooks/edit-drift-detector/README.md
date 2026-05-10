@@ -3,6 +3,8 @@
 PreToolUse hook on Edit that adds fuzzy-match correction context for `old_string` mismatches: when an Edit payload reaches the hook and `old_string` doesn't appear in the file, the hook surfaces the closest matching content and a re-read suggestion.
 
 > **Real-session coverage caveat.** In a current Claude Code dogfood session on macOS, the Edit tool's own input validation caught the simplest "old_string not found" case and returned `String to replace not found in file` *before* this hook produced any feedback — so complete mismatches surfaced Claude Code's built-in error rather than this hook's richer feedback. This hook is therefore best understood as a **correction layer for Edits whose payloads reach PreToolUse**, not as a replacement for Claude Code's built-in Edit validation. See [Real-session coverage](#real-session-coverage) below.
+>
+> Plugin-path dogfood has not yet separately proved this hook through `claude --plugin-dir .`; current live evidence is controlled non-plugin dogfood plus synthetic validation.
 
 ## What it catches (when the Edit payload reaches the hook)
 
