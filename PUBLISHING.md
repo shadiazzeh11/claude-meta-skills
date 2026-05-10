@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **technical preview, local install only**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, and local report export. It is not yet packaged as a Claude Code plugin or listed in a marketplace.
+Current status: **technical preview, local install recommended**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold. It is not yet listed in a marketplace, and the plugin install path still needs dedicated smoke testing before it replaces `install.sh` as the recommended path.
 
 ## Current distribution model
 
@@ -16,7 +16,17 @@ cd claude-meta-skills
 
 This copies hook files into the target project's `.claude/hooks/meta-skills/` directory and creates `.claude/settings.json`. When `jq` is available, it merges hook entries into an existing settings file; without `jq`, it prints manual merge instructions instead of modifying existing settings.
 
-This is a valid local distribution path for early users. It is not the same as plugin distribution. Claude Code plugin docs distinguish standalone `.claude/` configuration from plugin packages; plugins add a `.claude-plugin/plugin.json` manifest and are the path for versioned team/community distribution and marketplace installation.
+This is a valid local distribution path for early users. It is not the same as marketplace distribution. Claude Code plugin docs distinguish standalone `.claude/` configuration from plugin packages; plugins add a `.claude-plugin/plugin.json` manifest and are the path for versioned team/community distribution and marketplace installation.
+
+The repository now also includes an experimental plugin scaffold:
+
+- `.claude-plugin/plugin.json` declares the plugin metadata.
+- `hooks/hooks.json` declares the same five hook entries using `${CLAUDE_PLUGIN_ROOT}` paths.
+- `skills/verification-before-recommend/` is discovered as a bundled plugin skill when the repo is loaded as a plugin.
+
+This scaffold is intended for validation and smoke testing. The `install.sh` path remains the recommended user install path until plugin install tests are documented and passing.
+
+Expected validation caveat: `claude plugin validate .` warns that the repo-root `CLAUDE.md` is not loaded as plugin context. That is acceptable for this scaffold; plugin-shipped context should live in `skills/`, and this repo already has `skills/verification-before-recommend/`.
 
 ## Evidence snapshot
 
@@ -26,7 +36,7 @@ As of the first complete dogfood baseline:
 |---|---|
 | Synthetic validation | `make test` and `make test-stop-env` pass 61/61. |
 | Installer idempotency | `make test-installer` passes repeat-install and merge scenarios. |
-| CI | GitHub Actions runs analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
+| CI | GitHub Actions runs plugin package checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
@@ -44,7 +54,7 @@ The baseline proves lifecycle reachability and observable behavior under control
 | Hook collections | Community hook packs and directories | Smaller scope. The value here is measured validation, installer idempotency, CI, dogfood classification, and explicit caveats. |
 | Command safety | Claude Code Auto Mode, claude-warden, Sidecar-style policy tools | Out of scope. This repo does not ship a `PreToolUse:Bash` guard or sandbox. |
 | Observability | Multi-agent observability dashboards | Complementary. This repo logs local hook fires and exports summaries, but does not run a server or dashboard. |
-| Marketplaces | Claude plugin marketplace, plugin marketplaces, Claude Code Stack | Future distribution layer. The current repo is not packaged as a marketplace plugin. |
+| Marketplaces | Claude plugin marketplace, plugin marketplaces, Claude Code Stack | Future distribution layer. The repo has a plugin scaffold, but it is not published as a marketplace plugin. |
 
 ## What not to claim
 
@@ -69,10 +79,12 @@ Safe claims:
 
 Before presenting this as a public marketplace/plugin-quality artifact:
 
-- Create a plugin layout with `.claude-plugin/plugin.json` if marketplace distribution is the target.
-- Package hook declarations in the plugin hook format, rewrite hook commands to use `${CLAUDE_PLUGIN_ROOT}`, and verify no installed plugin path depends on the current local-installer layout.
-- Validate the plugin package with `claude plugin validate .` once a plugin layout exists.
-- Test marketplace installation locally with `/plugin marketplace add` and `/plugin install`.
+- Keep the plugin layout (`.claude-plugin/plugin.json`) valid.
+- Bump `.claude-plugin/plugin.json` `version` for every public plugin release.
+- Keep hook declarations in plugin format (`hooks/hooks.json`) and ensure bundled hook commands use `${CLAUDE_PLUGIN_ROOT}`.
+- Validate the plugin package with `make test-plugin` and `claude plugin validate .`.
+- Test local plugin loading with `claude --plugin-dir .` in a disposable project.
+- Test marketplace installation locally with `/plugin marketplace add` and `/plugin install` once a marketplace manifest exists.
 - Add an uninstall or disable guide for removing meta-skills hook entries from `.claude/settings.json`.
 - Add a release tag and changelog entry for the first public release.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
@@ -95,6 +107,7 @@ Sources checked on 2026-05-09:
 - Claude Code hooks reference: https://code.claude.com/docs/en/hooks
 - Claude Code hooks guide: https://code.claude.com/docs/en/hooks-guide
 - Claude Code plugin docs: https://code.claude.com/docs/en/plugins
+- Claude Code plugins reference: https://code.claude.com/docs/en/plugins-reference
 - Claude Code plugin marketplace docs: https://code.claude.com/docs/en/plugin-marketplaces
 - Claude Code Auto Mode: https://www.anthropic.com/engineering/claude-code-auto-mode
 - Official Superpowers plugin listing: https://claude.com/plugins/superpowers
