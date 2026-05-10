@@ -49,7 +49,7 @@ jobs:
       - name: Analyzer regression
         run: make test-analyzer
 
-      - name: Installer idempotency regression
+      - name: Installer lifecycle regression
         run: make test-installer
 
       - name: Validation harness

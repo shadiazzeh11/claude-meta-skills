@@ -5,6 +5,7 @@
 #   ./install.sh <target-project-path>             # install hooks
 #   ./install.sh <target> --with-claude-md         # also copy CLAUDE.md template
 #   ./install.sh <target> --verify                 # run validation harness after install
+#   ./install.sh <target> --uninstall              # remove installed hooks/settings entries
 #   ./install.sh --help                            # show this message
 #
 # What it does:
@@ -16,24 +17,32 @@
 #   3. Optionally installs the CLAUDE.md template (--with-claude-md)
 #   4. Optionally runs validation against the source repo (--verify)
 #
-# Settings.json merge requires jq. Without jq, the script prints the
-# JSON snippet for the user to merge manually.
+# Uninstall removes only meta-skills hook entries from settings.json and
+# deletes <target>/.claude/hooks/meta-skills/. It preserves unrelated hooks,
+# unrelated settings, and CLAUDE.md.
+#
+# Settings.json merge/uninstall requires jq. Without jq, install prints the
+# JSON snippet for the user to merge manually; uninstall stops before changing
+# files and prints the exact manual cleanup scope.
 
 set -euo pipefail
 
 TARGET=""
 WITH_CLAUDE_MD=false
 VERIFY=false
+UNINSTALL=false
 
 usage() {
   cat <<'EOF'
-Usage: install.sh <target-project-path> [--with-claude-md] [--verify]
+Usage: install.sh <target-project-path> [--with-claude-md] [--verify] [--uninstall]
 
 Options:
   --with-claude-md    Also install CLAUDE.md template at target root
                       (skipped if target already has CLAUDE.md)
   --verify            Run the source repo's full validation suite after
                       installation completes
+  --uninstall         Remove meta-skills hook entries from .claude/settings.json
+                      and delete .claude/hooks/meta-skills/
   -h, --help          Show this message
 EOF
 }
@@ -49,6 +58,9 @@ for arg in "$@"; do
       ;;
     --verify)
       VERIFY=true
+      ;;
+    --uninstall)
+      UNINSTALL=true
       ;;
     -*)
       echo "Unknown flag: $arg" >&2
@@ -78,6 +90,18 @@ if [ ! -d "$TARGET" ]; then
   exit 1
 fi
 
+if [ "$UNINSTALL" = true ] && [ "$WITH_CLAUDE_MD" = true ]; then
+  echo "Error: --uninstall cannot be combined with --with-claude-md" >&2
+  usage >&2
+  exit 1
+fi
+
+if [ "$UNINSTALL" = true ] && [ "$VERIFY" = true ]; then
+  echo "Error: --uninstall cannot be combined with --verify" >&2
+  usage >&2
+  exit 1
+fi
+
 TARGET="$(cd "$TARGET" && pwd)"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK_INSTALL_DIR="$TARGET/.claude/hooks/meta-skills"
@@ -89,6 +113,102 @@ HOOKS=(
   construction-gate
   context-recovery
 )
+
+backup_settings() {
+  local base backup n
+  base="$SETTINGS_FILE.backup-$(date +%s)"
+  backup="$base"
+  n=1
+  while [ -e "$backup" ]; do
+    backup="$base-$n"
+    n=$((n + 1))
+  done
+  cp "$SETTINGS_FILE" "$backup"
+  echo "$backup"
+}
+
+uninstall_meta_skills() {
+  echo "claude-meta-skills uninstaller"
+  echo "  Target: $TARGET"
+  echo
+
+  if [ -f "$SETTINGS_FILE" ]; then
+    echo "[1/2] Removing meta-skills entries from .claude/settings.json"
+    if ! command -v jq >/dev/null 2>&1; then
+      echo
+      echo "  ERROR: jq not installed; cannot safely edit existing settings.json." >&2
+      echo "  No files were changed." >&2
+      echo "  Manual cleanup scope:" >&2
+      echo "    - Remove hook commands whose command contains '.claude/hooks/meta-skills/'" >&2
+      echo "    - Then delete $HOOK_INSTALL_DIR" >&2
+      exit 1
+    fi
+
+    META_COUNT=$(jq '
+      [
+        .hooks // {}
+        | to_entries[]?
+        | .value[]?
+        | (.hooks // [])[]?
+        | select((.command // "") | contains(".claude/hooks/meta-skills/"))
+      ] | length
+    ' "$SETTINGS_FILE")
+
+    if [ "$META_COUNT" = "0" ]; then
+      echo "  no meta-skills hook entries found; settings unchanged"
+    else
+      CLEANED=$(jq '
+      def is_meta_skills_command:
+        (.command // "") | contains(".claude/hooks/meta-skills/");
+
+      def strip_meta_skills_entry:
+        .hooks = ((.hooks // []) | map(select(is_meta_skills_command | not)));
+
+      def filter_existing_event:
+        map(strip_meta_skills_entry)
+        | map(select((.hooks // []) | length > 0));
+
+      . as $existing |
+      ($existing.hooks // {}) as $eh |
+      $existing
+      | .hooks = (
+        reduce ($eh | keys[]) as $ev ({};
+          (($eh[$ev] // []) | filter_existing_event) as $filtered |
+          if ($filtered | length) > 0 then .[$ev] = $filtered else . end
+        )
+      )
+      | if (.hooks | length) == 0 then del(.hooks) else . end
+      ' "$SETTINGS_FILE")
+
+      BACKUP="$(backup_settings)"
+      echo "  backup: $BACKUP"
+      echo "$CLEANED" > "$SETTINGS_FILE"
+      echo "  removed meta-skills hook entries; unrelated settings/hooks preserved"
+    fi
+  else
+    echo "[1/2] No .claude/settings.json found; skipping settings cleanup"
+  fi
+
+  echo
+  echo "[2/2] Removing copied hook files"
+  if [ -d "$HOOK_INSTALL_DIR" ]; then
+    rm -rf "$HOOK_INSTALL_DIR"
+    echo "  removed: $HOOK_INSTALL_DIR"
+  else
+    echo "  no copied hook directory found at $HOOK_INSTALL_DIR"
+  fi
+
+  echo
+  echo "Uninstall complete."
+  echo "  Settings: $SETTINGS_FILE"
+  echo "  Hooks removed: $HOOK_INSTALL_DIR"
+  echo "  CLAUDE.md was not removed."
+}
+
+if [ "$UNINSTALL" = true ]; then
+  uninstall_meta_skills
+  exit 0
+fi
 
 echo "claude-meta-skills installer"
 echo "  Source: $REPO_DIR"
@@ -135,19 +255,18 @@ if [ -f "$SETTINGS_FILE" ]; then
     echo "$NEW_SETTINGS"
     echo
   else
-    BACKUP="$SETTINGS_FILE.backup-$(date +%s)"
-    cp "$SETTINGS_FILE" "$BACKUP"
+    BACKUP="$(backup_settings)"
     echo "  backup: $BACKUP"
 
     # Idempotent merge: strip any prior meta-skills hook commands from each
-    # event (signature: command path contains "/.claude/hooks/meta-skills/"),
+    # event (signature: command path contains ".claude/hooks/meta-skills/"),
     # preserving the user's unrelated hooks (including any commands that
     # share an entry with a meta-skills command), then append the fresh
     # meta-skills entries from the current template. Re-running install on
     # the same target produces the same result as a single install.
     MERGED=$(jq -s '
       def is_meta_skills_command:
-        (.command // "") | contains("/.claude/hooks/meta-skills/");
+        (.command // "") | contains(".claude/hooks/meta-skills/");
 
       def strip_meta_skills_entry:
         .hooks = ((.hooks // []) | map(select(is_meta_skills_command | not)));
@@ -160,11 +279,12 @@ if [ -f "$SETTINGS_FILE" ]; then
       ($existing.hooks // {}) as $eh |
       ($ours.hooks // {}) as $oh |
       ($eh | keys + ($oh | keys) | unique) as $all_events |
-      $existing * {hooks: (
+      $existing
+      | .hooks = (
         reduce $all_events[] as $ev ({};
           .[$ev] = (($eh[$ev] // [] | filter_existing_event) + ($oh[$ev] // []))
         )
-      )}
+      )
     ' "$SETTINGS_FILE" <(echo "$NEW_SETTINGS"))
 
     echo "$MERGED" > "$SETTINGS_FILE"

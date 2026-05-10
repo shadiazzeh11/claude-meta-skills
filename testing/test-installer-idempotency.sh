@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-# Installer idempotency tests for claude-meta-skills.
+# Installer tests for claude-meta-skills.
 #
 # Runs install.sh against temporary /tmp targets and asserts that
 # repeated installs produce identical settings.json (no duplicated
 # meta-skills hook entries) while preserving any unrelated hooks the
-# user has configured. Does not invoke hooks, does not write under
-# $HOME, and does not use --verify, so the dogfood log at
-# ~/.claude/meta-skills-log.jsonl is not touched.
+# user has configured. Also verifies that uninstall removes only
+# meta-skills hook entries and copied hook files. Does not invoke hooks,
+# does not write under $HOME, and does not use --verify, so the dogfood
+# log at ~/.claude/meta-skills-log.jsonl is not touched.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALL="$REPO_DIR/install.sh"
-META_SIG="/.claude/hooks/meta-skills/"
+META_SIG=".claude/hooks/meta-skills/"
 
 if [ ! -x "$INSTALL" ] && [ ! -f "$INSTALL" ]; then
   echo "FAIL: install.sh not found at $INSTALL" >&2
@@ -21,7 +22,7 @@ if [ ! -x "$INSTALL" ] && [ ! -f "$INSTALL" ]; then
 fi
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "FAIL: jq is required for installer idempotency tests" >&2
+  echo "FAIL: jq is required for installer lifecycle tests" >&2
   exit 1
 fi
 
@@ -37,6 +38,10 @@ mktemp_target() {
 
 run_install() {
   "$INSTALL" "$1" >/dev/null
+}
+
+run_uninstall() {
+  "$INSTALL" "$1" --uninstall >/dev/null
 }
 
 signatures() {
@@ -59,7 +64,7 @@ meta_signature_count() {
 }
 
 unique_meta_signature_count() {
-  signatures "$1" | grep -F "$META_SIG" | sort -u | wc -l | tr -d ' '
+  signatures "$1" | { grep -F "$META_SIG" || true; } | sort -u | wc -l | tr -d ' '
 }
 
 command_count() {
@@ -81,6 +86,22 @@ assert_settings_equal() {
   if ! diff -q "$1" "$2" >/dev/null; then
     echo "FAIL: $3" >&2
     diff -u "$1" "$2" >&2 || true
+    exit 1
+  fi
+}
+
+assert_path_exists() {
+  if [ ! -e "$1" ]; then
+    echo "FAIL: $2" >&2
+    echo "  expected path to exist: $1" >&2
+    exit 1
+  fi
+}
+
+assert_path_absent() {
+  if [ -e "$1" ]; then
+    echo "FAIL: $2" >&2
+    echo "  expected path to be absent: $1" >&2
     exit 1
   fi
 }
@@ -280,5 +301,191 @@ assert_construction_gate_matcher "$T_D/.claude/settings.json" "Test D"
 assert_pretooluse_privacy_order "$T_D/.claude/settings.json" "Test D"
 echo "PASS Test D"
 
+# -----------------------------------------------------------------------------
+echo "Test E — uninstall removes meta-skills entries and copied hooks"
+T_E="$(mktemp_target E)"
+
+run_install "$T_E"
+assert_path_exists "$T_E/.claude/hooks/meta-skills" "Test E: hook install dir must exist after install"
+assert_eq "$(meta_signature_count "$T_E/.claude/settings.json")" "5" "Test E: meta-skills signature count must be 5 after install"
+echo "# project guidance" > "$T_E/CLAUDE.md"
+
+run_uninstall "$T_E"
+jq -e . "$T_E/.claude/settings.json" >/dev/null
+assert_eq "$(meta_signature_count "$T_E/.claude/settings.json")" "0" "Test E: meta-skills signatures must be removed after uninstall"
+assert_eq "$(unique_meta_signature_count "$T_E/.claude/settings.json")" "0" "Test E: unique meta-skills signatures must be 0 after uninstall"
+assert_path_absent "$T_E/.claude/hooks/meta-skills" "Test E: hook install dir must be removed after uninstall"
+assert_path_exists "$T_E/CLAUDE.md" "Test E: CLAUDE.md must be preserved after uninstall"
+
+# Re-running uninstall should be a clean no-op.
+E_SETTINGS_BEFORE_NOOP="$T_E/settings.before-noop.json"
+cp "$T_E/.claude/settings.json" "$E_SETTINGS_BEFORE_NOOP"
+E_BACKUPS_BEFORE_NOOP="$(find "$T_E/.claude" -maxdepth 1 -name 'settings.json.backup-*' | wc -l | tr -d ' ')"
+run_uninstall "$T_E"
+jq -e . "$T_E/.claude/settings.json" >/dev/null
+assert_eq "$(meta_signature_count "$T_E/.claude/settings.json")" "0" "Test E: repeated uninstall must keep meta-skills signatures at 0"
+assert_path_absent "$T_E/.claude/hooks/meta-skills" "Test E: repeated uninstall must keep hook install dir absent"
+assert_settings_equal "$E_SETTINGS_BEFORE_NOOP" "$T_E/.claude/settings.json" "Test E: repeated uninstall must not rewrite settings content"
+E_BACKUPS_AFTER_NOOP="$(find "$T_E/.claude" -maxdepth 1 -name 'settings.json.backup-*' | wc -l | tr -d ' ')"
+assert_eq "$E_BACKUPS_AFTER_NOOP" "$E_BACKUPS_BEFORE_NOOP" "Test E: repeated uninstall must not create another backup"
+echo "PASS Test E"
+
+# -----------------------------------------------------------------------------
+echo "Test F — uninstall preserves unrelated hooks and top-level settings"
+T_F="$(mktemp_target F)"
+mkdir -p "$T_F/.claude"
+cat > "$T_F/.claude/settings.json" <<'JSON'
+{
+  "disableAllHooks": false,
+  "permissions": {
+    "allow": ["Read"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo existing-bash-hook"
+          }
+        ]
+      }
+    ]
+  }
+}
+JSON
+jq -e . "$T_F/.claude/settings.json" >/dev/null
+
+run_install "$T_F"
+run_uninstall "$T_F"
+jq -e . "$T_F/.claude/settings.json" >/dev/null
+
+assert_eq "$(command_count "$T_F/.claude/settings.json" "echo existing-bash-hook")" "1" "Test F: existing bash hook must appear exactly once after uninstall"
+F_PRESERVED="$(jq -r '.permissions.allow[0] // "MISSING"' "$T_F/.claude/settings.json")"
+assert_eq "$F_PRESERVED" "Read" "Test F: unrelated top-level permissions key must be preserved after uninstall"
+F_DISABLE="$(jq -r '.disableAllHooks' "$T_F/.claude/settings.json")"
+assert_eq "$F_DISABLE" "false" "Test F: unrelated disableAllHooks key must be preserved after uninstall"
+assert_eq "$(meta_signature_count "$T_F/.claude/settings.json")" "0" "Test F: meta-skills signatures must be removed"
+assert_path_absent "$T_F/.claude/hooks/meta-skills" "Test F: hook install dir must be removed"
+echo "PASS Test F"
+
+# -----------------------------------------------------------------------------
+echo "Test G — uninstall preserves unrelated command from mixed hook entry"
+T_G="$(mktemp_target G)"
+mkdir -p "$T_G/.claude/hooks/meta-skills/edit-drift-detector"
+cat > "$T_G/.claude/settings.json" <<'JSON'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/meta-skills/edit-drift-detector/hook.py\""
+          },
+          {
+            "type": "command",
+            "command": "echo keep-me"
+          }
+        ]
+      }
+    ]
+  }
+}
+JSON
+jq -e . "$T_G/.claude/settings.json" >/dev/null
+
+run_uninstall "$T_G"
+jq -e . "$T_G/.claude/settings.json" >/dev/null
+
+assert_eq "$(command_count "$T_G/.claude/settings.json" "echo keep-me")" "1" "Test G: unrelated 'echo keep-me' command must remain after uninstall"
+assert_eq "$(meta_signature_count "$T_G/.claude/settings.json")" "0" "Test G: meta-skills signatures must be removed"
+assert_path_absent "$T_G/.claude/hooks/meta-skills" "Test G: hook install dir must be removed"
+echo "PASS Test G"
+
+# -----------------------------------------------------------------------------
+echo "Test H — uninstall removes relative meta-skills commands"
+T_H="$(mktemp_target H)"
+mkdir -p "$T_H/.claude/hooks/meta-skills/construction-gate"
+cat > "$T_H/.claude/settings.json" <<'JSON'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/meta-skills/construction-gate/hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+JSON
+jq -e . "$T_H/.claude/settings.json" >/dev/null
+
+run_uninstall "$T_H"
+jq -e . "$T_H/.claude/settings.json" >/dev/null
+
+assert_eq "$(meta_signature_count "$T_H/.claude/settings.json")" "0" "Test H: relative meta-skills command must be removed"
+assert_path_absent "$T_H/.claude/hooks/meta-skills" "Test H: hook install dir must be removed"
+echo "PASS Test H"
+
+# -----------------------------------------------------------------------------
+echo "Test I — invalid settings aborts before deleting copied hooks"
+T_I="$(mktemp_target I)"
+mkdir -p "$T_I/.claude/hooks/meta-skills/construction-gate"
+printf '{ invalid json\n' > "$T_I/.claude/settings.json"
+
+if "$INSTALL" "$T_I" --uninstall >/dev/null 2>&1; then
+  echo "FAIL: Test I: uninstall should fail when settings.json is invalid" >&2
+  exit 1
+fi
+
+assert_path_exists "$T_I/.claude/hooks/meta-skills" "Test I: copied hook dir must remain when settings cleanup fails"
+echo "PASS Test I"
+
+# -----------------------------------------------------------------------------
+echo "Test J — uninstall without jq fails before deleting copied hooks"
+T_J="$(mktemp_target J)"
+mkdir -p "$T_J/.claude/hooks/meta-skills/construction-gate"
+cat > "$T_J/.claude/settings.json" <<'JSON'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/meta-skills/construction-gate/hook.py\""
+          }
+        ]
+      }
+    ]
+  }
+}
+JSON
+jq -e . "$T_J/.claude/settings.json" >/dev/null
+
+NO_JQ_BIN="$TMP_ROOT/no-jq-bin"
+mkdir -p "$NO_JQ_BIN"
+ln -s "$(command -v dirname)" "$NO_JQ_BIN/dirname"
+BASH_BIN="$(command -v bash)"
+
+if PATH="$NO_JQ_BIN" "$BASH_BIN" "$INSTALL" "$T_J" --uninstall >/dev/null 2>&1; then
+  echo "FAIL: Test J: uninstall should fail when jq is unavailable and settings.json exists" >&2
+  exit 1
+fi
+
+jq -e . "$T_J/.claude/settings.json" >/dev/null
+assert_eq "$(meta_signature_count "$T_J/.claude/settings.json")" "1" "Test J: meta-skills signature must remain when jq is unavailable"
+assert_path_exists "$T_J/.claude/hooks/meta-skills" "Test J: copied hook dir must remain when jq is unavailable"
+echo "PASS Test J"
+
 echo
-echo "All installer idempotency tests passed."
+echo "All installer tests passed."
