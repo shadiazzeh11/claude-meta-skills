@@ -22,7 +22,7 @@ The repository now also includes an experimental plugin scaffold and local marke
 
 - `.claude-plugin/plugin.json` declares the plugin metadata.
 - `.claude-plugin/marketplace.json` declares a one-plugin marketplace catalog for `claude-meta-skills`.
-- `hooks/hooks.json` declares the same five hook entries using `${CLAUDE_PLUGIN_ROOT}` paths.
+- `hooks/hooks.json` uses the standard Claude Code plugin hook location and declares the same five hook entries using `${CLAUDE_PLUGIN_ROOT}` paths.
 - `skills/verification-before-recommend/` is discovered as a bundled plugin skill when the repo is loaded as a plugin.
 
 This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. `make test-marketplace` validates the marketplace manifest and, when `claude` is available locally, exercises `plugin marketplace add`, `plugin list --available`, `plugin install`, `plugin uninstall`, and `plugin marketplace remove` inside isolated temp config/cache directories. The `install.sh` path remains the recommended user install path until marketplace-installed live hook tests are documented and passing.
@@ -86,7 +86,7 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 
 - Keep the plugin layout (`.claude-plugin/plugin.json`) valid.
 - Bump `.claude-plugin/plugin.json` `version` for every public plugin release.
-- Keep hook declarations in plugin format (`hooks/hooks.json`) and ensure bundled hook commands use `${CLAUDE_PLUGIN_ROOT}`.
+- Keep hook declarations in the standard plugin hook file (`hooks/hooks.json`) and ensure bundled hook commands use `${CLAUDE_PLUGIN_ROOT}`.
 - Validate the plugin package with `make test-plugin` and `claude plugin validate .`.
 - Keep `.claude-plugin/marketplace.json` valid with `make test-marketplace`.
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.

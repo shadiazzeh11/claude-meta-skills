@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Validate the Claude Code plugin scaffold. This is intentionally limited to
-# package shape and command mapping; it does not install the plugin anywhere.
+# package shape and command mapping; marketplace install behavior lives in
+# testing/test-marketplace-package.sh.
 
 set -euo pipefail
 
@@ -26,12 +27,16 @@ plugin = json.loads((root / "hooks" / "hooks.json").read_text())
 required_manifest = {
     "name": "claude-meta-skills",
     "license": "MIT",
-    "hooks": "./hooks/hooks.json",
 }
 for key, expected in required_manifest.items():
     actual = manifest.get(key)
     if actual != expected:
         raise SystemExit(f"manifest {key!r} expected {expected!r}, got {actual!r}")
+
+if "hooks" in manifest:
+    raise SystemExit(
+        "manifest must not declare hooks; Claude Code auto-loads the standard hooks/hooks.json path"
+    )
 
 expected_hooks = copy.deepcopy(template["hooks"])
 

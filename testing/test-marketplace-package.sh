@@ -129,10 +129,23 @@ import json
 import sys
 from pathlib import Path
 
-rendered = json.dumps(json.loads(Path(sys.argv[1]).read_text()), sort_keys=True)
+data = json.loads(Path(sys.argv[1]).read_text())
+rendered = json.dumps(data, sort_keys=True)
 for needle in sys.argv[2:]:
     if needle not in rendered:
         raise SystemExit(f"expected {needle!r} in installed plugin JSON")
+
+plugins = data if isinstance(data, list) else data.get("installed", [])
+matching = [
+    plugin for plugin in plugins
+    if plugin.get("id") == f"{sys.argv[2]}@{sys.argv[3]}" or plugin.get("name") == sys.argv[2]
+]
+if not matching:
+    raise SystemExit("installed plugin JSON did not contain a matching plugin object")
+for plugin in matching:
+    errors = plugin.get("errors") or []
+    if errors:
+        raise SystemExit(f"installed plugin reported load errors: {errors}")
 print("installed plugin list includes expected plugin")
 PY
 
