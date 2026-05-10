@@ -32,8 +32,8 @@ Usage: install.sh <target-project-path> [--with-claude-md] [--verify]
 Options:
   --with-claude-md    Also install CLAUDE.md template at target root
                       (skipped if target already has CLAUDE.md)
-  --verify            Run the source repo's validation harness after
-                      installation completes (45 test cases)
+  --verify            Run the source repo's full validation suite after
+                      installation completes
   -h, --help          Show this message
 EOF
 }

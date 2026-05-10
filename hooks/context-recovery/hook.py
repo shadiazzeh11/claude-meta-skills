@@ -9,8 +9,9 @@ compaction, CLAUDE.md auto-reloads with the recovery context preserved.
 Architecture: PreCompact + CLAUDE.md modification. Chosen because the
 SessionStart:compact stdout-injection pathway is broken (issue #15174);
 CLAUDE.md modification is the verified working path for post-compaction
-context preservation. PostCompact event does not exist (issues #14258,
-#40492, #32026 are all open feature requests).
+context preservation. Current Claude Code docs list PostCompact, but this
+hook intentionally writes before compaction via the dogfooded PreCompact
+path.
 
 Exit 0 always. PreCompact exit 2 has no blocking effect per Claude Code
 docs; we don't try to block compaction.
