@@ -1,6 +1,10 @@
 {
   "expected_exit_code": 0,
   "expected_stdout_contains": ["decision", "block", "Tests are failing"],
+  "expected_file_mode": {
+    "path": "{{HOME}}/.claude/meta-skills-log.jsonl",
+    "mode": "600"
+  },
   "description": "Node project with failing test command (npm test exits non-zero)",
   "category": "should-block"
 }

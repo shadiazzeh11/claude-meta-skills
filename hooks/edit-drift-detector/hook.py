@@ -18,6 +18,7 @@ import json
 import sys
 import os
 import difflib
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -27,7 +28,8 @@ def log_fire(hook_name, action, project, detail, session_id):
     Detail is metadata only — no file content, no diff snippets, no test output."""
     try:
         log_dir = Path.home() / ".claude"
-        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(log_dir, 0o700)
         entry = {
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "hook": hook_name,
@@ -38,8 +40,10 @@ def log_fire(hook_name, action, project, detail, session_id):
         }
         line = json.dumps(entry, separators=(",", ":")) + "\n"
         fd = os.open(str(log_dir / "meta-skills-log.jsonl"),
-                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         try:
+            if hasattr(os, "fchmod"):
+                os.fchmod(fd, 0o600)
             os.write(fd, line.encode("utf-8"))
         finally:
             os.close(fd)
@@ -108,6 +112,72 @@ def resolve_file_path(file_path, payload):
     return file_path
 
 
+DEFAULT_PROTECTED_PATTERNS = [
+    r"node_modules/",
+    r"\.git/",
+    r"\.env(?:\.|$)",
+    r"package-lock\.json$",
+    r"yarn\.lock$",
+    r"bun\.lockb$",
+    r"\.claude/settings\.json$",
+    r"Cargo\.lock$",
+    r"Gemfile\.lock$",
+    r"poetry\.lock$",
+    r"uv\.lock$",
+    r"pnpm-lock\.yaml$",
+    r"Pipfile\.lock$",
+    r"\.claude/settings\.local\.json$",
+    r"\.claude/hooks/",
+]
+
+
+def load_protected_patterns():
+    """Load construction-gate protected path patterns without importing that hook."""
+    rules_path = Path(__file__).parent.parent / "construction-gate" / "rules.json"
+    if not rules_path.exists():
+        return DEFAULT_PROTECTED_PATTERNS
+    try:
+        with open(rules_path) as f:
+            data = json.load(f)
+        patterns = data.get("protected_patterns", DEFAULT_PROTECTED_PATTERNS)
+        if not isinstance(patterns, list):
+            return DEFAULT_PROTECTED_PATTERNS
+        return [str(p) for p in patterns]
+    except (IOError, json.JSONDecodeError):
+        return DEFAULT_PROTECTED_PATTERNS
+
+
+def path_variants(file_path):
+    """Return tool-provided path variants with normalized separators."""
+    variants = []
+    if not file_path:
+        return variants
+    variants.append(file_path)
+    normalized = file_path.replace("\\", "/")
+    if normalized != file_path:
+        variants.append(normalized)
+    return variants
+
+
+def is_protected_path(file_path):
+    """True when construction-gate should own feedback for this path.
+
+    edit-drift-detector may include nearby file content in its correction
+    message. For protected paths, avoid reading the file at all; allow the
+    earlier construction-gate hook to block with metadata-only feedback. Match
+    only the tool-provided path, not the cwd-resolved filesystem path, so a
+    normal relative edit inside a directory named ".env.project" is not skipped.
+    """
+    for pattern in load_protected_patterns():
+        try:
+            compiled = re.compile(pattern)
+        except re.error:
+            continue
+        if any(compiled.search(path) for path in path_variants(file_path)):
+            return True
+    return False
+
+
 def load_messages():
     """Load message templates from messages.json next to this script."""
     script_dir = Path(__file__).parent
@@ -151,6 +221,9 @@ def main():
         return 0
 
     fs_path = resolve_file_path(file_path, payload)
+
+    if is_protected_path(file_path):
+        return 0
 
     # File must exist for comparison; otherwise let Edit's error handling catch it.
     if not os.path.exists(fs_path):

@@ -4,9 +4,9 @@ Claude Code hooks with harness-measured false-positive and false-negative result
 
 Five focused hooks covering edit verification, completion gating, file checks, write protection, and post-compaction context recovery. Each ships with a test suite. The validation harness works for any Claude Code hook, not just ours.
 
-| Hooks | Tests | False positives | False negatives | Crosley layers |
+| Hooks | Harness tests | Harness false positives | Harness false negatives | Crosley layers |
 |---|---|---|---|---|
-| 5 | 61 | 0 | 0 | 4/4 |
+| 5 | 67 | 0 | 0 | 4/4 |
 
 ## Fit
 
@@ -46,25 +46,25 @@ Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `
 
 | Hook | Layer | Event | What it catches | Tests |
 |---|---|---|---|---|
-| [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 12 |
-| [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 19 |
+| [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on non-protected Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 14 |
+| [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 20 |
 | [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 10 |
 | [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 12 |
-| [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 8 |
+| [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 10 |
 
 Each hook directory contains its own README with design decisions, known limitations, coexistence notes, and per-hook baseline results.
 
 ## How they work together
 
-The five hooks cover Blake Crosley's four-layer hook framework (Prevention, Validation, Quality Gating, Context Injection) across five Claude Code lifecycle events. They fire in lifecycle order: `PreCompact` runs when context fills (recovering session state to CLAUDE.md), `PreToolUse` blocks bad Edits or Writes before they execute, `PostToolUse` warns on ghost files after Write/Edit/MultiEdit/NotebookEdit completes, and `Stop` blocks completion when tests are failing. Each hook is independent — no shared state, no inter-hook dependencies — so installing a subset works the same as installing all five.
+The five hooks cover Blake Crosley's four-layer hook framework (Prevention, Validation, Quality Gating, Context Injection) across five Claude Code lifecycle events. They fire in lifecycle order: `PreCompact` runs when context fills (recovering session state to CLAUDE.md), `PreToolUse` blocks bad Edits or Writes before they execute, `PostToolUse` warns on ghost files after Write/Edit/MultiEdit/NotebookEdit completes, and `Stop` blocks completion when tests are failing. Each hook fails open and can be installed independently. When installed as a suite, `construction-gate` intentionally runs before `edit-drift-detector` so protected paths get metadata-only blocking before any fuzzy file-content feedback can run.
 
 ```
 Layer                Event                Hook
 ─────                ─────                ────
 Context Injection    PreCompact      ──▶  context-recovery
-Prevention           PreToolUse:Edit ──▶  edit-drift-detector
-                     PreToolUse      ──▶  construction-gate
+Prevention           PreToolUse      ──▶  construction-gate
                      (Write|Edit|MultiEdit|NotebookEdit)
+                     PreToolUse:Edit ──▶  edit-drift-detector
 Validation           PostToolUse     ──▶  silent-file-verifier
                      (Write|Edit|MultiEdit|NotebookEdit)
 Quality Gating       Stop            ──▶  completion-verifier
@@ -78,12 +78,12 @@ Every hook ships with its own test suite. Aggregate results from the latest vali
 
 | Hook | Tests | Pass | False positives | False negatives | Avg duration |
 |---|---|---|---|---|---|
-| edit-drift-detector | 12 | 12 | 0 | 0 | 73 ms |
-| construction-gate | 19 | 19 | 0 | 0 | 71 ms |
-| silent-file-verifier | 10 | 10 | 0 | 0 | 71 ms |
-| completion-verifier | 12 | 12 | 0 | 0 | 320 ms |
-| context-recovery | 8 | 8 | 0 | 0 | 118 ms |
-| **Total** | **61** | **61** | **0** | **0** | — |
+| edit-drift-detector | 14 | 14 | 0 | 0 | 162 ms |
+| construction-gate | 21 | 21 | 0 | 0 | 85 ms |
+| silent-file-verifier | 10 | 10 | 0 | 0 | 79 ms |
+| completion-verifier | 12 | 12 | 0 | 0 | 471 ms |
+| context-recovery | 10 | 10 | 0 | 0 | 141 ms |
+| **Total** | **67** | **67** | **0** | **0** | — |
 
 Run the suite yourself:
 
@@ -102,7 +102,7 @@ GitHub Actions runs the plugin package regression, marketplace catalog regressio
 
 ## Self-deployment data
 
-Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 61/61 tests prove the hooks fire correctly on constructed inputs; the auto-log is what tells you whether they're catching real issues during normal use.
+Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 67/67 tests prove the hooks fire correctly on constructed inputs; the auto-log is what tells you whether they're catching real issues during normal use.
 
 ```bash
 ./testing/analyze-log.py             # last 7 days summary
@@ -116,7 +116,7 @@ Current dogfood evidence should be read from `./testing/analyze-log.py --real-on
 
 The plugin scaffold also has controlled local `claude --plugin-dir .` smoke evidence for `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery`. Marketplace-installed smoke evidence covers the same four hooks from an installed local marketplace plugin. `edit-drift-detector` still has non-plugin controlled live evidence plus synthetic validation, but not a separate plugin-path or marketplace-installed proof.
 
-The `detail` field carries metadata only — paths, pattern names, line ranges, exit codes, similarity ratios. No file content, no diff snippets, no test output. See [testing/README.md](testing/README.md) for the full action enum, privacy boundaries, and what to look for after a week of dogfood usage.
+The `detail` field carries metadata only — paths, pattern names, line ranges, exit codes, similarity ratios. No file content, no diff snippets, no test output. Hooks create the log with private permissions (`~/.claude` 0700, log file 0600 on POSIX systems). See [testing/README.md](testing/README.md) for the full action enum, privacy boundaries, and what to look for after a week of dogfood usage.
 
 ## Configuration
 

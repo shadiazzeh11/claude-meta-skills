@@ -48,6 +48,7 @@ Test cases run in directory-name sort order, so prefix with `01-`, `02-`, ... if
 | `{{TEST_DIR}}` | Absolute path of the test case directory |
 | `{{FIXTURE_PATH}}` | Absolute path of `fixture.txt` (if it exists) |
 | `{{PROJECT_PATH}}` | Absolute path of `project/` directory (if it exists) |
+| `{{HOME}}` | Harness temp home; supported in assertion file paths |
 
 Example (from `test-cases/edit-drift-detector/01-exact-match/input.json`):
 
@@ -65,7 +66,7 @@ Example (from `test-cases/edit-drift-detector/01-exact-match/input.json`):
 }
 ```
 
-The keys are exactly the keys Claude Code would send to a real hook — see [Claude Code hooks reference](https://docs.claude.com/en/docs/claude-code/hooks-reference) for the per-event schema.
+The keys are exactly the keys Claude Code would send to a real hook — see [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) for the per-event schema.
 
 ## expected.json — assertions
 
@@ -93,11 +94,21 @@ Every test case must have an `expected_exit_code`. The other fields are optional
   ],
   "expected_stdout_contains": [
     "additionalContext"
+  ],
+  "expected_stderr_not_contains": [
+    "SECRET_TOKEN"
+  ],
+  "expected_stdout_not_contains": [
+    "SECRET_TOKEN"
   ]
 }
 ```
 
 Each pattern is checked with `grep -q --` (literal substring, not regex). All patterns must match for the test to pass.
+
+Set `expected_stdout_empty: true` or `expected_stderr_empty: true` when a hook is expected to be completely silent on that stream.
+
+`expected_log_not_contains` checks the isolated harness log at `{{HOME}}/.claude/meta-skills-log.jsonl`. Use it for privacy regressions where a secret must not appear in hook metadata.
 
 ### File content assertions
 
@@ -118,17 +129,31 @@ Useful for hooks that modify files (like `context-recovery` writing to CLAUDE.md
       "stale-content"
     ]
   },
-  "expected_file_pattern_count": {
-    "path": "{{TEST_DIR}}/CLAUDE.md",
-    "pattern": "post-compact-recovery-start",
-    "count": 1
-  }
-}
-```
+	  "expected_file_pattern_count": {
+	    "path": "{{TEST_DIR}}/CLAUDE.md",
+	    "pattern": "post-compact-recovery-start",
+	    "count": 1
+	  },
+	  "expected_file_mode": {
+	    "path": "{{HOME}}/.claude/meta-skills-log.jsonl",
+	    "mode": "600"
+	  },
+	  "expected_file_max_chars": {
+	    "path": "{{TEST_DIR}}/CLAUDE.md",
+	    "max": 2000
+	  },
+	  "expected_recovery_section_max_chars": {
+	    "path": "{{TEST_DIR}}/CLAUDE.md",
+	    "max": 2000
+	  }
+	}
+	```
 
-`path` supports the same `{{TEST_DIR}}` / `{{FIXTURE_PATH}}` / `{{PROJECT_PATH}}` placeholders as `input.json`.
+`path` supports `{{TEST_DIR}}`, `{{FIXTURE_PATH}}`, `{{PROJECT_PATH}}`, and `{{HOME}}` placeholders.
 
 `expected_file_pattern_count` is useful for verifying idempotency — e.g., that the recovery hook replaces a previous block rather than appending a duplicate.
+
+`expected_file_mode` uses `stat` to check POSIX permission bits. `expected_recovery_section_max_chars` measures only the block between `post-compact-recovery-start` and `post-compact-recovery-end`, which is useful when the surrounding file may contain unrelated content.
 
 ### Environment variables
 

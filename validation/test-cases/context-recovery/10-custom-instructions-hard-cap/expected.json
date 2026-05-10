@@ -1,0 +1,22 @@
+{
+  "expected_exit_code": 0,
+  "env": {
+    "CONTEXT_RECOVERY_SECTION_MAX_CHARS": "700",
+    "CONTEXT_RECOVERY_CUSTOM_MAX_CHARS": "1200"
+  },
+  "expected_stdout_empty": true,
+  "expected_file_contains": {
+    "path": "{{PROJECT_PATH}}/CLAUDE.md",
+    "patterns": ["Session Recovery", "truncated to fit recovery section budget", "post-compact-recovery-end"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{PROJECT_PATH}}/CLAUDE.md",
+    "patterns": ["TAIL_SENTINEL_SHOULD_NOT_SURVIVE"]
+  },
+  "expected_recovery_section_max_chars": {
+    "path": "{{PROJECT_PATH}}/CLAUDE.md",
+    "max": 700
+  },
+  "description": "custom compact instructions cannot push recovery section beyond hard cap",
+  "category": "should-write"
+}

@@ -84,7 +84,7 @@ To add a pattern: edit `rules.json`. To temporarily disable: comment out or remo
 ## Coexistence with other hooks
 
 - This hook fires PreToolUse on `Write|Edit|MultiEdit|NotebookEdit`. If it blocks (exit 2), `silent-file-verifier`'s PostToolUse does NOT fire (correct — there's no modification to verify when it was prevented).
-- Both `construction-gate` and `edit-drift-detector` fire on Edit. They run independently with no shared state — `edit-drift-detector` surfaces fuzzy-match guidance for `old_string` drift, `construction-gate` blocks the Edit if the path is protected. Either may exit 2; whichever does prevents the Edit.
+- Both `construction-gate` and `edit-drift-detector` fire on Edit. In the full meta-skills configuration, construction-gate runs first so protected paths block with metadata-only feedback before edit-drift can inspect file content. edit-drift also self-skips protected paths as defense in depth for stale/custom settings.
 - Independent of `completion-verifier` and `context-recovery` (different events).
 
 Behavior documented per Claude Code lifecycle docs; not validated by the harness (which tests each hook in isolation).
@@ -110,4 +110,4 @@ cd validation
 ./harness.sh construction-gate
 ```
 
-19 test cases covering should-block (16), should-pass (2), edge cases (1). Tool coverage spans Write (most cases), Edit (`11-claude-settings`), MultiEdit (`18-claude-settings-local`), and NotebookEdit (`19-claude-hooks-dir`, exercising the `notebook_path` fallback). See `validation/test-cases/construction-gate/`.
+21 test cases covering should-block (18), should-pass (2), edge cases (1). Tool coverage spans Write (most cases), Edit (`11-claude-settings`, `20-env-edit-mismatch`, `21-backslash-protected-path`), MultiEdit (`18-claude-settings-local`), and NotebookEdit (`19-claude-hooks-dir`, exercising the `notebook_path` fallback). See `validation/test-cases/construction-gate/`.

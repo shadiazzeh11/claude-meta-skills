@@ -28,7 +28,8 @@ def log_fire(hook_name, action, project, detail, session_id):
     Detail is metadata only — no file content, no diff snippets, no test output."""
     try:
         log_dir = Path.home() / ".claude"
-        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(log_dir, 0o700)
         entry = {
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "hook": hook_name,
@@ -40,8 +41,10 @@ def log_fire(hook_name, action, project, detail, session_id):
         line = json.dumps(entry, separators=(",", ":")) + "\n"
         # POSIX atomic append for writes < PIPE_BUF (4096 bytes).
         fd = os.open(str(log_dir / "meta-skills-log.jsonl"),
-                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         try:
+            if hasattr(os, "fchmod"):
+                os.fchmod(fd, 0o600)
             os.write(fd, line.encode("utf-8"))
         finally:
             os.close(fd)
@@ -102,11 +105,24 @@ def load_messages():
         return fallback
 
 
+def path_variants(file_path):
+    """Return tool-provided path variants with normalized separators."""
+    variants = []
+    if not file_path:
+        return variants
+    variants.append(file_path)
+    normalized = file_path.replace("\\", "/")
+    if normalized != file_path:
+        variants.append(normalized)
+    return variants
+
+
 def find_matching_pattern(file_path, patterns):
-    """Return the first pattern that matches file_path, or None."""
+    """Return the first pattern that matches file_path variants, or None."""
     for pattern in patterns:
         try:
-            if re.search(pattern, file_path):
+            compiled = re.compile(pattern)
+            if any(compiled.search(path) for path in path_variants(file_path)):
                 return pattern
         except re.error:
             # Invalid regex; skip this pattern silently

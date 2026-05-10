@@ -35,7 +35,7 @@ As of the first complete dogfood baseline:
 
 | Area | Evidence |
 |---|---|
-| Synthetic validation | `make test` and `make test-stop-env` pass 61/61. |
+| Synthetic validation | `make test` and `make test-stop-env` pass 67/67. |
 | Installer idempotency | `make test-installer` passes repeat-install and merge scenarios. |
 | CI | GitHub Actions runs plugin package checks, marketplace catalog checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
@@ -72,7 +72,7 @@ Do not claim:
 
 Safe claims:
 
-- "61/61 synthetic validation tests pass."
+- "67/67 synthetic validation tests pass."
 - "All five hooks have controlled live Claude Code session evidence."
 - "The plugin scaffold has local `--plugin-dir` smoke evidence for four of five hooks; `edit-drift-detector` remains covered by non-plugin controlled dogfood and harness validation."
 - "The marketplace catalog has isolated local CLI add/install/uninstall validation when Claude Code is available."
@@ -110,7 +110,7 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 
 ## Sources checked
 
-Sources checked on 2026-05-09:
+Sources checked on 2026-05-09 and refreshed on 2026-05-10:
 
 - Claude Code hooks reference: https://code.claude.com/docs/en/hooks
 - Claude Code hooks guide: https://code.claude.com/docs/en/hooks-guide
@@ -119,13 +119,17 @@ Sources checked on 2026-05-09:
 - Claude Code plugin marketplace docs: https://code.claude.com/docs/en/plugin-marketplaces
 - Claude Code discover/install plugin docs: https://code.claude.com/docs/en/discover-plugins
 - Claude Code environment variables reference: https://code.claude.com/docs/en/env-vars
+- Claude Code settings reference: https://code.claude.com/docs/en/settings
+- Claude Code memory docs: https://code.claude.com/docs/en/memory
 - Claude Code Auto Mode: https://www.anthropic.com/engineering/claude-code-auto-mode
 - Official Superpowers plugin listing: https://claude.com/plugins/superpowers
 - Superpowers skills repository: https://github.com/obra/superpowers-skills
 - claude-warden command-safety hook: https://github.com/banyudu/claude-warden
 - claude-code-sidecar command policy hook: https://github.com/snagnever/claude-code-sidecar
+- GouvernAI runtime guardrails: https://github.com/Myr-Aya/GouvernAI-claude-code-plugin
 - Community hook collection: https://github.com/karanb192/claude-code-hooks
 - Multi-agent observability example: https://github.com/disler/claude-code-hooks-multi-agent-observability
 - Claude Code Stack directory: https://www.claudecodestack.com/
+- ClaudePluginHub directory: https://www.claudepluginhub.com/marketplaces
 
 These sources informed the scope boundaries above: hooks lifecycle support is official; plugin/marketplace packaging is a distinct distribution step; broad workflow, command-safety, memory, and observability systems solve adjacent problems that this repo should not overclaim.

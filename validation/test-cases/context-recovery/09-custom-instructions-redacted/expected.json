@@ -1,0 +1,22 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_empty": true,
+  "expected_file_contains": {
+    "path": "{{PROJECT_PATH}}/CLAUDE.md",
+    "patterns": ["Session Recovery", "DOGFOOD_SAFE_SENTINEL", "api_key=[REDACTED]", "password=[REDACTED]"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{PROJECT_PATH}}/CLAUDE.md",
+    "patterns": ["sk-live-SUPERSECRET1234567890", "hunter2"]
+  },
+  "expected_recovery_section_max_chars": {
+    "path": "{{PROJECT_PATH}}/CLAUDE.md",
+    "max": 2000
+  },
+  "expected_file_mode": {
+    "path": "{{HOME}}/.claude/meta-skills-log.jsonl",
+    "mode": "600"
+  },
+  "description": "custom compact instructions are preserved as a bounded redacted excerpt",
+  "category": "should-write"
+}

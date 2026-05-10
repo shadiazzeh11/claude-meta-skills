@@ -1,0 +1,8 @@
+{
+  "expected_exit_code": 0,
+  "expected_stderr_empty": true,
+  "expected_stderr_not_contains": ["SUPER_SECRET_ENV_VALUE_SHOULD_NOT_LEAK", "DATABASE_URL"],
+  "expected_log_not_contains": ["SUPER_SECRET_ENV_VALUE_SHOULD_NOT_LEAK", "DATABASE_URL"],
+  "description": "protected .env path is skipped by edit-drift-detector so construction-gate owns metadata-only blocking",
+  "category": "should-pass"
+}

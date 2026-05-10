@@ -1,0 +1,12 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", ".env"],
+  "expected_stderr_not_contains": ["SUPER_SECRET_ENV_VALUE_SHOULD_NOT_LEAK"],
+  "expected_log_not_contains": ["SUPER_SECRET_ENV_VALUE_SHOULD_NOT_LEAK"],
+  "expected_file_mode": {
+    "path": "{{HOME}}/.claude/meta-skills-log.jsonl",
+    "mode": "600"
+  },
+  "description": "Edit to .env path is blocked without echoing old_string/new_string secret values",
+  "category": "should-block"
+}

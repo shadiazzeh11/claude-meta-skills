@@ -1,0 +1,8 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", ".claude/settings\\.local\\.json"],
+  "expected_stderr_not_contains": ["secret-token-value", "changed-token-value"],
+  "expected_log_not_contains": ["secret-token-value", "changed-token-value"],
+  "description": "Windows-style backslash path normalizes before protected-pattern matching and blocks without echoing content",
+  "category": "should-block"
+}

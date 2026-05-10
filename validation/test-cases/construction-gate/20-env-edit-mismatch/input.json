@@ -1,0 +1,11 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Edit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp",
+  "tool_input": {
+    "file_path": "/tmp/project/.env.local",
+    "old_string": "API_TOKEN=SUPER_SECRET_ENV_VALUE_SHOULD_NOT_LEAK",
+    "new_string": "API_TOKEN=changed"
+  }
+}
