@@ -118,17 +118,11 @@ What the log can't tell you:
 - **Did Claude actually self-correct after the hook fired?** The log records the fire but not the next-turn outcome. That's qualitative — you have to remember whether the block-fuzzy on `auth.py` led to a clean retry or whether Claude got confused. Keep notes during the week if you want this signal.
 - **False positive rate in real use.** A `block-fuzzy` that suggested wrong content, or a `warn-missing` for a file that was about to materialize, are FPs but not visible in the log alone. Cross-reference with your memory of the session.
 
-## Avoiding harness pollution
+## Harness log isolation
 
-Running `make test` or `./validation/harness.sh` directly appends entries with `session_id="test-session"` to the active log. `analyze-log.py --real-only` filters those out, but if you'd rather keep the active log dogfood-only, run validation under a temp `HOME`:
+`make test` and `./validation/harness.sh` run each hook with `HOME` pointed at a per-run temp directory. Hook fires from validation still use `session_id="test-session"` and still appear in the harness's captured stdout/stderr/results, but their auto-log writes go to the temp home and are removed when the harness exits. The active dogfood log at `~/.claude/meta-skills-log.jsonl` stays dogfood-only during normal validation runs.
 
-```bash
-TEST_HOME="$(mktemp -d /tmp/claude-meta-test-home.XXXXXX)" && \
-  HOME="$TEST_HOME" make test; rc=$?; \
-  rm -rf "$TEST_HOME"; exit $rc
-```
-
-The hooks resolve their log path via `Path.home()`, so redirecting `HOME` redirects the log writes. The temp directory is removed at the end of the run, leaving the real `~/.claude/meta-skills-log.jsonl` untouched.
+`analyze-log.py --real-only` still filters historical harness entries from older runs and remains the canonical dogfood evidence view.
 
 ## Log file management
 

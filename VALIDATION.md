@@ -8,12 +8,14 @@ For each test case under `validation/test-cases/<hook-name>/<case-name>/`:
 
 1. Optionally runs `setup.sh` to prepare the test environment (with `TEST_DIR` env var pointing at the case directory).
 2. Substitutes placeholders in `input.json` (paths to fixtures, project dirs, the test directory itself).
-3. Pipes the resulting JSON to the hook's `hook.py` via stdin.
+3. Pipes the resulting JSON to the hook's `hook.py` via stdin, with `HOME` set to a per-run temp directory so hook auto-logs do not write to the active dogfood log.
 4. Captures exit code, stdout, stderr, and wall-clock duration.
 5. Asserts against the fields in `expected.json`.
 6. Optionally runs `cleanup.sh`.
 
 Produces a console summary plus a per-run JSON file in `validation/results/`.
+
+The per-run temp `HOME` is removed when the harness exits. Test cases can still override `HOME` explicitly through `expected.json` `env` when a fixture needs to exercise home-directory behavior.
 
 ## Directory layout
 
