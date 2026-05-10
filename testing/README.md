@@ -13,7 +13,7 @@ One JSON line per fire. Schema:
   "action": "block-fuzzy",
   "project": "/Users/shadi/code/flashquest",
   "detail": "file=src/auth.py lines=42-45 similarity=0.91",
-  "session_id": "abc123"
+  "session_id": "abcdef12-1234-1234-1234-1234567890ab"
 }
 ```
 
@@ -62,6 +62,7 @@ This is enforced by inspection — each hook builds its own `detail` from a limi
 ./testing/analyze-log.py                  # summary, last 7 days
 ./testing/analyze-log.py --real-only      # dogfood-only view; canonical for dogfood evidence
 ./testing/analyze-log.py --days 30        # last N days
+./testing/analyze-log.py --log /tmp/log.jsonl
 ./testing/analyze-log.py --redact         # rewrite /Users/<you>/ → ~/ for safer sharing
 ./testing/analyze-log.py --help
 ```
@@ -78,6 +79,20 @@ Hook fire summary (last 7 days):
   silent-file-verifier: 3 fires (2 warn-missing, 1 warn-empty)
 
 Total: 28 fires across 5 hooks
+
+Classification totals (all matching log entries, before --real-only display filter):
+  real dogfood: 28 fires
+  manual/synthetic: 0 fires
+  harness/validation: 0 fires
+  unknown: 0 fires
+  Real Claude Code sessions: 4
+
+Real dogfood hook coverage:
+  Observed real hooks: edit-drift-detector (6), construction-gate (4), silent-file-verifier (3), completion-verifier (7), context-recovery (8)
+  Missing real-session evidence: (none)
+
+Real dogfood sessions:
+  abcdef12… — 9 fires, 4 hooks (completion-verifier, construction-gate, context-recovery, edit-drift-detector), project=/Users/shadi/code/flashquest, time=2026-05-08T22:30:42Z..2026-05-08T23:15:10Z
 
 Top triggered files:
   src/auth.py — 4 fires (edit-drift-detector)
@@ -99,6 +114,8 @@ Projects:
 
 Use `--real-only` when reporting dogfood evidence. Default output intentionally includes all buckets and prints classification totals so you can spot harness or manual noise at a glance. The raw JSONL is still useful when you need to inspect a specific session or correlate timestamps across mixed runs.
 
+The analyzer also prints a real dogfood hook coverage section. This is the fastest way to see which hooks have been proven in live Claude Code sessions and which still only have synthetic or harness evidence. If historical harness entries dominate the active log, the default view prints a noise note and points you back to `--real-only`.
+
 Raw JSONL is at `~/.claude/meta-skills-log.jsonl` if you want to grep, jq, or feed into a different analyzer.
 
 ## What to look for after a week of usage
@@ -106,6 +123,8 @@ Raw JSONL is at `~/.claude/meta-skills-log.jsonl` if you want to grep, jq, or fe
 Three signal categories, in order of priority:
 
 1. **Hooks that never fire.** A hook with zero fires across a week of real coding is either (a) catching a problem that doesn't actually happen for you, or (b) silently broken. Check the hook's known-limitations to decide. If a hook is genuinely not earning its keep for your workflow, disable it in `.claude/settings.json`.
+
+   Start with the analyzer's `Missing real-session evidence` line from `--real-only`. Missing does not automatically mean broken — for example, `silent-file-verifier` only logs anomaly paths — but it tells you which hooks still need dogfood coverage or a deliberate decision.
 
 2. **High-fire-rate files.** A file showing up in the top-files list with many fires from the same hook is a friction signal. Examples:
    - Same file fires `edit-drift-detector` 5+ times in a week → either you're memorizing it wrong systematically, or the hook's similarity threshold is too tight for that file's structure (consider why; don't just disable).

@@ -28,6 +28,9 @@ proof or harness/validation noise:
 
 macOS /private/tmp paths are normalized to /tmp before grouping so the same
 disposable project does not appear under two project keys.
+
+The summary includes real dogfood hook coverage and live-session grouping so it
+answers both "what fired?" and "which hooks still lack real-session evidence?"
 """
 import json
 import os
@@ -50,6 +53,13 @@ CLASS_HARNESS = "harness/validation"
 CLASS_UNKNOWN = "unknown"
 
 CLASS_ORDER = [CLASS_REAL, CLASS_MANUAL, CLASS_HARNESS, CLASS_UNKNOWN]
+EXPECTED_HOOKS = [
+    "edit-drift-detector",
+    "construction-gate",
+    "silent-file-verifier",
+    "completion-verifier",
+    "context-recovery",
+]
 
 
 def parse_args():
@@ -96,9 +106,23 @@ def parse_args():
 
 
 def redact_path(p, home):
-    if p and p.startswith(home):
+    if p and (p == home or p.startswith(home + os.sep)):
         return "~" + p[len(home):]
     return p
+
+
+def parse_timestamp(ts):
+    """Parse an ISO-8601 timestamp into UTC. Returns None when malformed."""
+    if not isinstance(ts, str) or not ts:
+        return None
+    try:
+        normalized = ts[:-1] + "+00:00" if ts.endswith("Z") else ts
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def canonicalize_path(p):
@@ -121,11 +145,20 @@ def canonicalize_file(p):
     return canonicalize_path(p)
 
 
-def extract_file_from_detail(detail):
-    """Pull file=... from detail field. Returns None if not present."""
-    for part in detail.split():
-        if part.startswith("file="):
-            return part[len("file="):]
+def extract_path_from_detail(detail):
+    """Pull file=... or path=... from detail. Values may contain spaces."""
+    if not detail:
+        return None
+    for key in ("file", "path"):
+        match = re.search(rf"(?<!\S){re.escape(key)}=", detail)
+        if not match:
+            continue
+        start = match.end()
+        next_key = re.search(r"\s+[A-Za-z_][A-Za-z0-9_-]*=", detail[start:])
+        end = start + next_key.start() if next_key else len(detail)
+        value = detail[start:end].strip()
+        if value:
+            return value
     return None
 
 
@@ -160,15 +193,16 @@ def main():
 
     home = str(Path.home())
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     by_hook_action = defaultdict(lambda: defaultdict(int))
     by_project = defaultdict(int)
     by_file = defaultdict(lambda: defaultdict(int))
     by_classification = defaultdict(int)
-    real_sessions = set()
+    real_session_stats = {}
+    real_hook_counts = defaultdict(int)
     total = 0
     parse_errors = 0
+    timestamp_errors = 0
 
     with open(log_path, "r", errors="replace") as f:
         for line in f:
@@ -180,22 +214,44 @@ def main():
             except json.JSONDecodeError:
                 parse_errors += 1
                 continue
-            ts = entry.get("timestamp", "")
-            if ts < cutoff_str:
+            ts_dt = parse_timestamp(entry.get("timestamp", ""))
+            if ts_dt is None:
+                timestamp_errors += 1
                 continue
+            if ts_dt < cutoff:
+                continue
+            ts = ts_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
             hook = entry.get("hook", "unknown")
             action = entry.get("action", "unknown")
             project = canonicalize_path(entry.get("project") or "")
             detail = entry.get("detail", "")
-            file_path = canonicalize_file(extract_file_from_detail(detail))
+            file_path = canonicalize_file(extract_path_from_detail(detail))
 
             classification = classify(entry.get("session_id"), project, file_path)
             by_classification[classification] += 1
             if classification == CLASS_REAL:
                 sid = (entry.get("session_id") or "").strip()
                 if sid:
-                    real_sessions.add(sid)
+                    stats = real_session_stats.setdefault(
+                        sid,
+                        {
+                            "count": 0,
+                            "hooks": defaultdict(int),
+                            "projects": defaultdict(int),
+                            "first_ts": ts,
+                            "last_ts": ts,
+                        },
+                    )
+                    stats["count"] += 1
+                    stats["hooks"][hook] += 1
+                    if project:
+                        stats["projects"][project] += 1
+                    if ts < stats["first_ts"]:
+                        stats["first_ts"] = ts
+                    if ts > stats["last_ts"]:
+                        stats["last_ts"] = ts
+                    real_hook_counts[hook] += 1
 
             if real_only and classification != CLASS_REAL:
                 continue
@@ -226,12 +282,65 @@ def main():
     print(f"Total: {total} fires across {len(by_hook_action)} hooks")
     if parse_errors:
         print(f"  (skipped {parse_errors} unparseable lines)")
+    if timestamp_errors:
+        print(f"  (skipped {timestamp_errors} lines with invalid timestamps)")
     print()
 
     print("Classification totals (all matching log entries, before --real-only display filter):")
     for label in CLASS_ORDER:
         print(f"  {label}: {by_classification.get(label, 0)} fires")
-    print(f"  Real Claude Code sessions: {len(real_sessions)}")
+    classification_total = sum(by_classification.values())
+    real_count = by_classification.get(CLASS_REAL, 0)
+    non_real_count = classification_total - real_count
+    print(f"  Real Claude Code sessions: {len(real_session_stats)}")
+    if non_real_count and not real_only:
+        print(
+            f"  Noise note: {non_real_count} / {classification_total} fires are non-real. "
+            "Use --real-only for dogfood evidence."
+        )
+    elif non_real_count and real_only:
+        print(f"  Display filter removed {non_real_count} non-real fires.")
+    print()
+
+    print("Real dogfood hook coverage:")
+    observed_hooks = [h for h in EXPECTED_HOOKS if real_hook_counts.get(h, 0)]
+    unexpected_hooks = sorted(set(real_hook_counts) - set(EXPECTED_HOOKS))
+    observed_labels = [f"{h} ({real_hook_counts[h]})" for h in observed_hooks]
+    observed_labels.extend(f"{h} ({real_hook_counts[h]}, unexpected)" for h in unexpected_hooks)
+    if observed_labels:
+        print(f"  Observed real hooks: {', '.join(observed_labels)}")
+    else:
+        print("  Observed real hooks: (none)")
+    missing_hooks = [h for h in EXPECTED_HOOKS if not real_hook_counts.get(h, 0)]
+    if missing_hooks:
+        print(f"  Missing real-session evidence: {', '.join(missing_hooks)}")
+    else:
+        print("  Missing real-session evidence: (none)")
+    print()
+
+    if real_session_stats:
+        print("Real dogfood sessions:")
+        sorted_sessions = sorted(
+            real_session_stats.items(),
+            key=lambda x: (-x[1]["count"], x[1]["first_ts"], x[0]),
+        )[:10]
+        for sid, stats in sorted_sessions:
+            hooks = ", ".join(sorted(stats["hooks"].keys()))
+            project = ""
+            if stats["projects"]:
+                project = max(stats["projects"].items(), key=lambda x: (x[1], x[0]))[0]
+            display_project = redact_path(project, home) if redact else project
+            project_text = f", project={display_project}" if display_project else ""
+            if stats["first_ts"] == stats["last_ts"]:
+                time_text = f", time={stats['first_ts']}"
+            else:
+                time_text = f", time={stats['first_ts']}..{stats['last_ts']}"
+            hook_word = "hook" if len(stats["hooks"]) == 1 else "hooks"
+            fire_word = "fire" if stats["count"] == 1 else "fires"
+            print(
+                f"  {sid[:8]}… — {stats['count']} {fire_word}, "
+                f"{len(stats['hooks'])} {hook_word} ({hooks}){project_text}{time_text}"
+            )
     print()
 
     if by_file:
