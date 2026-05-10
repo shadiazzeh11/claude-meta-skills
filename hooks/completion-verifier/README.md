@@ -71,6 +71,7 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 
 ## Known limitations
 
+- **Plugin-path live proof covers Makefile-based Stop blocking.** A local `claude --plugin-dir .` smoke session intentionally broke a disposable project's `Makefile test` path and observed this hook block Stop with the failing unittest output.
 - **Issue #3573, #10205**: Stop hook infinite loops if `stop_hook_active` not checked. We check first thing; verified in test 07.
 
 - **Issue #15813, #8564, #3019, #3046**: `transcript_path` can be stale, point to wrong file, or be missing. When transcript is unreadable, we default to running tests (false-positive risk). Documented and tested.

@@ -91,6 +91,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 ## Known limitations
 
+- **Plugin-path live proof covers Write/Edit/NotebookEdit, not MultiEdit.** A local `claude --plugin-dir .` smoke session proved this hook blocks protected `Write`, `Edit`, and `NotebookEdit` operations from the plugin scaffold. `MultiEdit` was not registered in that Claude Code session, so plugin-path `MultiEdit` remains covered by synthetic validation rather than live plugin dogfood.
 - **GitHub issue #13744:** PreToolUse exit 2 has been reported as unreliable for blocking Write/Edit in some Claude Code versions. Same caveat as `edit-drift-detector`. If observed, switch to JSON-based blocking.
 - **Path matching is regex, not git-aware.** A pattern like `\.git/` blocks all `.git` paths, including in nested git submodules and bare repos. Generally desirable.
 - **No allowlist override.** If a user wants to write to a protected path intentionally (e.g., updating a lock file as part of a controlled refactor), they must temporarily disable the hook or modify `rules.json`. No "this one time only" mechanism.

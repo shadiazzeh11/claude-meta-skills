@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **technical preview, local install recommended**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold. It is not yet listed in a marketplace, and the plugin install path still needs dedicated smoke testing before it replaces `install.sh` as the recommended path.
+Current status: **technical preview, local install recommended**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It is not yet listed in a marketplace, and marketplace installation still needs dedicated smoke testing before the plugin path replaces `install.sh` as the recommended path.
 
 ## Current distribution model
 
@@ -24,7 +24,7 @@ The repository now also includes an experimental plugin scaffold:
 - `hooks/hooks.json` declares the same five hook entries using `${CLAUDE_PLUGIN_ROOT}` paths.
 - `skills/verification-before-recommend/` is discovered as a bundled plugin skill when the repo is loaded as a plugin.
 
-This scaffold is intended for validation and smoke testing. The `install.sh` path remains the recommended user install path until plugin install tests are documented and passing.
+This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. The `install.sh` path remains the recommended user install path until marketplace install tests are documented and passing.
 
 Expected validation caveat: `claude plugin validate .` warns that the repo-root `CLAUDE.md` is not loaded as plugin context. That is acceptable for this scaffold; plugin-shipped context should live in `skills/`, and this repo already has `skills/verification-before-recommend/`.
 
@@ -38,6 +38,7 @@ As of the first complete dogfood baseline:
 | Installer idempotency | `make test-installer` passes repeat-install and merge scenarios. |
 | CI | GitHub Actions runs plugin package checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
+| Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
 
@@ -71,6 +72,7 @@ Safe claims:
 
 - "61/61 synthetic validation tests pass."
 - "All five hooks have controlled live Claude Code session evidence."
+- "The plugin scaffold has local `--plugin-dir` smoke evidence for four of five hooks; `edit-drift-detector` remains covered by non-plugin controlled dogfood and harness validation."
 - "CI runs validation on pull requests and pushes to main."
 - "Install is idempotent and project-local."
 - "Logs are local metadata only and can be redacted/exported."
@@ -83,7 +85,7 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 - Bump `.claude-plugin/plugin.json` `version` for every public plugin release.
 - Keep hook declarations in plugin format (`hooks/hooks.json`) and ensure bundled hook commands use `${CLAUDE_PLUGIN_ROOT}`.
 - Validate the plugin package with `make test-plugin` and `claude plugin validate .`.
-- Test local plugin loading with `claude --plugin-dir .` in a disposable project.
+- Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
 - Test marketplace installation locally with `/plugin marketplace add` and `/plugin install` once a marketplace manifest exists.
 - Add an uninstall or disable guide for removing meta-skills hook entries from `.claude/settings.json`.
 - Add a release tag and changelog entry for the first public release.

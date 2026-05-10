@@ -66,6 +66,10 @@ Requires Python 3.7+, git, and a writable CLAUDE.md (or a writable project direc
 - **Read-only file → exit silently.** PermissionError on read or write returns exit 0 without crashing. Better than blowing up before compaction.
 - **Exit 0 always.** PreCompact exit 2 has no blocking effect per Claude Code docs. We never try to block compaction.
 
+## Real-session coverage
+
+A controlled local `claude --plugin-dir .` smoke session proved this hook fires from plugin configuration during manual `/compact`: it wrote a Session Recovery block to `CLAUDE.md` containing branch, recent commit, modified files, and the manual compaction sentinel. Treat this as plugin-path lifecycle evidence, not as proof that every future compaction mode or project layout is covered.
+
 ## Configuring rules.json
 
 `rules.json` next to the hook script holds project-specific reminders that get included in every recovery section:

@@ -25,7 +25,7 @@ Do not install it expecting:
 - A project-management workflow, TDD methodology, or subagent orchestration system.
 - Persistent cross-project memory.
 - A hosted dashboard or external telemetry.
-- One-click Claude plugin marketplace installation. This repo now includes a Claude Code plugin scaffold for validation, but marketplace listing and plugin-install smoke testing are still future work. See [PUBLISHING.md](PUBLISHING.md) for readiness notes.
+- One-click Claude plugin marketplace installation. This repo now includes a Claude Code plugin scaffold with local smoke evidence, but marketplace listing and marketplace-install smoke testing are still future work. See [PUBLISHING.md](PUBLISHING.md) for readiness notes.
 
 ## Install
 
@@ -114,6 +114,8 @@ Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON lin
 
 Current dogfood evidence should be read from `./testing/analyze-log.py --real-only`, because the raw log can also contain manual proof and historical harness/validation entries. The current dogfood baseline has real-session log evidence for all five hooks: `edit-drift-detector`, `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery`. Treat this as lifecycle evidence that each hook has fired in live Claude Code sessions, not as proof of production false-positive rate or exhaustive real-world coverage. See [testing/DOGFOOD-BASELINE.md](testing/DOGFOOD-BASELINE.md) and each hook README for caveats.
 
+The plugin scaffold also has controlled local `claude --plugin-dir .` smoke evidence for `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery`. `edit-drift-detector` still has non-plugin controlled live evidence plus synthetic validation, but not a separate plugin-path proof.
+
 The `detail` field carries metadata only — paths, pattern names, line ranges, exit codes, similarity ratios. No file content, no diff snippets, no test output. See [testing/README.md](testing/README.md) for the full action enum, privacy boundaries, and what to look for after a week of dogfood usage.
 
 ## Configuration
@@ -153,7 +155,7 @@ For the current marketplace-readiness status, positioning, and pre-publish check
 - **Subdirectory project detection in `completion-verifier`** only checks the immediate `cwd` for project config files (`package.json`, `Cargo.toml`, etc.) — doesn't walk up parent directories the way `npm` and `cargo` do. Workaround: ensure `cwd` is project root, or define a top-level `Makefile test:` target.
 - **Race condition window in `context-recovery`** when a user edits CLAUDE.md in another editor while the hook fires. Mitigated by atomic write (`tempfile.mkstemp` + `os.replace`); not eliminated.
 - **CI is limited to GitHub Actions validation on Ubuntu;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, analyzer regression, installer idempotency, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no multi-OS or multi-Python matrix.
-- **No marketplace distribution.** Install via `git clone` + `install.sh`. A plugin scaffold exists for validation, but marketplace listing and plugin-install smoke tests are future enhancements.
+- **No marketplace distribution.** Install via `git clone` + `install.sh`. A plugin scaffold exists and has local `--plugin-dir` smoke evidence, but marketplace listing and marketplace-install smoke tests are future enhancements.
 
 ## License
 

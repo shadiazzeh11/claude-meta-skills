@@ -47,7 +47,7 @@ Add to `.claude/settings.json`:
 
 A controlled dogfood run on disposable projects observed normal successful Writes succeed silently — no warning, no log entry. That is consistent with the allow path running on real payloads, but PostToolUse's allow path is silent by design (no stdout, no log line), so positive evidence of the hook firing on the success path is absent rather than affirmative. The empty-content Write case (`tool_input.content == ""` producing a 0-byte file) also correctly stays silent because empty content matching an empty file is expected.
 
-The warning paths (`warn-missing` and `warn-empty`) are now both represented in real-session dogfood logs. The proof used a disposable project with a local fault watcher: one reported-success Write target was deleted before PostToolUse verification, and another non-empty Write target was truncated to 0 bytes. Treat this as controlled real-session evidence that the warning branches are reachable and visible to Claude, not as evidence that organic ghost writes are frequent.
+The warning paths (`warn-missing` and `warn-empty`) are now both represented in real-session dogfood logs, including a local `claude --plugin-dir .` smoke session. The proof used disposable projects with a local fault watcher: one reported-success Write target was deleted before PostToolUse verification, and another non-empty Write target was truncated to 0 bytes. Treat this as controlled real-session evidence that the warning branches are reachable and visible to Claude, not as evidence that organic ghost writes are frequent.
 
 See [testing/DOGFOOD-BASELINE.md](../../testing/DOGFOOD-BASELINE.md) for the current aggregate dogfood baseline.
 
