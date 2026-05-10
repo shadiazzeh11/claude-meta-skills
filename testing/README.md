@@ -64,6 +64,8 @@ This is enforced by inspection — each hook builds its own `detail` from a limi
 ./testing/analyze-log.py --days 30        # last N days
 ./testing/analyze-log.py --log /tmp/log.jsonl
 ./testing/analyze-log.py --redact         # rewrite /Users/<you>/ → ~/ for safer sharing
+./testing/analyze-log.py --format markdown --output dogfood-report.md
+./testing/analyze-log.py --format json --output dogfood-report.json
 ./testing/analyze-log.py --help
 ```
 
@@ -119,6 +121,25 @@ The analyzer also prints a real dogfood hook coverage section. This is the faste
 Raw JSONL is at `~/.claude/meta-skills-log.jsonl` if you want to grep, jq, or feed into a different analyzer.
 
 The current complete dogfood evidence snapshot is documented in [DOGFOOD-BASELINE.md](DOGFOOD-BASELINE.md). Keep that file narrow: it records live-session evidence and caveats, while this README documents the analyzer and log format.
+
+## Report export
+
+`analyze-log.py` can render the same summary in three formats:
+
+| Format | Use |
+|---|---|
+| `text` | Default terminal output; stable for quick local inspection. |
+| `markdown` | Shareable dogfood reports for PRs, reviews, and weekly summaries. |
+| `json` | Structured output for downstream scripts, dashboards, or archived measurements. |
+
+Examples:
+
+```bash
+./testing/analyze-log.py --real-only --redact --format markdown --output dogfood-report.md
+./testing/analyze-log.py --real-only --redact --format json --output dogfood-report.json
+```
+
+`--output` writes only the selected report file and does not print the report to stdout. When `--redact` is enabled, emitted path and project fields are redacted in text, markdown, and JSON. The JSON report includes displayed hook totals, all-bucket classification totals, real-session coverage, top files, top projects, parse errors, and timestamp errors.
 
 ## What to look for after a week of usage
 

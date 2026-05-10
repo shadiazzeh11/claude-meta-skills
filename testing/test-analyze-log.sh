@@ -111,4 +111,98 @@ fi
 assert_contains "redact-home-project" "project=~/" "$REDACT_OUT"
 assert_not_contains "redact-no-home-project" "project=$HOME/" "$REDACT_OUT"
 
+echo "Test: --format text matches default shape"
+TEXT_OUT="$(python3 "$ANALYZER" --log "$TEMP_LOG" --format text)"
+assert_contains "text-total" "Total: 6 fires across 5 hooks" "$TEXT_OUT"
+assert_contains "text-coverage-missing" "Missing real-session evidence: edit-drift-detector, silent-file-verifier, context-recovery" "$TEXT_OUT"
+
+echo "Test: --format json"
+JSON_OUT="$(python3 "$ANALYZER" --log "$TEMP_LOG" --format json)"
+JSON_PAYLOAD="$JSON_OUT" python3 - <<'PY'
+import json
+import os
+import sys
+
+data = json.loads(os.environ["JSON_PAYLOAD"])
+assert data["filter"] == "all"
+assert data["total_fires"] == 6
+assert data["hook_count"] == 5
+assert data["classification_totals"]["real dogfood"] == 2
+assert data["classification_totals"]["manual/synthetic"] == 1
+assert data["classification_totals"]["harness/validation"] == 2
+assert data["classification_totals"]["unknown"] == 1
+assert data["timestamp_errors"] == 1
+assert data["real_session_count"] == 1
+assert data["missing_real_hooks"] == [
+    "edit-drift-detector",
+    "silent-file-verifier",
+    "context-recovery",
+]
+assert data["observed_real_hooks"] == [
+    {"hook": "construction-gate", "count": 1},
+    {"hook": "completion-verifier", "count": 1},
+]
+assert data["top_projects"][0]["path"]
+PY
+
+echo "Test: --format json with --real-only"
+REAL_JSON_OUT="$(python3 "$ANALYZER" --log "$TEMP_LOG" --real-only --format json)"
+JSON_PAYLOAD="$REAL_JSON_OUT" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["JSON_PAYLOAD"])
+assert data["filter"] == "real dogfood only"
+assert data["total_fires"] == 2
+assert data["classification_total"] == 6
+assert data["non_real_count"] == 4
+assert data["classification_totals"]["unknown"] == 1
+PY
+
+echo "Test: --format markdown"
+MARKDOWN_OUT="$(python3 "$ANALYZER" --log "$TEMP_LOG" --format markdown)"
+assert_contains "markdown-title" "# Meta-skills Hook Fire Report" "$MARKDOWN_OUT"
+assert_contains "markdown-hook-summary" "## Hook Summary" "$MARKDOWN_OUT"
+assert_contains "markdown-classification" "## Classification" "$MARKDOWN_OUT"
+assert_contains "markdown-coverage" "## Real Dogfood Coverage" "$MARKDOWN_OUT"
+assert_contains "markdown-caveats" "## Caveats" "$MARKDOWN_OUT"
+
+echo "Test: --output writes report file without stdout"
+OUT_FILE="$WORKDIR/report.json"
+STDOUT="$(python3 "$ANALYZER" --log "$TEMP_LOG" --format json --output "$OUT_FILE")"
+if [[ -n "$STDOUT" ]]; then
+    echo "FAIL [output-stdout]: expected empty stdout, got: $STDOUT" >&2
+    exit 1
+fi
+python3 - <<'PY' "$OUT_FILE"
+import json
+import sys
+
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+assert data["total_fires"] == 6
+PY
+
+echo "Test: redacted JSON"
+REDACT_JSON_OUT="$(python3 "$ANALYZER" --log "$TEMP_LOG" --format json --redact)"
+assert_contains "redact-json-home" "~/" "$REDACT_JSON_OUT"
+assert_not_contains "redact-json-no-home" "$HOME/" "$REDACT_JSON_OUT"
+
+echo "Test: argument errors"
+if python3 "$ANALYZER" --format xml >/dev/null 2>"$WORKDIR/format.err"; then
+    echo "FAIL [format-error]: expected --format xml to fail" >&2
+    exit 1
+fi
+assert_contains "format-error-message" "Error: --format expects text, json, or markdown" "$(cat "$WORKDIR/format.err")"
+if python3 "$ANALYZER" --format >/dev/null 2>"$WORKDIR/format-missing.err"; then
+    echo "FAIL [format-missing]: expected --format without value to fail" >&2
+    exit 1
+fi
+assert_contains "format-missing-message" "Error: --format requires one of" "$(cat "$WORKDIR/format-missing.err")"
+if python3 "$ANALYZER" --output >/dev/null 2>"$WORKDIR/output-missing.err"; then
+    echo "FAIL [output-missing]: expected --output without value to fail" >&2
+    exit 1
+fi
+assert_contains "output-missing-message" "Error: --output requires a path" "$(cat "$WORKDIR/output-missing.err")"
+
 echo "All analyzer tests passed"
