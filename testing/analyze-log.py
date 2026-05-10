@@ -7,6 +7,8 @@ Usage:
   ./analyze-log.py --days 14         # last N days
   ./analyze-log.py --real-only       # restrict summaries to real dogfood entries
   ./analyze-log.py --log <path>      # read a different JSONL log (default: ~/.claude/meta-skills-log.jsonl)
+  ./analyze-log.py --format markdown # output format: text, json, or markdown
+  ./analyze-log.py --output report.md # write the selected format to a file
   ./analyze-log.py --redact          # redact home prefix to ~ for safer sharing
   ./analyze-log.py --help
 
@@ -67,6 +69,8 @@ def parse_args():
     redact = False
     real_only = False
     log_path = None
+    output_format = "text"
+    output_path = None
     args = sys.argv[1:]
     i = 0
     while i < len(args):
@@ -93,6 +97,24 @@ def parse_args():
                 sys.exit(1)
             log_path = Path(args[i + 1])
             i += 2
+        elif a == "--format":
+            if i + 1 >= len(args):
+                print("Error: --format requires one of: text, json, markdown", file=sys.stderr)
+                sys.exit(1)
+            output_format = args[i + 1]
+            if output_format not in ("text", "json", "markdown"):
+                print(
+                    f"Error: --format expects text, json, or markdown; got '{output_format}'",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            i += 2
+        elif a == "--output":
+            if i + 1 >= len(args):
+                print("Error: --output requires a path", file=sys.stderr)
+                sys.exit(1)
+            output_path = Path(args[i + 1])
+            i += 2
         elif a in ("-h", "--help"):
             print(__doc__)
             sys.exit(0)
@@ -102,7 +124,7 @@ def parse_args():
             sys.exit(1)
     if log_path is None:
         log_path = DEFAULT_LOG_PATH
-    return days, redact, real_only, log_path
+    return days, redact, real_only, log_path, output_format, output_path
 
 
 def redact_path(p, home):
@@ -183,15 +205,403 @@ def classify(session_id, project, file_path):
     return CLASS_REAL
 
 
+def sorted_action_breakdown(actions):
+    return [
+        {"action": action, "count": count}
+        for action, count in sorted(actions.items(), key=lambda x: -x[1])
+    ]
+
+
+def summarize_report(
+    *,
+    days,
+    redact,
+    real_only,
+    log_path,
+    by_hook_action,
+    by_project,
+    by_file,
+    by_classification,
+    real_session_stats,
+    real_hook_counts,
+    total,
+    parse_errors,
+    timestamp_errors,
+):
+    home = str(Path.home())
+
+    hooks = []
+    for hook in sorted(by_hook_action.keys()):
+        actions = by_hook_action[hook]
+        hooks.append(
+            {
+                "hook": hook,
+                "count": sum(actions.values()),
+                "actions": sorted_action_breakdown(actions),
+            }
+        )
+
+    classifications = {label: by_classification.get(label, 0) for label in CLASS_ORDER}
+    classification_total = sum(classifications.values())
+    real_count = classifications.get(CLASS_REAL, 0)
+    non_real_count = classification_total - real_count
+
+    observed_hooks = [h for h in EXPECTED_HOOKS if real_hook_counts.get(h, 0)]
+    unexpected_hooks = sorted(set(real_hook_counts) - set(EXPECTED_HOOKS))
+    missing_hooks = [h for h in EXPECTED_HOOKS if not real_hook_counts.get(h, 0)]
+
+    sessions = []
+    sorted_sessions = sorted(
+        real_session_stats.items(),
+        key=lambda x: (-x[1]["count"], x[1]["first_ts"], x[0]),
+    )[:10]
+    for sid, stats in sorted_sessions:
+        project = ""
+        if stats["projects"]:
+            project = max(stats["projects"].items(), key=lambda x: (x[1], x[0]))[0]
+        sessions.append(
+            {
+                "session_id": sid,
+                "session_id_short": sid[:8] + "…",
+                "count": stats["count"],
+                "hooks": sorted(stats["hooks"].keys()),
+                "hook_counts": dict(sorted(stats["hooks"].items())),
+                "project": redact_path(project, home) if redact else project,
+                "first_ts": stats["first_ts"],
+                "last_ts": stats["last_ts"],
+            }
+        )
+
+    files = []
+    for file_path, hook_counts in sorted(
+        by_file.items(), key=lambda x: -sum(x[1].values())
+    )[:10]:
+        files.append(
+            {
+                "path": redact_path(file_path, home) if redact else file_path,
+                "count": sum(hook_counts.values()),
+                "hooks": sorted(hook_counts.keys()),
+                "hook_counts": dict(sorted(hook_counts.items())),
+            }
+        )
+
+    projects = []
+    for project, count in sorted(by_project.items(), key=lambda x: -x[1])[:10]:
+        projects.append(
+            {
+                "path": redact_path(project, home) if redact else project,
+                "count": count,
+            }
+        )
+
+    return {
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "days": days,
+        "filter": "real dogfood only" if real_only else "all",
+        "redacted": redact,
+        "log_path": redact_path(str(log_path), home) if redact else str(log_path),
+        "total_fires": total,
+        "hook_count": len(by_hook_action),
+        "hooks": hooks,
+        "classification_totals": classifications,
+        "classification_total": classification_total,
+        "real_dogfood_count": real_count,
+        "non_real_count": non_real_count,
+        "real_session_count": len(real_session_stats),
+        "observed_real_hooks": [
+            {"hook": hook, "count": real_hook_counts[hook]} for hook in observed_hooks
+        ],
+        "unexpected_real_hooks": [
+            {"hook": hook, "count": real_hook_counts[hook]} for hook in unexpected_hooks
+        ],
+        "missing_real_hooks": missing_hooks,
+        "real_sessions": sessions,
+        "top_files": files,
+        "top_projects": projects,
+        "parse_errors": parse_errors,
+        "timestamp_errors": timestamp_errors,
+    }
+
+
+def format_action_breakdown(actions):
+    return ", ".join(f"{a['count']} {a['action']}" for a in actions)
+
+
+def format_text_report(report):
+    lines = [f"Hook fire summary (last {report['days']} days):"]
+    if report["filter"] == "real dogfood only":
+        lines.extend(["", "Filter: real dogfood only"])
+    lines.append("")
+
+    if not report["hooks"]:
+        lines.append("  (no fires in window)")
+    else:
+        for hook in report["hooks"]:
+            lines.append(
+                f"  {hook['hook']}: {hook['count']} fires "
+                f"({format_action_breakdown(hook['actions'])})"
+            )
+    lines.append("")
+    lines.append(f"Total: {report['total_fires']} fires across {report['hook_count']} hooks")
+    if report["parse_errors"]:
+        lines.append(f"  (skipped {report['parse_errors']} unparseable lines)")
+    if report["timestamp_errors"]:
+        lines.append(f"  (skipped {report['timestamp_errors']} lines with invalid timestamps)")
+    lines.append("")
+
+    lines.append("Classification totals (all matching log entries, before --real-only display filter):")
+    for label in CLASS_ORDER:
+        lines.append(f"  {label}: {report['classification_totals'].get(label, 0)} fires")
+    lines.append(f"  Real Claude Code sessions: {report['real_session_count']}")
+    if report["non_real_count"] and report["filter"] != "real dogfood only":
+        lines.append(
+            f"  Noise note: {report['non_real_count']} / {report['classification_total']} "
+            "fires are non-real. Use --real-only for dogfood evidence."
+        )
+    elif report["non_real_count"] and report["filter"] == "real dogfood only":
+        lines.append(f"  Display filter removed {report['non_real_count']} non-real fires.")
+    lines.append("")
+
+    lines.append("Real dogfood hook coverage:")
+    observed_labels = [
+        f"{item['hook']} ({item['count']})" for item in report["observed_real_hooks"]
+    ]
+    observed_labels.extend(
+        f"{item['hook']} ({item['count']}, unexpected)"
+        for item in report["unexpected_real_hooks"]
+    )
+    if observed_labels:
+        lines.append(f"  Observed real hooks: {', '.join(observed_labels)}")
+    else:
+        lines.append("  Observed real hooks: (none)")
+    if report["missing_real_hooks"]:
+        lines.append(f"  Missing real-session evidence: {', '.join(report['missing_real_hooks'])}")
+    else:
+        lines.append("  Missing real-session evidence: (none)")
+    lines.append("")
+
+    if report["real_sessions"]:
+        lines.append("Real dogfood sessions:")
+        for session in report["real_sessions"]:
+            hooks = ", ".join(session["hooks"])
+            project_text = f", project={session['project']}" if session["project"] else ""
+            if session["first_ts"] == session["last_ts"]:
+                time_text = f", time={session['first_ts']}"
+            else:
+                time_text = f", time={session['first_ts']}..{session['last_ts']}"
+            hook_word = "hook" if len(session["hooks"]) == 1 else "hooks"
+            fire_word = "fire" if session["count"] == 1 else "fires"
+            lines.append(
+                f"  {session['session_id_short']} — {session['count']} {fire_word}, "
+                f"{len(session['hooks'])} {hook_word} ({hooks}){project_text}{time_text}"
+            )
+    lines.append("")
+
+    if report["top_files"]:
+        lines.append("Top triggered files:")
+        for item in report["top_files"]:
+            lines.append(
+                f"  {item['path']} — {item['count']} fires ({','.join(item['hooks'])})"
+            )
+        lines.append("")
+
+    if report["top_projects"]:
+        lines.append("Projects:")
+        for item in report["top_projects"]:
+            lines.append(f"  {item['path']} — {item['count']} fires")
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def markdown_table(headers, rows):
+    def cell(value):
+        return str(value).replace("|", "\\|").replace("\n", " ")
+
+    lines = [
+        "| " + " | ".join(cell(header) for header in headers) + " |",
+        "| " + " | ".join("---" for _ in headers) + " |",
+    ]
+    for row in rows:
+        lines.append("| " + " | ".join(cell(value) for value in row) + " |")
+    return "\n".join(lines)
+
+
+def format_markdown_report(report):
+    lines = [
+        "# Meta-skills Hook Fire Report",
+        "",
+        f"- Window: last {report['days']} days",
+        f"- Filter: {report['filter']}",
+        f"- Generated: {report['generated_at']}",
+        f"- Log: `{report['log_path']}`",
+        f"- Total displayed fires: {report['total_fires']}",
+        f"- Real Claude Code sessions: {report['real_session_count']}",
+        "",
+        "## Hook Summary",
+        "",
+    ]
+
+    if report["hooks"]:
+        lines.append(
+            markdown_table(
+                ["Hook", "Fires", "Actions"],
+                [
+                    [
+                        item["hook"],
+                        item["count"],
+                        format_action_breakdown(item["actions"]),
+                    ]
+                    for item in report["hooks"]
+                ],
+            )
+        )
+    else:
+        lines.append("(no fires in window)")
+    lines.extend(["", "## Classification", ""])
+    lines.append(
+        markdown_table(
+            ["Bucket", "Fires"],
+            [[label, report["classification_totals"].get(label, 0)] for label in CLASS_ORDER],
+        )
+    )
+    if report["non_real_count"] and report["filter"] == "all":
+        lines.append("")
+        lines.append(
+            f"Noise note: {report['non_real_count']} / {report['classification_total']} "
+            "fires are non-real. Use `--real-only` for dogfood evidence."
+        )
+    elif report["non_real_count"]:
+        lines.append("")
+        lines.append(f"Display filter removed {report['non_real_count']} non-real fires.")
+
+    lines.extend(["", "## Real Dogfood Coverage", ""])
+    observed = ", ".join(
+        f"{item['hook']} ({item['count']})" for item in report["observed_real_hooks"]
+    )
+    if report["unexpected_real_hooks"]:
+        unexpected = ", ".join(
+            f"{item['hook']} ({item['count']}, unexpected)"
+            for item in report["unexpected_real_hooks"]
+        )
+        observed = ", ".join(filter(None, [observed, unexpected]))
+    lines.append(f"- Observed real hooks: {observed or '(none)'}")
+    if report["missing_real_hooks"]:
+        lines.append(f"- Missing real-session evidence: {', '.join(report['missing_real_hooks'])}")
+    else:
+        lines.append("- Missing real-session evidence: (none)")
+
+    if report["real_sessions"]:
+        lines.extend(["", "## Real Dogfood Sessions", ""])
+        lines.append(
+            markdown_table(
+                ["Session", "Fires", "Hooks", "Project", "Time"],
+                [
+                    [
+                        session["session_id_short"],
+                        session["count"],
+                        ", ".join(session["hooks"]),
+                        f"`{session['project']}`" if session["project"] else "",
+                        session["first_ts"]
+                        if session["first_ts"] == session["last_ts"]
+                        else f"{session['first_ts']}..{session['last_ts']}",
+                    ]
+                    for session in report["real_sessions"]
+                ],
+            )
+        )
+
+    if report["top_files"]:
+        lines.extend(["", "## Top Triggered Files", ""])
+        lines.append(
+            markdown_table(
+                ["Path", "Fires", "Hooks"],
+                [
+                    [f"`{item['path']}`", item["count"], ", ".join(item["hooks"])]
+                    for item in report["top_files"]
+                ],
+            )
+        )
+
+    if report["top_projects"]:
+        lines.extend(["", "## Projects", ""])
+        lines.append(
+            markdown_table(
+                ["Project", "Fires"],
+                [[f"`{item['path']}`", item["count"]] for item in report["top_projects"]],
+            )
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Caveats",
+            "",
+            "- The log records hook fires, not whether Claude self-corrected afterward.",
+            "- Real dogfood evidence is lifecycle evidence, not production false-positive rate.",
+            "- `detail` fields contain metadata only, but paths can still identify projects; use `--redact` before sharing.",
+        ]
+    )
+    if report["parse_errors"] or report["timestamp_errors"]:
+        lines.extend(["", "## Skipped Lines", ""])
+        if report["parse_errors"]:
+            lines.append(f"- Unparseable JSON lines: {report['parse_errors']}")
+        if report["timestamp_errors"]:
+            lines.append(f"- Invalid timestamps: {report['timestamp_errors']}")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def format_report(report, output_format):
+    if output_format == "text":
+        return format_text_report(report)
+    if output_format == "json":
+        return json.dumps(report, indent=2, sort_keys=True) + "\n"
+    if output_format == "markdown":
+        return format_markdown_report(report)
+    raise ValueError(f"unsupported format: {output_format}")
+
+
+def emit_output(content, output_path):
+    if output_path is None:
+        sys.stdout.write(content)
+        return
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(content)
+    except OSError as exc:
+        print(f"Error: couldn't write report to {output_path}: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+def format_missing_log(log_path, output_format, redact):
+    home = str(Path.home())
+    display_path = redact_path(str(log_path), home) if redact else str(log_path)
+    message = f"No log file at {display_path}."
+    hint = "Logging activates the first time a hook fires after install."
+    if output_format == "json":
+        return json.dumps(
+            {
+                "error": "log_not_found",
+                "log_path": display_path,
+                "message": message,
+                "hint": hint,
+            },
+            indent=2,
+            sort_keys=True,
+        ) + "\n"
+    if output_format == "markdown":
+        return f"# Meta-skills Hook Fire Report\n\n{message}\n\n{hint}\n"
+    return f"{message}\n{hint}\n"
+
+
 def main():
-    days, redact, real_only, log_path = parse_args()
+    days, redact, real_only, log_path, output_format, output_path = parse_args()
 
     if not log_path.exists():
-        print(f"No log file at {log_path}.")
-        print("Logging activates the first time a hook fires after install.")
+        emit_output(format_missing_log(log_path, output_format, redact), output_path)
         return 0
 
-    home = str(Path.home())
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
     by_hook_action = defaultdict(lambda: defaultdict(int))
@@ -263,106 +673,22 @@ def main():
                 by_file[file_path][hook] += 1
             total += 1
 
-    print(f"Hook fire summary (last {days} days):")
-    if real_only:
-        print()
-        print("Filter: real dogfood only")
-    print()
-    if not by_hook_action:
-        print("  (no fires in window)")
-    else:
-        for hook in sorted(by_hook_action.keys()):
-            actions = by_hook_action[hook]
-            total_for_hook = sum(actions.values())
-            action_breakdown = ", ".join(
-                f"{n} {a}" for a, n in sorted(actions.items(), key=lambda x: -x[1])
-            )
-            print(f"  {hook}: {total_for_hook} fires ({action_breakdown})")
-    print()
-    print(f"Total: {total} fires across {len(by_hook_action)} hooks")
-    if parse_errors:
-        print(f"  (skipped {parse_errors} unparseable lines)")
-    if timestamp_errors:
-        print(f"  (skipped {timestamp_errors} lines with invalid timestamps)")
-    print()
-
-    print("Classification totals (all matching log entries, before --real-only display filter):")
-    for label in CLASS_ORDER:
-        print(f"  {label}: {by_classification.get(label, 0)} fires")
-    classification_total = sum(by_classification.values())
-    real_count = by_classification.get(CLASS_REAL, 0)
-    non_real_count = classification_total - real_count
-    print(f"  Real Claude Code sessions: {len(real_session_stats)}")
-    if non_real_count and not real_only:
-        print(
-            f"  Noise note: {non_real_count} / {classification_total} fires are non-real. "
-            "Use --real-only for dogfood evidence."
-        )
-    elif non_real_count and real_only:
-        print(f"  Display filter removed {non_real_count} non-real fires.")
-    print()
-
-    print("Real dogfood hook coverage:")
-    observed_hooks = [h for h in EXPECTED_HOOKS if real_hook_counts.get(h, 0)]
-    unexpected_hooks = sorted(set(real_hook_counts) - set(EXPECTED_HOOKS))
-    observed_labels = [f"{h} ({real_hook_counts[h]})" for h in observed_hooks]
-    observed_labels.extend(f"{h} ({real_hook_counts[h]}, unexpected)" for h in unexpected_hooks)
-    if observed_labels:
-        print(f"  Observed real hooks: {', '.join(observed_labels)}")
-    else:
-        print("  Observed real hooks: (none)")
-    missing_hooks = [h for h in EXPECTED_HOOKS if not real_hook_counts.get(h, 0)]
-    if missing_hooks:
-        print(f"  Missing real-session evidence: {', '.join(missing_hooks)}")
-    else:
-        print("  Missing real-session evidence: (none)")
-    print()
-
-    if real_session_stats:
-        print("Real dogfood sessions:")
-        sorted_sessions = sorted(
-            real_session_stats.items(),
-            key=lambda x: (-x[1]["count"], x[1]["first_ts"], x[0]),
-        )[:10]
-        for sid, stats in sorted_sessions:
-            hooks = ", ".join(sorted(stats["hooks"].keys()))
-            project = ""
-            if stats["projects"]:
-                project = max(stats["projects"].items(), key=lambda x: (x[1], x[0]))[0]
-            display_project = redact_path(project, home) if redact else project
-            project_text = f", project={display_project}" if display_project else ""
-            if stats["first_ts"] == stats["last_ts"]:
-                time_text = f", time={stats['first_ts']}"
-            else:
-                time_text = f", time={stats['first_ts']}..{stats['last_ts']}"
-            hook_word = "hook" if len(stats["hooks"]) == 1 else "hooks"
-            fire_word = "fire" if stats["count"] == 1 else "fires"
-            print(
-                f"  {sid[:8]}… — {stats['count']} {fire_word}, "
-                f"{len(stats['hooks'])} {hook_word} ({hooks}){project_text}{time_text}"
-            )
-    print()
-
-    if by_file:
-        print("Top triggered files:")
-        sorted_files = sorted(
-            by_file.items(), key=lambda x: -sum(x[1].values())
-        )[:10]
-        for file_path, hook_counts in sorted_files:
-            count = sum(hook_counts.values())
-            hook_str = ",".join(sorted(hook_counts.keys()))
-            display = redact_path(file_path, home) if redact else file_path
-            print(f"  {display} — {count} fires ({hook_str})")
-        print()
-
-    if by_project:
-        print("Projects:")
-        sorted_projects = sorted(by_project.items(), key=lambda x: -x[1])[:10]
-        for project, count in sorted_projects:
-            display = redact_path(project, home) if redact else project
-            print(f"  {display} — {count} fires")
-        print()
-
+    report = summarize_report(
+        days=days,
+        redact=redact,
+        real_only=real_only,
+        log_path=log_path,
+        by_hook_action=by_hook_action,
+        by_project=by_project,
+        by_file=by_file,
+        by_classification=by_classification,
+        real_session_stats=real_session_stats,
+        real_hook_counts=real_hook_counts,
+        total=total,
+        parse_errors=parse_errors,
+        timestamp_errors=timestamp_errors,
+    )
+    emit_output(format_report(report, output_format), output_path)
     return 0
 
 

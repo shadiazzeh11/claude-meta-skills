@@ -88,6 +88,7 @@ Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON lin
 ./testing/analyze-log.py --real-only # dogfood-only view (canonical for dogfood evidence)
 ./testing/analyze-log.py --days 30   # longer window
 ./testing/analyze-log.py --redact    # rewrite home prefix to ~ for safer sharing
+./testing/analyze-log.py --format markdown --output dogfood-report.md
 ```
 
 Current dogfood evidence should be read from `./testing/analyze-log.py --real-only`, because the raw log can also contain manual proof and historical harness/validation entries. The current dogfood baseline has real-session log evidence for all five hooks: `edit-drift-detector`, `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery`. Treat this as lifecycle evidence that each hook has fired in live Claude Code sessions, not as proof of production false-positive rate or exhaustive real-world coverage. See [testing/DOGFOOD-BASELINE.md](testing/DOGFOOD-BASELINE.md) and each hook README for caveats.
