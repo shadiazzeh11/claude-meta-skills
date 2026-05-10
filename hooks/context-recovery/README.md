@@ -16,7 +16,7 @@ The official docs example for post-compaction context recovery uses a `SessionSt
 
 The verified working path is CLAUDE.md modification: PreCompact hook writes a recovery section to CLAUDE.md, which auto-reloads after compaction. This is the workaround documented on issue #15174 itself.
 
-There is no `PostCompact` event (issues #14258, #40492, #32026 are open feature requests). PreCompact is the only event that fires reliably around compaction.
+Current Claude Code docs list a `PostCompact` event, but this hook intentionally remains `PreCompact`: it writes recovery state before compaction finishes, and this exact path has live-session dogfood evidence. Any redesign around `PostCompact` should first prove the desired post-compaction context-injection behavior in a live Claude Code session.
 
 ## Installation
 
@@ -96,7 +96,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 - **Token budget is approximate.** The 2000-char limit is roughly 500 tokens for English text but actual token count depends on tokenizer. We're within Boris Cherny's recommended 5000-token CLAUDE.md ceiling regardless.
 - **HTML comment delimiter behavior in Claude's context window is unverified.** The hook works correctly at the file level (reads/writes raw text). Whether Claude sees the markers in rendered context is unknown but harmless either way.
 - **Race condition window with concurrent CLAUDE.md edits.** If a user edits CLAUDE.md in another editor while the hook fires, atomic-write overwrites their unsaved changes. The window is narrow (hook fires on PreCompact only) but real. Mitigation: don't edit CLAUDE.md during long sessions where compaction is likely.
-- **`PostCompact` event does not exist.** We rely on CLAUDE.md auto-reload after compaction (per Issue #15174 workaround). If Claude Code changes the post-compaction reload behavior, this hook would silently stop providing context recovery.
+- **PreCompact dependency.** Current Claude Code docs list `PostCompact`, but this hook relies on the dogfooded `PreCompact` + CLAUDE.md reload path. If Claude Code changes the post-compaction reload behavior, this hook would silently stop providing context recovery.
 - **Empty git environment.** Outside a git repo, the hook still writes a recovery section with just static reminders + timestamp. No crash.
 
 ## Performance

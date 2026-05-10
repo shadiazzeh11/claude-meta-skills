@@ -1,12 +1,31 @@
 # claude-meta-skills
 
-Claude Code hooks with measured false-positive rates.
+Claude Code hooks with harness-measured false-positive and false-negative results.
 
 Five focused hooks covering edit verification, completion gating, file checks, write protection, and post-compaction context recovery. Each ships with a test suite. The validation harness works for any Claude Code hook, not just ours.
 
 | Hooks | Tests | False positives | False negatives | Crosley layers |
 |---|---|---|---|---|
 | 5 | 61 | 0 | 0 | 4/4 |
+
+## Fit
+
+Install this if you use Claude Code on real repositories and want a small local reliability layer that targets common agent failure modes when the relevant lifecycle payload reaches the hooks: stale edit context, protected-file writes, ghost writes, failing tests at completion time, and lost context after compaction.
+
+The project is strongest when you want:
+
+- Project-local hooks that run from `.claude/settings.json` and stay with the repo.
+- Deterministic checks with per-hook validation fixtures, CI, and baseline results.
+- Local-only dogfood telemetry that can be summarized with `./testing/analyze-log.py --real-only`.
+- A narrow verification layer that can coexist with broader workflow systems, command-safety tools, and observability dashboards.
+
+Do not install it expecting:
+
+- Bash command safety or sandboxing.
+- A project-management workflow, TDD methodology, or subagent orchestration system.
+- Persistent cross-project memory.
+- A hosted dashboard or external telemetry.
+- One-click Claude plugin marketplace installation. This repo is currently a local installable hook suite; marketplace/plugin packaging is future work. See [PUBLISHING.md](PUBLISHING.md) for readiness notes.
 
 ## Install
 
@@ -119,11 +138,13 @@ We focus on metacognitive verification — catching Claude's own mistakes during
 
 **Explicit non-goals:** command safety, agent workflow methodology, persistent cross-session memory, observability dashboards, and marketplace plugin distribution. We focus on a small, validated, locally-installable hook suite.
 
+For the current marketplace-readiness status, positioning, and pre-publish checklist, see [PUBLISHING.md](PUBLISHING.md).
+
 ## Known limitations
 
 - **Cross-platform.** Hooks invoke `python3` directly. On Windows native (no WSL), `python3` may not be in PATH; use `python` or alias accordingly. Tested on macOS Darwin 25 and Linux. Windows native untested.
 - **`SessionStart:compact` is broken** per [Claude Code Issue #15174](https://github.com/anthropics/claude-code/issues/15174) — the matcher fires but stdout is not injected into post-compaction context. Our `context-recovery` hook uses `PreCompact` + CLAUDE.md modification (the verified working path) instead.
-- **No PostCompact event exists** per Claude Code lifecycle. We rely on CLAUDE.md auto-reloading after compaction.
+- **`context-recovery` intentionally uses `PreCompact`, not `PostCompact`.** Current Claude Code docs list `PostCompact`, but the verified path for this repo is still `PreCompact` + CLAUDE.md modification so recovery state exists before compaction completes. Any future `PostCompact` redesign needs a fresh live-session proof.
 - **Async hook stdin bug on macOS** per [Claude Code Issue #38162](https://github.com/anthropics/claude-code/issues/38162) — `"async": true` causes empty stdin on macOS. All our hooks default to synchronous mode (the correct choice).
 - **`construction-gate` is convergent with ecosystem.** Patterns are well-trodden ground (PAI's path protection, claude-warden's argument-aware rules, native Claude Code permission deny rules). Our value-add is the validation suite, not novel patterns.
 - **Validation harness timing includes ~30-40 ms of Python startup overhead** per measurement. Real hook execution overhead when installed in Claude Code is approximately 30-45 ms lower than reported values.
