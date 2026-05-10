@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "claude/hooks"],
+  "description": "NotebookEdit on .claude/hooks/... path → blocked (NotebookEdit payload uses notebook_path fallback; matches .claude/hooks/ pattern)",
+  "category": "should-block"
+}

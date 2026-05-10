@@ -85,6 +85,31 @@ assert_settings_equal() {
   fi
 }
 
+# Permanent assertion: the installed construction-gate hook entry must use
+# matcher "Write|Edit|MultiEdit|NotebookEdit" so it covers every file-modifying
+# tool, not just Write. Regression guard for Phase 2B.3.
+assert_construction_gate_matcher() {
+  local settings_file="$1"
+  local label="$2"
+  local matcher
+  matcher="$(jq -r '
+    [
+      .hooks.PreToolUse // []
+      | .[]
+      | select(
+          (.hooks // [])
+          | any(.command // "" | contains("/construction-gate/hook.py"))
+        )
+      | .matcher
+    ] | unique | join(",")
+  ' "$settings_file")"
+  if [ "$matcher" != "Write|Edit|MultiEdit|NotebookEdit" ]; then
+    echo "FAIL: $label: construction-gate matcher must be 'Write|Edit|MultiEdit|NotebookEdit'" >&2
+    echo "  actual: $matcher" >&2
+    exit 1
+  fi
+}
+
 # -----------------------------------------------------------------------------
 echo "Test A — empty target, two installs"
 T_A="$(mktemp_target A)"
@@ -102,6 +127,7 @@ jq -S . "$T_A/.claude/settings.json" > "$A_SECOND"
 assert_settings_equal "$A_FIRST" "$A_SECOND" "Test A: settings differ between two installs"
 assert_eq "$(meta_signature_count "$T_A/.claude/settings.json")" "5" "Test A: meta-skills signature count must be 5"
 assert_eq "$(unique_meta_signature_count "$T_A/.claude/settings.json")" "5" "Test A: meta-skills unique signatures must be 5"
+assert_construction_gate_matcher "$T_A/.claude/settings.json" "Test A"
 echo "PASS Test A"
 
 # -----------------------------------------------------------------------------
@@ -144,6 +170,7 @@ assert_eq "$PRESERVED" "Read" "Test B: unrelated top-level permissions key must 
 assert_eq "$(meta_signature_count "$T_B/.claude/settings.json")" "5" "Test B: meta-skills signature count must be 5"
 assert_eq "$(unique_meta_signature_count "$T_B/.claude/settings.json")" "5" "Test B: meta-skills unique signatures must be 5"
 assert_settings_equal "$B_FIRST" "$B_SECOND" "Test B: settings differ between two installs"
+assert_construction_gate_matcher "$T_B/.claude/settings.json" "Test B"
 echo "PASS Test B"
 
 # -----------------------------------------------------------------------------
@@ -175,6 +202,7 @@ jq -e . "$T_C/.claude/settings.json" >/dev/null
 
 assert_eq "$(meta_signature_count "$T_C/.claude/settings.json")" "5" "Test C: post-repair signature count must be 5"
 assert_eq "$(unique_meta_signature_count "$T_C/.claude/settings.json")" "5" "Test C: post-repair unique signatures must be 5"
+assert_construction_gate_matcher "$T_C/.claude/settings.json" "Test C"
 echo "PASS Test C"
 
 # -----------------------------------------------------------------------------
@@ -210,6 +238,7 @@ jq -e . "$T_D/.claude/settings.json" >/dev/null
 assert_eq "$(command_count "$T_D/.claude/settings.json" "echo keep-me")" "1" "Test D: unrelated 'echo keep-me' command must appear exactly once"
 assert_eq "$(meta_signature_count "$T_D/.claude/settings.json")" "5" "Test D: fresh meta-skills signature count must be 5"
 assert_eq "$(unique_meta_signature_count "$T_D/.claude/settings.json")" "5" "Test D: meta-skills unique signatures must be 5"
+assert_construction_gate_matcher "$T_D/.claude/settings.json" "Test D"
 echo "PASS Test D"
 
 echo

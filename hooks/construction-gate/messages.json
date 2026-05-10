@@ -3,7 +3,7 @@
 
   "_comment_versions": "A/B testing variants for Phase 4+. Switch by changing 'default' to 'punitive' or 'constructive'.",
 
-  "constructive": "This file path matches a protected pattern: '{pattern}'. Protected paths typically contain dependencies, version control data, or lock files that shouldn't be modified directly by Claude. If this write is intentional and you understand the implications, ask the user to temporarily disable the construction-gate hook or add an exception to rules.json.",
+  "constructive": "This file path matches a protected pattern: '{pattern}'. Protected paths typically contain dependencies, version control data, or lock files that shouldn't be modified directly by Claude. If this file modification (write/edit) is intentional and you understand the implications, ask the user to temporarily disable the construction-gate hook or add an exception to rules.json.",
 
-  "punitive": "BLOCKED: Write to protected path {file_path} matching pattern '{pattern}'."
+  "punitive": "BLOCKED: file modification of protected path {file_path} matching pattern '{pattern}'."
 }

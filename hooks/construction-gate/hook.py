@@ -2,17 +2,18 @@
 """
 construction-gate hook for Claude Code.
 
-PreToolUse hook on Write. Blocks writes to protected paths (dependency
-directories, lock files, sensitive config). Narrow scope: protected
-paths only — no TODO/placeholder check (delegated to specialized
-ecosystem tools like danielmiessler/PAI).
+PreToolUse hook on Write/Edit/MultiEdit/NotebookEdit. Blocks file
+modifications to protected paths (dependency directories, lock files,
+sensitive config). Narrow scope: protected paths only — no
+TODO/placeholder check (delegated to specialized ecosystem tools like
+danielmiessler/PAI).
 
 Patterns are configurable via rules.json next to the hook script.
 Defaults cover common cases (node_modules/, .git/, .env, lock files).
 
 Exit codes:
-  0  - Allow the write (no protected pattern matched, or hook can't run)
-  2  - Block the write with stderr feedback
+  0  - Allow the modification (no protected pattern matched, or hook can't run)
+  2  - Block the modification with stderr feedback
 """
 import json
 import sys
@@ -56,6 +57,14 @@ DEFAULT_PATTERNS = [
     r"yarn\.lock$",
     r"bun\.lockb$",
     r"\.claude/settings\.json$",
+    r"Cargo\.lock$",
+    r"Gemfile\.lock$",
+    r"poetry\.lock$",
+    r"uv\.lock$",
+    r"pnpm-lock\.yaml$",
+    r"Pipfile\.lock$",
+    r"\.claude/settings\.local\.json$",
+    r"\.claude/hooks/",
 ]
 
 
@@ -82,7 +91,7 @@ def load_messages():
     fallback = {
         "default": "constructive",
         "constructive": "This file path matches a protected pattern: '{pattern}'. Protected paths typically contain dependencies, version control data, or lock files that shouldn't be modified directly.",
-        "punitive": "BLOCKED: Write to protected path {file_path} matching pattern '{pattern}'.",
+        "punitive": "BLOCKED: file modification of protected path {file_path} matching pattern '{pattern}'.",
     }
     if not messages_path.exists():
         return fallback
@@ -113,7 +122,8 @@ def main():
         return 0
 
     tool_input = payload.get("tool_input", {})
-    file_path = tool_input.get("file_path", "")
+    # NotebookEdit payloads carry the path under notebook_path, not file_path.
+    file_path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
 
     if not file_path:
         return 0

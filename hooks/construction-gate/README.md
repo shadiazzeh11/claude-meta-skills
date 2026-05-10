@@ -1,14 +1,14 @@
 # construction-gate
 
-PreToolUse hook on Write that blocks writes to protected paths (dependency directories, lock files, sensitive config). Completes the Prevention layer — alongside `edit-drift-detector` (Edit) — for file-modifying operations.
+PreToolUse hook on `Write|Edit|MultiEdit|NotebookEdit` that blocks file modifications to protected paths (dependency directories, lock files, sensitive config). Completes the Prevention layer — alongside `edit-drift-detector` (Edit-only fuzzy-match guidance) — for file-modifying operations.
 
 ## What it catches
 
-- Writes to dependency directories (`node_modules/`, etc.)
-- Writes to `.git/` internals
-- Writes to environment files (`.env`, `.env.production`, etc.)
-- Writes to package lock files (`package-lock.json`, `yarn.lock`, `bun.lockb`, `Cargo.lock`, `Gemfile.lock`, `poetry.lock`, `uv.lock`)
-- Writes to Claude Code's own configuration (`.claude/settings.json`)
+- Modifications to dependency directories (`node_modules/`, etc.)
+- Modifications to `.git/` internals
+- Modifications to environment files (`.env`, `.env.production`, etc.)
+- Modifications to package lock files (`package-lock.json`, `yarn.lock`, `bun.lockb`, `pnpm-lock.yaml`, `Cargo.lock`, `Gemfile.lock`, `poetry.lock`, `uv.lock`, `Pipfile.lock`)
+- Modifications to Claude Code's own configuration (`.claude/settings.json`, `.claude/settings.local.json`) and installed-hook directory (`.claude/hooks/`)
 
 ## What it intentionally doesn't catch
 
@@ -25,7 +25,7 @@ Add to `.claude/settings.json` (project-level) or `~/.claude/settings.json` (glo
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Write",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
@@ -43,12 +43,12 @@ Requires Python 3.7+. Uses stdlib only.
 ## How it works
 
 1. Reads JSON from stdin (PreToolUse payload).
-2. Extracts `tool_input.file_path`.
+2. Extracts `tool_input.file_path`. NotebookEdit payloads carry the path as `tool_input.notebook_path` instead — the hook falls back to that field when `file_path` is absent.
 3. Loads protected-path patterns from `rules.json` next to the hook (or built-in defaults if missing).
 4. Compiles each pattern; skips invalid regexes silently rather than crashing.
 5. Searches the file path against each pattern with `re.search` (matches anywhere in path).
 6. First pattern match → exit 2 with constructive stderr feedback.
-7. No match → exit 0 (allow write).
+7. No match → exit 0 (allow modification).
 
 ## Configuring rules.json
 
@@ -83,8 +83,8 @@ To add a pattern: edit `rules.json`. To temporarily disable: comment out or remo
 
 ## Coexistence with other hooks
 
-- This hook fires PreToolUse on Write. If it blocks (exit 2), `silent-file-verifier`'s PostToolUse does NOT fire (correct — there's no Write to verify when it was prevented).
-- Independent of `edit-drift-detector` (different matcher: Write vs Edit).
+- This hook fires PreToolUse on `Write|Edit|MultiEdit|NotebookEdit`. If it blocks (exit 2), `silent-file-verifier`'s PostToolUse does NOT fire (correct — there's no modification to verify when it was prevented).
+- Both `construction-gate` and `edit-drift-detector` fire on Edit. They run independently with no shared state — `edit-drift-detector` surfaces fuzzy-match guidance for `old_string` drift, `construction-gate` blocks the Edit if the path is protected. Either may exit 2; whichever does prevents the Edit.
 - Independent of `completion-verifier` and `context-recovery` (different events).
 
 Behavior documented per Claude Code lifecycle docs; not validated by the harness (which tests each hook in isolation).
@@ -109,4 +109,4 @@ cd validation
 ./harness.sh construction-gate
 ```
 
-7 test cases covering should-block (3), should-pass (3), edge cases (1). See `validation/test-cases/construction-gate/`.
+19 test cases covering should-block (16), should-pass (2), edge cases (1). Tool coverage spans Write (most cases), Edit (`11-claude-settings`), MultiEdit (`18-claude-settings-local`), and NotebookEdit (`19-claude-hooks-dir`, exercising the `notebook_path` fallback). See `validation/test-cases/construction-gate/`.

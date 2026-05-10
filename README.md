@@ -6,7 +6,7 @@ Five focused hooks covering edit verification, completion gating, file checks, w
 
 | Hooks | Tests | False positives | False negatives | Crosley layers |
 |---|---|---|---|---|
-| 5 | 45 | 0 | 0 | 4/4 |
+| 5 | 61 | 0 | 0 | 4/4 |
 
 ## Install
 
@@ -25,9 +25,9 @@ Manual alternative: copy `hooks/` into your project, then merge `templates/setti
 
 | Hook | Layer | Event | What it catches | Tests |
 |---|---|---|---|---|
-| [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 11 |
-| [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write` | Writes to protected paths (`node_modules/`, `.git/`, `.env*`, lock files) | 7 |
-| [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 7 |
+| [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 12 |
+| [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 19 |
+| [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 10 |
 | [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 12 |
 | [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 8 |
 
@@ -42,7 +42,8 @@ Layer                Event                Hook
 ─────                ─────                ────
 Context Injection    PreCompact      ──▶  context-recovery
 Prevention           PreToolUse:Edit ──▶  edit-drift-detector
-                     PreToolUse:Write──▶  construction-gate
+                     PreToolUse      ──▶  construction-gate
+                     (Write|Edit|MultiEdit|NotebookEdit)
 Validation           PostToolUse     ──▶  silent-file-verifier
                      (Write|Edit|MultiEdit|NotebookEdit)
 Quality Gating       Stop            ──▶  completion-verifier
@@ -56,12 +57,12 @@ Every hook ships with its own test suite. Aggregate results from the latest vali
 
 | Hook | Tests | Pass | False positives | False negatives | Avg duration |
 |---|---|---|---|---|---|
-| edit-drift-detector | 11 | 11 | 0 | 0 | 51 ms |
-| construction-gate | 7 | 7 | 0 | 0 | 49 ms |
-| silent-file-verifier | 7 | 7 | 0 | 0 | 48 ms |
-| completion-verifier | 12 | 12 | 0 | 0 | 268 ms |
-| context-recovery | 8 | 8 | 0 | 0 | 84 ms |
-| **Total** | **45** | **45** | **0** | **0** | — |
+| edit-drift-detector | 12 | 12 | 0 | 0 | 73 ms |
+| construction-gate | 19 | 19 | 0 | 0 | 71 ms |
+| silent-file-verifier | 10 | 10 | 0 | 0 | 71 ms |
+| completion-verifier | 12 | 12 | 0 | 0 | 320 ms |
+| context-recovery | 8 | 8 | 0 | 0 | 118 ms |
+| **Total** | **61** | **61** | **0** | **0** | — |
 
 Run the suite yourself:
 
@@ -78,7 +79,7 @@ Per-hook baseline results live in each hook directory's `BASELINE-RESULTS.md`. P
 
 ## Self-deployment data
 
-Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 45/45 tests prove the hooks fire correctly on constructed inputs; the auto-log is what tells you whether they're catching real issues during normal use.
+Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 61/61 tests prove the hooks fire correctly on constructed inputs; the auto-log is what tells you whether they're catching real issues during normal use.
 
 ```bash
 ./testing/analyze-log.py             # last 7 days summary

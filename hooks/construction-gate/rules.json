@@ -11,6 +11,10 @@
     "Cargo\\.lock$",
     "Gemfile\\.lock$",
     "poetry\\.lock$",
-    "uv\\.lock$"
+    "uv\\.lock$",
+    "pnpm-lock\\.yaml$",
+    "Pipfile\\.lock$",
+    "\\.claude/settings\\.local\\.json$",
+    "\\.claude/hooks/"
   ]
 }

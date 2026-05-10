@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "package-lock"],
+  "description": "Write to package-lock.json → blocked (matches package-lock\\.json$ pattern)",
+  "category": "should-block"
+}

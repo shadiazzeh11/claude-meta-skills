@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "bun"],
+  "description": "Write to bun.lockb → blocked (matches bun\\.lockb$ pattern)",
+  "category": "should-block"
+}

@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "Gemfile"],
+  "description": "Write to Gemfile.lock → blocked (matches Gemfile\\.lock$ pattern)",
+  "category": "should-block"
+}
