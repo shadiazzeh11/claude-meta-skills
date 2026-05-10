@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "pnpm-lock"],
+  "description": "Write to pnpm-lock.yaml → blocked (matches pnpm-lock\\.yaml$ pattern)",
+  "category": "should-block"
+}

@@ -1,0 +1,12 @@
+{
+  "session_id": "test-session",
+  "tool_name": "MultiEdit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp",
+  "tool_input": {
+    "file_path": "/Users/test/project/.claude/settings.local.json",
+    "edits": [
+      {"old_string": "{}", "new_string": "{\"permissions\": {}}"}
+    ]
+  }
+}

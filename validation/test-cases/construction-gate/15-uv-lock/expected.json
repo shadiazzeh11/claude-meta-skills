@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "uv"],
+  "description": "Write to uv.lock → blocked (matches uv\\.lock$ pattern)",
+  "category": "should-block"
+}

@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "Pipfile"],
+  "description": "Write to Pipfile.lock → blocked (matches Pipfile\\.lock$ pattern)",
+  "category": "should-block"
+}

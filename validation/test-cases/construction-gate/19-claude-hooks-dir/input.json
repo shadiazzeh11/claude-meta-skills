@@ -1,0 +1,10 @@
+{
+  "session_id": "test-session",
+  "tool_name": "NotebookEdit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp",
+  "tool_input": {
+    "notebook_path": "/Users/test/project/.claude/hooks/example/notebook.ipynb",
+    "new_source": "print('hi')"
+  }
+}

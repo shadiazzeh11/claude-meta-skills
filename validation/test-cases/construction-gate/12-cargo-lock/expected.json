@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "Cargo"],
+  "description": "Write to Cargo.lock → blocked (matches Cargo\\.lock$ pattern)",
+  "category": "should-block"
+}

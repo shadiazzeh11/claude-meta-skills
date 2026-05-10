@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "claude/settings"],
+  "description": "Edit on .claude/settings.json → blocked (Edit tool with file_path; matches .claude/settings\\.json$ pattern)",
+  "category": "should-block"
+}
