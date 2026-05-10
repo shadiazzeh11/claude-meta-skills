@@ -84,7 +84,17 @@ expand_expected_path() {
 
 file_mode() {
   local path="$1"
-  stat -f "%Lp" "$path" 2>/dev/null || stat -c "%a" "$path" 2>/dev/null || true
+  python3 - "$path" <<'PY'
+import os
+import stat
+import sys
+
+try:
+    mode = stat.S_IMODE(os.stat(sys.argv[1]).st_mode)
+except OSError:
+    raise SystemExit(0)
+print(format(mode, "o"))
+PY
 }
 
 echo "Validation: $HOOK_NAME"
