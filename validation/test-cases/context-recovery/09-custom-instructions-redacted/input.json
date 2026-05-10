@@ -1,0 +1,8 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PreCompact",
+  "trigger": "manual",
+  "custom_instructions": "Keep DOGFOOD_SAFE_SENTINEL but redact api_key=sk-live-SUPERSECRET1234567890 and password=hunter2 before writing recovery context.",
+  "cwd": "{{PROJECT_PATH}}",
+  "transcript_path": ""
+}

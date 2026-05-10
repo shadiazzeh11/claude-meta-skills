@@ -1,0 +1,11 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Edit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp/project",
+  "tool_input": {
+    "file_path": ".claude\\settings.local.json",
+    "old_string": "secret-token-value",
+    "new_string": "changed-token-value"
+  }
+}

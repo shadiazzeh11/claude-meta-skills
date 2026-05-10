@@ -1,6 +1,10 @@
 {
   "expected_exit_code": 2,
   "expected_stderr_contains": ["item.price", "doesn't match"],
+  "expected_file_mode": {
+    "path": "{{HOME}}/.claude/meta-skills-log.jsonl",
+    "mode": "600"
+  },
   "description": "old_string close to actual but with wrong word (cost vs price); fuzzy match should surface real content",
   "category": "should-block"
 }

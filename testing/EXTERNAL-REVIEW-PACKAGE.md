@@ -1,10 +1,10 @@
 # External Review Package — claude-meta-skills
 
-> **Audit context.** This document is generated for ChatGPT to review the claude-meta-skills project end-to-end without access to the GitHub repository (which is currently PRIVATE) or to the build conversation history. Everything required to evaluate the project is inlined below: full source of all 5 hooks, the validation harness, validation results, architecture decisions, ecosystem context, known limitations, the complete test inventory, key research sources, open questions, and the logging system.
+> **Audit context.** This document is a historical generated package for ChatGPT review from an earlier private-repo phase. It is retained for audit history only; it is not regenerated on every implementation change and is not the current source of truth.
 >
 > **Goal of this review:** find problems. Logic bugs, security holes, design flaws, ecosystem-positioning blind spots, false-confidence claims, contradictions between docs and code, and anything that would embarrass us in a public audit.
 
-> **Historical snapshot warning.** This package is a stale external-review snapshot from an earlier phase. It is retained for audit history, not as the current source of truth. For current validation counts, CI status, and dogfood evidence, start with `README.md` and `testing/DOGFOOD-BASELINE.md`.
+> **Historical snapshot warning.** This package contains stale inlined code, counts, and ecosystem notes from an earlier phase. For current validation counts, CI status, dogfood evidence, and source code, use the repository files directly: start with `README.md`, `PUBLISHING.md`, `VALIDATION.md`, and `testing/DOGFOOD-BASELINE.md`.
 
 ---
 
@@ -14,7 +14,7 @@
 
 The architecture covers Blake Crosley's four-layer hook framework: **Prevention** (PreToolUse), **Validation** (PostToolUse), **Quality Gating** (Stop), and **Context Injection** (PreCompact). Each hook ships with its own Python source (~150–350 lines, stdlib only), per-hook README, baseline validation results, configurable `messages.json` (constructive vs punitive variants), and where applicable a `rules.json` for protected-pattern lists or static reminders.
 
-**Repository:** `github.com/shadiazzeh11/claude-meta-skills` — currently **PRIVATE**. The clone instructions in README.md will not work for an external reviewer; this document is the canonical source of truth for the audit.
+**Repository:** `github.com/shadiazzeh11/claude-meta-skills`. This historical package is not the canonical source of truth after the later Phase 2B / plugin / marketplace / privacy-hardening work.
 
 **Authors:** Shadi AL Azzeh and Caleb Mukasa, joint MIT copyright 2026. Co-authored throughout by Claude Opus 4.7 (1M context). Built across five build phases (foundation, two hook batches, polish, packaging+logging) using a triangle workflow: Caleb (decision authority), CC (executor), chat-Claude (planner with broader research context).
 

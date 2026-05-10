@@ -1,6 +1,6 @@
 # edit-drift-detector
 
-PreToolUse hook on Edit that adds fuzzy-match correction context for `old_string` mismatches: when an Edit payload reaches the hook and `old_string` doesn't appear in the file, the hook surfaces the closest matching content and a re-read suggestion.
+PreToolUse hook on Edit that adds fuzzy-match correction context for `old_string` mismatches: when an Edit payload reaches the hook and `old_string` doesn't appear in a non-protected file, the hook surfaces the closest matching content and a re-read suggestion.
 
 > **Real-session coverage caveat.** In a current Claude Code dogfood session on macOS, the Edit tool's own input validation caught the simplest "old_string not found" case and returned `String to replace not found in file` *before* this hook produced any feedback — so complete mismatches surfaced Claude Code's built-in error rather than this hook's richer feedback. This hook is therefore best understood as a **correction layer for Edits whose payloads reach PreToolUse**, not as a replacement for Claude Code's built-in Edit validation. See [Real-session coverage](#real-session-coverage) below.
 >
@@ -18,6 +18,7 @@ PreToolUse hook on Edit that adds fuzzy-match correction context for `old_string
 - **Trailing whitespace differences** — pass-through; below the recall-drift threshold (see Design decisions).
 - **File-doesn't-exist** — pass-through; let Edit's own error handling surface that.
 - **Correctness of `new_string`** — out of scope; this hook only verifies `old_string` matches what's there.
+- **Protected paths** — pass-through without reading the file. `construction-gate` owns protected-path blocking so `.env`, `.claude/`, lockfile, and dependency paths do not leak nearby file content through fuzzy-match feedback.
 
 ## Installation
 
@@ -47,11 +48,13 @@ Requires Python 3.7+ in PATH. Uses stdlib only — no external dependencies.
 
 1. Reads JSON from stdin (Claude Code's PreToolUse payload).
 2. Extracts `tool_input.file_path` and `tool_input.old_string`.
-3. If file doesn't exist or can't be read → exit 0 (allow).
-4. If `old_string` appears verbatim in file content → exit 0 (allow).
-5. If trailing-whitespace-normalized match exists → exit 0 (allow).
-6. Otherwise, finds closest matching region via `difflib.SequenceMatcher`. If similarity ≥ 0.6, surfaces the actual file content at that location. If no fuzzy match, reports no-close-match.
-7. Exit 2 with stderr feedback (constructive by default; see `messages.json`).
+3. Resolves relative paths against the payload `cwd`.
+4. If the path matches `construction-gate` protected patterns → exit 0 without reading the file.
+5. If file doesn't exist or can't be read → exit 0 (allow).
+6. If `old_string` appears verbatim in file content → exit 0 (allow).
+7. If trailing-whitespace-normalized match exists → exit 0 (allow).
+8. Otherwise, finds closest matching region via `difflib.SequenceMatcher`. If similarity ≥ 0.6, surfaces the actual file content at that location. If no fuzzy match, reports no-close-match.
+9. Exit 2 with stderr feedback (constructive by default; see `messages.json`).
 
 ## Design decisions
 
@@ -68,6 +71,8 @@ Requires Python 3.7+ in PATH. Uses stdlib only — no external dependencies.
 - **Malformed input → allow.** If stdin JSON is unparseable, hook exits 0. Don't block legitimate edits when the hook itself can't function.
 
 - **`replace_all: true`** — hook checks `old_string` exists in file; doesn't count occurrences. Single match is sufficient to pass.
+
+- **Protected-path privacy.** The hook loads `construction-gate/rules.json` and skips protected paths before opening the target file. This keeps path protection and secret-bearing file feedback in one hook: construction-gate blocks with metadata-only feedback, while edit-drift handles ordinary source files.
 
 ## Known limitations
 
@@ -86,6 +91,7 @@ Requires Python 3.7+ in PATH. Uses stdlib only — no external dependencies.
 When this hook is installed alongside `silent-file-verifier` and `completion-verifier`:
 
 - This hook fires PreToolUse on Edit. If it blocks (exit 2), the Edit is cancelled and silent-file-verifier's PostToolUse does NOT fire (correct: there's nothing to verify when the Edit was prevented).
+- In the full meta-skills configuration, `construction-gate` is ordered before this hook for `Edit` so protected paths block before edit-drift can inspect file content. This hook also self-skips protected paths as defense in depth for stale/custom settings.
 - Stop hook (completion-verifier) is independent and fires after Claude finishes responding, regardless of any Edit blocks during the response.
 
 Behavior documented per Claude Code lifecycle docs; not validated by the harness (which tests each hook in isolation). Real-world coexistence worth a spot-check when all three hooks are installed in an actual Claude Code session.
@@ -106,7 +112,7 @@ The practical implication: in current Claude Code, the hook's block path adds li
 - Edit payloads that *do* reach PreToolUse without being short-circuited (workflow shapes, Edit variants, or future Claude Code versions where validation order changes).
 - Forward compatibility: the hook is already installed and exercised by the harness, so a Claude Code change that exposes more payloads to PreToolUse would immediately benefit from the existing fuzzy-match feedback.
 
-The harness's 12/12 pass rate measures the hook's logic via direct stdin injection, **not** its in-session reachability. Treat the dogfood entry as controlled lifecycle evidence for `block-fuzzy`, not proof that organic stale-edit failures are common. Future work could explore Read-time freshness tracking or a stale-read advisory if we want coverage for the complete-mismatch case before Claude Code's Edit validation runs; that is out of scope for this documentation update.
+The harness's 14/14 pass rate measures the hook's logic via direct stdin injection, **not** its in-session reachability. Treat the dogfood entry as controlled lifecycle evidence for `block-fuzzy`, not proof that organic stale-edit failures are common. Future work could explore Read-time freshness tracking or a stale-read advisory if we want coverage for the complete-mismatch case before Claude Code's Edit validation runs; that is out of scope for this documentation update.
 
 ## Additional known limitations
 
@@ -127,7 +133,7 @@ cd validation
 ./harness.sh edit-drift-detector
 ```
 
-12 test cases covering should-block (7) and should-pass (5). Fixtures and expected outcomes in `validation/test-cases/edit-drift-detector/`.
+14 test cases covering should-block (8) and should-pass (6). Fixtures and expected outcomes in `validation/test-cases/edit-drift-detector/`.
 
 ## Notes on prior art
 

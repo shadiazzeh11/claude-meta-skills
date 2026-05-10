@@ -17,7 +17,12 @@
 #   - Compares against expected.json fields:
 #       expected_exit_code (required)
 #       expected_stderr_contains[] (optional)
+#       expected_stderr_not_contains[] (optional)
 #       expected_stdout_contains[] (optional)
+#       expected_stdout_not_contains[] (optional)
+#       expected_file_mode {path, mode} (optional)
+#       expected_file_max_chars {path, max} (optional)
+#       expected_recovery_section_max_chars {path, max} (optional)
 #
 # Writes per-run results to results/<hook-name>-<timestamp>.json.
 
@@ -62,6 +67,35 @@ cleanup() {
   rm -rf "$HARNESS_HOME"
 }
 trap cleanup EXIT
+
+expand_expected_path() {
+  local path="$1"
+  local case_dir="$2"
+  path="${path//\{\{TEST_DIR\}\}/$case_dir}"
+  path="${path//\{\{HOME\}\}/$HARNESS_HOME}"
+  if [ -f "$case_dir/fixture.txt" ]; then
+    path="${path//\{\{FIXTURE_PATH\}\}/$case_dir/fixture.txt}"
+  fi
+  if [ -d "$case_dir/project" ]; then
+    path="${path//\{\{PROJECT_PATH\}\}/$case_dir/project}"
+  fi
+  echo "$path"
+}
+
+file_mode() {
+  local path="$1"
+  python3 - "$path" <<'PY'
+import os
+import stat
+import sys
+
+try:
+    mode = stat.S_IMODE(os.stat(sys.argv[1]).st_mode)
+except OSError:
+    raise SystemExit(0)
+print(format(mode, "o"))
+PY
+}
 
 echo "Validation: $HOOK_NAME"
 echo "Hook: $HOOK_PATH"
@@ -170,6 +204,15 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
     fi
   done < <(jq -r '.expected_stderr_contains[]?' "$expected")
 
+  # Verify expected_stderr_not_contains
+  while IFS= read -r pattern; do
+    [ -z "$pattern" ] && continue
+    if echo "$actual_stderr" | grep -Fq -- "$pattern"; then
+      passed=false
+      failure_reasons+=("stderr should NOT contain pattern: '$pattern'")
+    fi
+  done < <(jq -r '.expected_stderr_not_contains[]?' "$expected")
+
   # Verify expected_stdout_contains
   while IFS= read -r pattern; do
     [ -z "$pattern" ] && continue
@@ -178,6 +221,15 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
       failure_reasons+=("stdout missing pattern: '$pattern'")
     fi
   done < <(jq -r '.expected_stdout_contains[]?' "$expected")
+
+  # Verify expected_stdout_not_contains
+  while IFS= read -r pattern; do
+    [ -z "$pattern" ] && continue
+    if echo "$actual_stdout" | grep -Fq -- "$pattern"; then
+      passed=false
+      failure_reasons+=("stdout should NOT contain pattern: '$pattern'")
+    fi
+  done < <(jq -r '.expected_stdout_not_contains[]?' "$expected")
 
   # Verify expected_stdout_empty (if specified)
   # Distinct from expected_stdout_contains: an empty array there asserts
@@ -188,18 +240,29 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
     failure_reasons+=("stdout expected empty but was non-empty")
   fi
 
+  # Verify expected_stderr_empty (if specified)
+  expected_stderr_empty="$(jq -r '.expected_stderr_empty // false' "$expected")"
+  if [ "$expected_stderr_empty" = "true" ] && [ -n "$actual_stderr" ]; then
+    passed=false
+    failure_reasons+=("stderr expected empty but was non-empty")
+  fi
+
+  # Verify expected_log_not_contains against the isolated harness log.
+  log_file="$HARNESS_HOME/.claude/meta-skills-log.jsonl"
+  while IFS= read -r pattern; do
+    [ -z "$pattern" ] && continue
+    if [ -f "$log_file" ] && grep -Fq -- "$pattern" "$log_file"; then
+      passed=false
+      failure_reasons+=("log should NOT contain pattern: '$pattern'")
+    fi
+  done < <(jq -r '.expected_log_not_contains[]?' "$expected")
+
   # Verify expected_file_contains (if specified)
   # Format: { "path": "...", "patterns": ["pattern1", "pattern2"] }
   # Path supports the same placeholders as input.json substitution.
   expected_file_path="$(jq -r '.expected_file_contains.path // empty' "$expected" 2>/dev/null)"
   if [ -n "$expected_file_path" ]; then
-    expected_file_path="${expected_file_path//\{\{TEST_DIR\}\}/$case_dir}"
-    if [ -f "$case_dir/fixture.txt" ]; then
-      expected_file_path="${expected_file_path//\{\{FIXTURE_PATH\}\}/$case_dir/fixture.txt}"
-    fi
-    if [ -d "$case_dir/project" ]; then
-      expected_file_path="${expected_file_path//\{\{PROJECT_PATH\}\}/$case_dir/project}"
-    fi
+    expected_file_path="$(expand_expected_path "$expected_file_path" "$case_dir")"
     if [ ! -f "$expected_file_path" ]; then
       passed=false
       failure_reasons+=("expected_file_contains: file not found at $expected_file_path")
@@ -218,13 +281,7 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
   # Verify expected_file_not_contains (if specified)
   not_file_path="$(jq -r '.expected_file_not_contains.path // empty' "$expected" 2>/dev/null)"
   if [ -n "$not_file_path" ]; then
-    not_file_path="${not_file_path//\{\{TEST_DIR\}\}/$case_dir}"
-    if [ -f "$case_dir/fixture.txt" ]; then
-      not_file_path="${not_file_path//\{\{FIXTURE_PATH\}\}/$case_dir/fixture.txt}"
-    fi
-    if [ -d "$case_dir/project" ]; then
-      not_file_path="${not_file_path//\{\{PROJECT_PATH\}\}/$case_dir/project}"
-    fi
+    not_file_path="$(expand_expected_path "$not_file_path" "$case_dir")"
     if [ -f "$not_file_path" ]; then
       file_content="$(cat "$not_file_path")"
       while IFS= read -r pattern; do
@@ -242,7 +299,7 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
   # Format: { "path": "...", "pattern": "...", "count": N }
   count_file_path="$(jq -r '.expected_file_pattern_count.path // empty' "$expected" 2>/dev/null)"
   if [ -n "$count_file_path" ]; then
-    count_file_path="${count_file_path//\{\{TEST_DIR\}\}/$case_dir}"
+    count_file_path="$(expand_expected_path "$count_file_path" "$case_dir")"
     count_pattern="$(jq -r '.expected_file_pattern_count.pattern' "$expected")"
     expected_count="$(jq -r '.expected_file_pattern_count.count' "$expected")"
     if [ -f "$count_file_path" ]; then
@@ -258,6 +315,75 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
     else
       passed=false
       failure_reasons+=("expected_file_pattern_count: file not found at $count_file_path")
+    fi
+  fi
+
+  # Verify expected_file_mode (if specified)
+  mode_file_path="$(jq -r '.expected_file_mode.path // empty' "$expected" 2>/dev/null)"
+  if [ -n "$mode_file_path" ]; then
+    mode_file_path="$(expand_expected_path "$mode_file_path" "$case_dir")"
+    expected_mode="$(jq -r '.expected_file_mode.mode' "$expected")"
+    if [ ! -e "$mode_file_path" ]; then
+      passed=false
+      failure_reasons+=("expected_file_mode: file not found at $mode_file_path")
+    else
+      actual_mode="$(file_mode "$mode_file_path")"
+      if [ "$actual_mode" != "$expected_mode" ]; then
+        passed=false
+        failure_reasons+=("file '$mode_file_path' mode $actual_mode, expected $expected_mode")
+      fi
+    fi
+  fi
+
+  # Verify expected_file_max_chars (if specified)
+  max_file_path="$(jq -r '.expected_file_max_chars.path // empty' "$expected" 2>/dev/null)"
+  if [ -n "$max_file_path" ]; then
+    max_file_path="$(expand_expected_path "$max_file_path" "$case_dir")"
+    expected_max="$(jq -r '.expected_file_max_chars.max' "$expected")"
+    if [ ! -f "$max_file_path" ]; then
+      passed=false
+      failure_reasons+=("expected_file_max_chars: file not found at $max_file_path")
+    else
+      actual_chars="$(wc -m < "$max_file_path" | tr -d ' ')"
+      if [ "$actual_chars" -gt "$expected_max" ]; then
+        passed=false
+        failure_reasons+=("file '$max_file_path' has $actual_chars chars, expected <= $expected_max")
+      fi
+    fi
+  fi
+
+  # Verify expected_recovery_section_max_chars (if specified)
+  recovery_file_path="$(jq -r '.expected_recovery_section_max_chars.path // empty' "$expected" 2>/dev/null)"
+  if [ -n "$recovery_file_path" ]; then
+    recovery_file_path="$(expand_expected_path "$recovery_file_path" "$case_dir")"
+    recovery_max="$(jq -r '.expected_recovery_section_max_chars.max' "$expected")"
+    if [ ! -f "$recovery_file_path" ]; then
+      passed=false
+      failure_reasons+=("expected_recovery_section_max_chars: file not found at $recovery_file_path")
+    else
+      recovery_chars="$(python3 - "$recovery_file_path" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(errors="replace")
+start = "<!-- post-compact-recovery-start -->"
+end = "<!-- post-compact-recovery-end -->"
+start_idx = text.find(start)
+end_idx = text.find(end, start_idx)
+if start_idx == -1 or end_idx == -1:
+    print(-1)
+else:
+    print(len(text[start_idx:end_idx + len(end)]))
+PY
+)"
+      if [ "$recovery_chars" = "-1" ]; then
+        passed=false
+        failure_reasons+=("recovery section delimiters not found in $recovery_file_path")
+      elif [ "$recovery_chars" -gt "$recovery_max" ]; then
+        passed=false
+        failure_reasons+=("recovery section in '$recovery_file_path' has $recovery_chars chars, expected <= $recovery_max")
+      fi
     fi
   fi
 

@@ -13,8 +13,8 @@ context preservation. Current Claude Code docs list PostCompact, but this
 hook intentionally writes before compaction via the dogfooded PreCompact
 path.
 
-Exit 0 always. PreCompact exit 2 has no blocking effect per Claude Code
-docs; we don't try to block compaction.
+Exit 0 always. Claude Code supports PreCompact decision control, but this
+hook does not try to block compaction; it fails open.
 
 macOS stdin bug (#38162) only affects async hooks. This hook must be
 invoked synchronously (no "async": true in settings.json).
@@ -22,6 +22,7 @@ invoked synchronously (no "async": true in settings.json).
 import json
 import sys
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -33,7 +34,8 @@ def log_fire(hook_name, action, project, detail, session_id):
     Detail is metadata only — no file content, no diff snippets, no test output."""
     try:
         log_dir = Path.home() / ".claude"
-        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(log_dir, 0o700)
         entry = {
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "hook": hook_name,
@@ -44,8 +46,10 @@ def log_fire(hook_name, action, project, detail, session_id):
         }
         line = json.dumps(entry, separators=(",", ":")) + "\n"
         fd = os.open(str(log_dir / "meta-skills-log.jsonl"),
-                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         try:
+            if hasattr(os, "fchmod"):
+                os.fchmod(fd, 0o600)
             os.write(fd, line.encode("utf-8"))
         finally:
             os.close(fd)
@@ -59,10 +63,30 @@ def log_fire(hook_name, action, project, detail, session_id):
 DELIMITER_START = "<!-- post-compact-recovery-start -->"
 DELIMITER_END = "<!-- post-compact-recovery-end -->"
 
+
+def env_int(name, default):
+    """Read a positive integer env var, falling back on invalid values."""
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
 GIT_TIMEOUT_SECS = 5
 # ~500 tokens; per Boris Cherny CLAUDE.md guidance to stay well under
 # the 5000-token total budget.
-RECOVERY_SECTION_MAX_CHARS = 2000
+RECOVERY_SECTION_MAX_CHARS = env_int("CONTEXT_RECOVERY_SECTION_MAX_CHARS", 2000)
+CUSTOM_INSTRUCTIONS_MAX_CHARS = env_int("CONTEXT_RECOVERY_CUSTOM_MAX_CHARS", 300)
+
+CUSTOM_INSTRUCTION_REDACTIONS = [
+    re.compile(
+        r"(?i)\b([A-Za-z0-9_-]*(?:api[_-]?key|token|secret|password|passwd|credential)[A-Za-z0-9_-]*)\s*[:=]\s*[^,\s;]+"
+    ),
+    re.compile(r"(?i)\bauthorization\s*:\s*bearer\s+[A-Za-z0-9._~+/=-]+"),
+    re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{12,}"),
+    re.compile(r"\bsk-[A-Za-z0-9_-]{12,}\b"),
+]
 
 
 def resolve_claude_md_path(cwd):
@@ -152,6 +176,38 @@ def load_reminders():
         return []
 
 
+def truncate_with_marker(text, max_chars, marker):
+    """Truncate text to max_chars while preserving an explicit marker."""
+    if len(text) <= max_chars:
+        return text
+    if max_chars <= len(marker):
+        return marker[:max_chars]
+    return text[: max_chars - len(marker)].rstrip() + marker
+
+
+def redact_secret_match(match):
+    """Preserve the secret label where possible, but drop the value."""
+    if match.groups():
+        return f"{match.group(1).strip()}=[REDACTED]"
+    return "[REDACTED]"
+
+
+def sanitize_custom_instructions(custom_instructions):
+    """Return a bounded, secret-redacted custom instruction excerpt."""
+    if not custom_instructions:
+        return ""
+
+    sanitized = " ".join(str(custom_instructions).split())
+    for pattern in CUSTOM_INSTRUCTION_REDACTIONS:
+        sanitized = pattern.sub(redact_secret_match, sanitized)
+
+    return truncate_with_marker(
+        sanitized,
+        CUSTOM_INSTRUCTIONS_MAX_CHARS,
+        " [truncated custom instructions]",
+    )
+
+
 def render_section(git_context, reminders, custom_instructions, timestamp,
                    modified_files_limit=None):
     """
@@ -215,9 +271,8 @@ def build_recovery_section(git_context, reminders, custom_instructions):
     # Over budget. Reduce modified-files list progressively.
     modified_files = git_context.get("modified_files")
     if not modified_files:
-        # No modified-files list to truncate; section is over-budget for other reasons.
-        # Best effort: return as-is; rare case.
-        return full
+        # No modified-files list to truncate; enforce the hard section budget.
+        return enforce_recovery_section_budget(full)
 
     file_count = len([f for f in modified_files.split("\n") if f.strip()])
     # Binary-search-ish: try decreasing limits until under budget
@@ -228,11 +283,33 @@ def build_recovery_section(git_context, reminders, custom_instructions):
         )
         if len(truncated) <= RECOVERY_SECTION_MAX_CHARS:
             return truncated
-    # Even with 0 files shown, still over budget. Return as-is.
-    return render_section(
+    # Even with 0 files shown, still over budget. Enforce the hard cap.
+    return enforce_recovery_section_budget(render_section(
         git_context, reminders, custom_instructions, timestamp,
         modified_files_limit=0,
-    )
+    ))
+
+
+def enforce_recovery_section_budget(section):
+    """Hard-cap the recovery block while preserving replacement delimiters."""
+    if len(section) <= RECOVERY_SECTION_MAX_CHARS:
+        return section
+    full_marker = "\n\n[truncated to fit recovery section budget]\n" + DELIMITER_END
+    compact_marker = "\n" + DELIMITER_END
+    min_delimited_budget = len(DELIMITER_START) + len(compact_marker)
+    budget = max(RECOVERY_SECTION_MAX_CHARS, min_delimited_budget)
+    available_after_start = budget - len(DELIMITER_START)
+    marker = full_marker if len(full_marker) <= available_after_start else compact_marker
+    body = section
+    if body.endswith(DELIMITER_END):
+        body = body[: -len(DELIMITER_END)].rstrip()
+    if body.startswith(DELIMITER_START):
+        body = body[len(DELIMITER_START):].lstrip()
+    keep = max(0, budget - len(DELIMITER_START) - 1 - len(marker))
+    middle = body[:keep].rstrip()
+    if middle:
+        return DELIMITER_START + "\n" + middle + marker
+    return DELIMITER_START + marker
 
 
 def merge_into_claude_md(existing_content, recovery_section):
@@ -290,7 +367,9 @@ def main():
 
     cwd = payload.get("cwd") or os.getcwd()
     session_id = payload.get("session_id", "")
-    custom_instructions = payload.get("custom_instructions", "") or ""
+    custom_instructions = sanitize_custom_instructions(
+        payload.get("custom_instructions", "") or ""
+    )
 
     claude_md_path = resolve_claude_md_path(cwd)
     project = os.environ.get("CLAUDE_PROJECT_DIR") or cwd

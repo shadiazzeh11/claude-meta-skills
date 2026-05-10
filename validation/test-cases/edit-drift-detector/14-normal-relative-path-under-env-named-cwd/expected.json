@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["doesn't", "Re-read"],
+  "description": "Relative normal source path still gets drift detection even when cwd contains a protected-looking .env segment",
+  "category": "should-block"
+}

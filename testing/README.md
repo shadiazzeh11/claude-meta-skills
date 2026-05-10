@@ -54,7 +54,7 @@ The `detail` field never contains:
 - Environment variable values, command arguments beyond the runner name
 - User prompts or assistant responses
 
-This is enforced by inspection — each hook builds its own `detail` from a limited template. If you ever want to share a log excerpt for a bug report or chat, the detail strings are safe in shape but paths still identify your projects. Use `--redact` (below) to swap your home prefix for `~`.
+This is enforced by inspection and regression tests — each hook builds its own `detail` from a limited template, and the validation harness asserts sensitive strings stay out of stderr/log output for protected-path cases. If you ever want to share a log excerpt for a bug report or chat, the detail strings are safe in shape but paths still identify your projects. Use `--redact` (below) to swap your home prefix for `~`.
 
 ## Reading the log
 
@@ -169,6 +169,7 @@ What the log can't tell you:
 ## Log file management
 
 - **Append-only.** No rotation, no automatic cleanup. At ~200 chars per line and ~30 fires/day (heavy usage), the file grows ~22 KB/day = ~8 MB/year. Not a real concern unless you're heavily multi-project and multi-decade.
+- **Private permissions.** Hooks create `~/.claude` with mode `0700` and `meta-skills-log.jsonl` with mode `0600` where the platform supports POSIX permissions. Existing permissive log files are tightened best-effort on the next hook fire.
 - **Manual reset.** `> ~/.claude/meta-skills-log.jsonl` truncates without removing the file. Useful if you want to start a fresh measurement window.
 - **No telemetry leaves your machine.** Local-only by design. The log file never gets uploaded anywhere by these hooks. If you want to share findings, paste analyze-log output (with `--redact`) — not the raw JSONL.
 

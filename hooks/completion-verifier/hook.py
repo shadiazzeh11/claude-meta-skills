@@ -32,7 +32,8 @@ def log_fire(hook_name, action, project, detail, session_id):
     Detail is metadata only — no file content, no diff snippets, no test output."""
     try:
         log_dir = Path.home() / ".claude"
-        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(log_dir, 0o700)
         entry = {
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "hook": hook_name,
@@ -43,8 +44,10 @@ def log_fire(hook_name, action, project, detail, session_id):
         }
         line = json.dumps(entry, separators=(",", ":")) + "\n"
         fd = os.open(str(log_dir / "meta-skills-log.jsonl"),
-                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+                     os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
         try:
+            if hasattr(os, "fchmod"):
+                os.fchmod(fd, 0o600)
             os.write(fd, line.encode("utf-8"))
         finally:
             os.close(fd)
