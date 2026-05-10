@@ -28,4 +28,5 @@ validation/test-cases/*/*/project/CLAUDE.md
 validation/test-cases/*/*/project/**/*.txt
 validation/test-cases/*/*/project/**/*.js
 validation/test-cases/*/*/project/**/*.ipynb
+validation/test-cases/context-recovery/*/project/
 
