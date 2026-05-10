@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **technical preview, local install recommended**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog and isolated marketplace CLI regression. It is not yet publicly listed in a marketplace, and marketplace-installed live hook smoke testing still needs to pass before the plugin path replaces `install.sh` as the recommended path.
+Current status: **technical preview, local install recommended**. The repo has a tested installer, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until release/uninstall docs and public marketplace packaging are finished.
 
 ## Current distribution model
 
@@ -25,7 +25,7 @@ The repository now also includes an experimental plugin scaffold and local marke
 - `hooks/hooks.json` uses the standard Claude Code plugin hook location and declares the same five hook entries using `${CLAUDE_PLUGIN_ROOT}` paths.
 - `skills/verification-before-recommend/` is discovered as a bundled plugin skill when the repo is loaded as a plugin.
 
-This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. `make test-marketplace` validates the marketplace manifest and, when `claude` is available locally, exercises `plugin marketplace add`, `plugin list --available`, `plugin install`, `plugin uninstall`, and `plugin marketplace remove` inside isolated temp config/cache directories. The `install.sh` path remains the recommended user install path until marketplace-installed live hook tests are documented and passing.
+This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. `make test-marketplace` validates the marketplace manifest and, when `claude` is available locally, exercises `plugin marketplace add`, `plugin list --available`, `plugin install`, `plugin uninstall`, and `plugin marketplace remove` inside isolated temp config/cache directories. A disposable marketplace-installed smoke project has also proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery from the installed plugin path. The `install.sh` path remains the recommended user install path until public release docs and marketplace packaging are complete.
 
 Expected validation caveat: `claude plugin validate .` warns that the repo-root `CLAUDE.md` is not loaded as plugin context. That is acceptable for this scaffold; plugin-shipped context should live in `skills/`, and this repo already has `skills/verification-before-recommend/`.
 
@@ -40,7 +40,7 @@ As of the first complete dogfood baseline:
 | CI | GitHub Actions runs plugin package checks, marketplace catalog checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
-| Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. |
+| Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
 
@@ -57,7 +57,7 @@ The baseline proves lifecycle reachability and observable behavior under control
 | Hook collections | Community hook packs and directories | Smaller scope. The value here is measured validation, installer idempotency, CI, dogfood classification, and explicit caveats. |
 | Command safety | Claude Code Auto Mode, claude-warden, Sidecar-style policy tools | Out of scope. This repo does not ship a `PreToolUse:Bash` guard or sandbox. |
 | Observability | Multi-agent observability dashboards | Complementary. This repo logs local hook fires and exports summaries, but does not run a server or dashboard. |
-| Marketplaces | Claude plugin marketplace, plugin marketplaces, Claude Code Stack | Future distribution layer. The repo has a plugin scaffold and local catalog, but it is not published as a marketplace plugin. |
+| Marketplaces | Claude plugin marketplace, plugin marketplaces, Claude Code Stack | Future distribution layer. The repo has a plugin scaffold, local catalog, isolated CLI install validation, and marketplace-installed smoke evidence, but it is not published as a marketplace plugin. |
 
 ## What not to claim
 
@@ -76,6 +76,7 @@ Safe claims:
 - "All five hooks have controlled live Claude Code session evidence."
 - "The plugin scaffold has local `--plugin-dir` smoke evidence for four of five hooks; `edit-drift-detector` remains covered by non-plugin controlled dogfood and harness validation."
 - "The marketplace catalog has isolated local CLI add/install/uninstall validation when Claude Code is available."
+- "Marketplace-installed smoke evidence covers construction-gate, silent-file-verifier, completion-verifier, and context-recovery; edit-drift-detector remains covered by non-marketplace controlled dogfood and harness validation."
 - "CI runs validation on pull requests and pushes to main."
 - "Install is idempotent and project-local."
 - "Logs are local metadata only and can be redacted/exported."
@@ -90,7 +91,8 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 - Validate the plugin package with `make test-plugin` and `claude plugin validate .`.
 - Keep `.claude-plugin/marketplace.json` valid with `make test-marketplace`.
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
-- Add marketplace-installed live hook smoke tests in a disposable project after the catalog lands on `main`.
+- Keep marketplace-installed live hook smoke tests current in disposable projects.
+- Decide whether to add a marketplace-installed `edit-drift-detector` proof or keep the current non-marketplace live proof plus harness coverage as the documented caveat.
 - Add an uninstall or disable guide for removing meta-skills hook entries from `.claude/settings.json`.
 - Add a release tag and changelog entry for the first public release.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
