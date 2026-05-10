@@ -40,7 +40,7 @@ cd claude-meta-skills
 
 Manual alternative: copy `hooks/` into your project, then merge `templates/settings.json` into `.claude/settings.json`.
 
-Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `hooks/hooks.json` for Claude Code plugin validation and local marketplace installation tests. The local `install.sh` path above remains the recommended install path until marketplace-installed live smoke tests are documented and passing.
+Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and the standard `hooks/hooks.json` plugin hook file for Claude Code plugin validation and local marketplace installation tests. The local `install.sh` path above remains the recommended install path until marketplace-installed live smoke tests are documented and passing.
 
 ## Hooks
 
