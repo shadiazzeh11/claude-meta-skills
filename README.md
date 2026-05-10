@@ -75,6 +75,8 @@ make test
 
 Per-hook baseline results live in each hook directory's `BASELINE-RESULTS.md`. Per-run JSON output goes to `validation/results/` (gitignored, regenerated each run).
 
+GitHub Actions runs the analyzer regression, installer idempotency regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` (see `.github/workflows/validation.yml`).
+
 **The harness is generic.** It tests against assertions on exit code, stdout patterns, stderr patterns, file content, and file pattern counts — applicable to any Claude Code hook, not just ours. See [VALIDATION.md](VALIDATION.md) for how to validate your own hooks against the harness.
 
 ## Self-deployment data
@@ -125,7 +127,7 @@ We focus on metacognitive verification — catching Claude's own mistakes during
 - **Validation harness timing includes ~30-40 ms of Python startup overhead** per measurement. Real hook execution overhead when installed in Claude Code is approximately 30-45 ms lower than reported values.
 - **Subdirectory project detection in `completion-verifier`** only checks the immediate `cwd` for project config files (`package.json`, `Cargo.toml`, etc.) — doesn't walk up parent directories the way `npm` and `cargo` do. Workaround: ensure `cwd` is project root, or define a top-level `Makefile test:` target.
 - **Race condition window in `context-recovery`** when a user edits CLAUDE.md in another editor while the hook fires. Mitigated by atomic write (`tempfile.mkstemp` + `os.replace`); not eliminated.
-- **No CI/CD integration.** The validation harness runs locally; `make test` works in any shell. Wiring this into GitHub Actions is a future enhancement.
+- **CI is limited to GitHub Actions validation on Ubuntu;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs the analyzer, installer idempotency, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no multi-OS or multi-Python matrix.
 - **No marketplace distribution.** Install via `git clone` + `install.sh`. Plugin marketplace listing is a future enhancement.
 
 ## License

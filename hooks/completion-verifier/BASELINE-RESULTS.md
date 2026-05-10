@@ -52,7 +52,7 @@ Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing
 ## Phase 2.5 additions
 
 - **Tests 09-11 (transcript parsing):** Validate the previously-untested transcript_has_writes feature. Test 10 is the load-bearing case (exploration session detection). Test 11 verifies fallback to running tests when transcript is unreadable.
-- **Test 12 (cargo-not-installed):** Validates FileNotFoundError handler. Cargo is missing on this machine; hook correctly emits "command not found" warning.
+- **Test 12 (cargo-not-installed):** Validates FileNotFoundError handler. The fixture hides Cargo from PATH (via `env.PATH = "/usr/bin:/bin"` in `expected.json`) so the FileNotFoundError path is deterministic both locally and in CI runners that ship Cargo by default. The hook correctly emits a "command not found" `additionalContext` warning.
 - **Code change:** transcript_has_writes now distinguishes "transcript parseable but no writes" (returns False → skip tests) from "transcript unreadable" (returns None → run tests). Previously both paths returned False, causing malformed-transcript scenarios to be misclassified as exploration sessions.
 - **Code change:** cwd-missing now emits a distinct warning instead of being misreported as "command not found." Cleaner debugging when cwd resolution fails.
 - **Code change:** transcript scanner extended to detect `MultiEdit` and `NotebookEdit` (in addition to `Write` and `Edit`) so sessions using batch-edit tools are correctly classified as having writes.
