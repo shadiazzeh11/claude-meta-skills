@@ -1,0 +1,34 @@
+{
+  "name": "claude-meta-skills-marketplace",
+  "owner": {
+    "name": "Shadi AL Azzeh and Caleb Mukasa"
+  },
+  "description": "Marketplace catalog for installing claude-meta-skills as a Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "claude-meta-skills",
+      "source": "./",
+      "description": "Claude Code reliability hooks with harness validation, local dogfood evidence, and a bundled verification discipline skill.",
+      "author": {
+        "name": "Shadi AL Azzeh and Caleb Mukasa"
+      },
+      "homepage": "https://github.com/shadiazzeh11/claude-meta-skills",
+      "repository": "https://github.com/shadiazzeh11/claude-meta-skills",
+      "license": "MIT",
+      "keywords": [
+        "claude-code",
+        "hooks",
+        "validation",
+        "dogfood",
+        "reliability"
+      ],
+      "category": "productivity",
+      "tags": [
+        "hooks",
+        "validation",
+        "dogfood",
+        "reliability"
+      ]
+    }
+  ]
+}

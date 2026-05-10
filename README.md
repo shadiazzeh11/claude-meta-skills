@@ -25,7 +25,7 @@ Do not install it expecting:
 - A project-management workflow, TDD methodology, or subagent orchestration system.
 - Persistent cross-project memory.
 - A hosted dashboard or external telemetry.
-- One-click Claude plugin marketplace installation. This repo now includes a Claude Code plugin scaffold with local smoke evidence, but marketplace listing and marketplace-install smoke testing are still future work. See [PUBLISHING.md](PUBLISHING.md) for readiness notes.
+- A public Claude plugin marketplace listing. This repo includes a Claude Code plugin scaffold, marketplace catalog, and isolated marketplace CLI install regression, but public listing and marketplace-installed live smoke testing are still future work. See [PUBLISHING.md](PUBLISHING.md) for readiness notes.
 
 ## Install
 
@@ -40,7 +40,7 @@ cd claude-meta-skills
 
 Manual alternative: copy `hooks/` into your project, then merge `templates/settings.json` into `.claude/settings.json`.
 
-Experimental plugin path: the repo root includes `.claude-plugin/plugin.json` and `hooks/hooks.json` for Claude Code plugin validation. The local `install.sh` path above remains the recommended install path until plugin install smoke tests and marketplace packaging are complete.
+Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `hooks/hooks.json` for Claude Code plugin validation and local marketplace installation tests. The local `install.sh` path above remains the recommended install path until marketplace-installed live smoke tests are documented and passing.
 
 ## Hooks
 
@@ -96,7 +96,7 @@ make test
 
 Per-hook baseline results live in each hook directory's `BASELINE-RESULTS.md`. Per-run JSON output goes to `validation/results/` (gitignored, regenerated each run).
 
-GitHub Actions runs the plugin package regression, analyzer regression, installer idempotency regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` (see `.github/workflows/validation.yml`).
+GitHub Actions runs the plugin package regression, marketplace catalog regression, analyzer regression, installer idempotency regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` (see `.github/workflows/validation.yml`).
 
 **The harness is generic.** It tests against assertions on exit code, stdout patterns, stderr patterns, file content, and file pattern counts — applicable to any Claude Code hook, not just ours. See [VALIDATION.md](VALIDATION.md) for how to validate your own hooks against the harness.
 
@@ -138,9 +138,9 @@ We focus on metacognitive verification — catching Claude's own mistakes during
 - **Persistent memory** ([Claude-Mem](https://docs.claude-mem.ai/) for cross-session memory with SQLite + vector search). Heavier than our PreCompact + CLAUDE.md approach; different problem class.
 - **Language-specific code quality** ([omerkaz/claude-code-ts-quality-hook](https://github.com/omerkaz/claude-code-ts-quality-hook) for TypeScript lint/type checks; [danielmiessler/PAI](https://github.com/danielmiessler/Personal_AI_Infrastructure) for path protection plus TODO regex). We cover language-agnostic structural checks; these cover language-specific quality.
 - **Observability dashboards** ([disler/claude-code-hooks-multi-agent-observability](https://github.com/disler/claude-code-hooks-multi-agent-observability) for real-time agent monitoring with WebSocket UI). Different category.
-- **Marketplaces and directories** ([Claude Code Stack](https://www.claudecodestack.com/) and the [Claude plugin marketplace](https://claude.com/plugins)) help users discover hooks, skills, MCPs, agents, and plugins. Different distribution layer; this repo now has a plugin scaffold, with marketplace publication left for future work.
+- **Marketplaces and directories** ([Claude Code Stack](https://www.claudecodestack.com/) and the [Claude plugin marketplace](https://claude.com/plugins)) help users discover hooks, skills, MCPs, agents, and plugins. Different distribution layer; this repo now has a plugin scaffold and local marketplace catalog, with public marketplace publication left for future work.
 
-**Explicit non-goals:** command safety, agent workflow methodology, persistent cross-session memory, observability dashboards, and marketplace plugin distribution. We focus on a small, validated, locally-installable hook suite.
+**Explicit non-goals:** command safety, agent workflow methodology, persistent cross-session memory, observability dashboards, and public marketplace publication. We focus on a small, validated, locally-installable hook suite.
 
 For the current marketplace-readiness status, positioning, and pre-publish checklist, see [PUBLISHING.md](PUBLISHING.md).
 
@@ -154,8 +154,8 @@ For the current marketplace-readiness status, positioning, and pre-publish check
 - **Validation harness timing includes ~30-40 ms of Python startup overhead** per measurement. Real hook execution overhead when installed in Claude Code is approximately 30-45 ms lower than reported values.
 - **Subdirectory project detection in `completion-verifier`** only checks the immediate `cwd` for project config files (`package.json`, `Cargo.toml`, etc.) — doesn't walk up parent directories the way `npm` and `cargo` do. Workaround: ensure `cwd` is project root, or define a top-level `Makefile test:` target.
 - **Race condition window in `context-recovery`** when a user edits CLAUDE.md in another editor while the hook fires. Mitigated by atomic write (`tempfile.mkstemp` + `os.replace`); not eliminated.
-- **CI is limited to GitHub Actions validation on Ubuntu;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, analyzer regression, installer idempotency, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no multi-OS or multi-Python matrix.
-- **No marketplace distribution.** Install via `git clone` + `install.sh`. A plugin scaffold exists and has local `--plugin-dir` smoke evidence, but marketplace listing and marketplace-install smoke tests are future enhancements.
+- **CI is limited to GitHub Actions validation on Ubuntu;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, marketplace catalog validation, analyzer regression, installer idempotency, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no multi-OS or multi-Python matrix.
+- **No public marketplace listing.** Install via `git clone` + `install.sh`. A plugin scaffold and marketplace catalog exist, but public listing and marketplace-installed live hook smoke tests are future enhancements.
 
 ## License
 
