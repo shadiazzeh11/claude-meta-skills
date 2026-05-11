@@ -6,6 +6,10 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+### Added
+
+- Added an analyzer evidence scorecard and deterministic recommendations so dogfood reports show real hook coverage, real session/project counts, non-real ratio, and next actions.
+
 ### Changed
 
 - Clarified post-`v0.1.0` release and publishing documentation so it reads as a reusable release process rather than only a first-release checklist.
