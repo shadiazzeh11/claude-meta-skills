@@ -1,0 +1,17 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/other-dir/CLAUDE.md",
+    "patterns": ["Session Recovery", "DOGFOOD_CONTEXT_ROOT_SENTINEL=env-wins", "Env target content"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Session Recovery", "post-compact-recovery-start"]
+  },
+  "description": "CLAUDE_PROJECT_DIR still wins over upward CLAUDE.md/.git discovery from cwd",
+  "category": "should-write",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "{{TEST_DIR}}/other-dir"
+  }
+}

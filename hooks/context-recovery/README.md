@@ -48,19 +48,21 @@ Requires Python 3.7+, git, and a writable CLAUDE.md (or a writable project direc
 ## How it works
 
 1. Reads JSON from stdin (PreCompact event payload).
-2. Resolves CLAUDE.md path: `$CLAUDE_PROJECT_DIR/CLAUDE.md` if env var set, otherwise `cwd/CLAUDE.md`.
-3. Runs git commands (with 5-second timeout each, error-tolerant): `branch --show-current`, `log --oneline -5`, `diff --name-only HEAD`.
-4. Loads static reminders from `rules.json` next to the hook script.
-5. Sanitizes custom instructions: collapses whitespace, redacts common secret/token/password assignments, and truncates to a bounded excerpt.
-6. Builds recovery section between `<!-- post-compact-recovery-start -->` and `<!-- post-compact-recovery-end -->` delimiters.
-7. Token budget: caps recovery section at ~2000 characters (~500 tokens). Modified-files list is truncated first if over budget; if reminders/custom instructions still exceed the budget, the final section is hard-capped while preserving the recovery-block delimiters needed for later idempotent replacement.
-8. Reads existing CLAUDE.md. If it has a recovery block, replaces it (idempotent). Otherwise, appends.
-9. Atomic write: writes to temp file, then `os.replace()`. If the original is locked, read-only, or any step fails, the original is left untouched.
+2. Resolves project root: `$CLAUDE_PROJECT_DIR` if set, otherwise walks upward from `cwd` to the nearest existing `CLAUDE.md` or `.git`, falling back to `cwd` for plain scratch directories.
+3. Writes recovery state to `CLAUDE.md` at that resolved root.
+4. Runs git commands from the resolved root when it directly contains `.git` (with 5-second timeout each, error-tolerant): `branch --show-current`, `log --oneline -5`, `diff --name-only HEAD`.
+5. Loads static reminders from `rules.json` next to the hook script.
+6. Sanitizes custom instructions: collapses whitespace, redacts common secret/token/password assignments, and truncates to a bounded excerpt.
+7. Builds recovery section between `<!-- post-compact-recovery-start -->` and `<!-- post-compact-recovery-end -->` delimiters.
+8. Token budget: caps recovery section at ~2000 characters (~500 tokens). Modified-files list is truncated first if over budget; if reminders/custom instructions still exceed the budget, the final section is hard-capped while preserving the recovery-block delimiters needed for later idempotent replacement.
+9. Reads existing CLAUDE.md. If it has a recovery block, replaces it (idempotent). Otherwise, appends.
+10. Atomic write: writes to temp file, then `os.replace()`. If the original is locked, read-only, or any step fails, the original is left untouched.
 
 ## Design decisions
 
 - **HTML comment delimiters.** Standard markdown convention for invisible markers. Hook reads/writes raw file content, so delimiter visibility in rendered context is irrelevant for mechanics. If Claude sees them in context, they're benign noise.
 - **Atomic write.** Uses `tempfile.mkstemp` + `os.replace` (atomic on POSIX). Prevents corruption if the hook crashes mid-write.
+- **Nearest project marker discovery.** `$CLAUDE_PROJECT_DIR` stays authoritative. Without it, the hook walks upward from `cwd` and selects the nearest existing `CLAUDE.md` or `.git` marker. This handles subdirectory Claude Code sessions while avoiding a blind `git rev-parse` walk that can surface unrelated parent-repo context.
 - **Idempotent.** Repeated PreCompact events replace the previous recovery section, not append. CLAUDE.md doesn't grow indefinitely.
 - **Token budget enforcement.** ~500 tokens max (per Boris Cherny CLAUDE.md guidance: stay well under 5000 total). Modified-files list is the variable-size component; it's truncated first, then the final recovery section is hard-capped if any other content still exceeds the budget. If an impossible tiny cap is configured, delimiter preservation wins so future compactions can still replace the block cleanly.
 - **Custom instruction privacy.** Manual `/compact` text can contain sensitive operational notes. The hook preserves only a sanitized excerpt, redacts common secret-like assignments, and truncates long text before writing to CLAUDE.md.
@@ -98,7 +100,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 ## Known limitations
 
-- **`$CLAUDE_PROJECT_DIR` not set + cwd is subdirectory:** the hook may write to a CLAUDE.md in the wrong location. Workaround: ensure Claude Code is launched from project root, or rely on `$CLAUDE_PROJECT_DIR` being set (Claude Code typically sets it). Fix candidate for future: walk up parent directories looking for an existing CLAUDE.md or `.git` directory.
+- **Parent-marker ambiguity.** If `$CLAUDE_PROJECT_DIR` is absent, root discovery chooses the nearest parent `CLAUDE.md` or `.git` marker. That is correct for normal project subdirectories, but unusual nested-repo or monorepo layouts may prefer a different root. Launch Claude Code from the intended root or rely on `$CLAUDE_PROJECT_DIR` when precision matters.
 - **Token budget is approximate.** The 2000-char limit is roughly 500 tokens for English text but actual token count depends on tokenizer. The character cap is enforced, but exact token count is not.
 - **Custom instruction redaction is best effort.** The hook redacts common `token=`, `api_key=`, `secret=`, `password=`, bearer-token, and `sk-...` shapes. It cannot guarantee every possible secret format is removed. Avoid putting sensitive material in `/compact` instructions if CLAUDE.md is tracked.
 - **HTML comment delimiter behavior in Claude's context window is unverified.** The hook works correctly at the file level (reads/writes raw text). Whether Claude sees the markers in rendered context is unknown but harmless either way.
@@ -119,4 +121,4 @@ cd validation
 ./harness.sh context-recovery
 ```
 
-10 test cases covering should-write, idempotency, privacy redaction, hard-cap behavior, and edge cases. See `validation/test-cases/context-recovery/`.
+13 test cases covering should-write, idempotency, privacy redaction, hard-cap behavior, subdirectory root discovery, and edge cases. See `validation/test-cases/context-recovery/`.
