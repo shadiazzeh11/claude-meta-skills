@@ -41,7 +41,7 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 
 | Area | Evidence |
 |---|---|
-| Synthetic validation | `make test` and `make test-stop-env` pass 87/87. |
+| Synthetic validation | `make test` and `make test-stop-env` pass 89/89. |
 | Installer lifecycle | `make test-installer` passes repeat-install, merge, uninstall, no-op uninstall, and preservation scenarios. |
 | Doctor diagnostics | `make doctor TARGET=/path/to/project` performs read-only source/install diagnostics; `make test-doctor` covers source-only, no-`jq`, clean-target, installed, broken, duplicate, disabled, drifted-copy, missing-hook, and missing-target states. |
 | CI | GitHub Actions runs plugin package checks, marketplace catalog checks, release metadata checks, validation harness lock checks, validation harness behavior checks, repository hygiene checks, doctor diagnostic checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
@@ -80,7 +80,7 @@ Do not claim:
 
 Safe claims:
 
-- "87/87 synthetic validation tests pass."
+- "89/89 synthetic validation tests pass."
 - "All five hooks have controlled live Claude Code session evidence."
 - "The plugin scaffold has local `--plugin-dir` smoke evidence for four of five hooks; `edit-drift-detector` remains covered by non-plugin controlled dogfood and harness validation."
 - "The marketplace catalog has isolated local CLI add/install/uninstall validation when Claude Code is available."

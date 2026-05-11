@@ -6,7 +6,7 @@ Five focused hooks covering edit verification, completion gating, file checks, w
 
 | Hooks | Harness tests | Harness false positives | Harness false negatives | Crosley layers |
 |---|---|---|---|---|
-| 5 | 87 | 0 | 0 | 4/4 |
+| 5 | 89 | 0 | 0 | 4/4 |
 
 ## Fit
 
@@ -55,7 +55,7 @@ Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `
 | [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on non-protected Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 14 |
 | [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 32 |
 | [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 10 |
-| [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 18 |
+| [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 20 |
 | [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 13 |
 
 Each hook directory contains its own README with design decisions, known limitations, coexistence notes, and per-hook baseline results.
@@ -87,9 +87,9 @@ Every hook ships with its own test suite. The counts below summarize the tracked
 | edit-drift-detector | 14 | 14 | 0 | 0 |
 | construction-gate | 32 | 32 | 0 | 0 |
 | silent-file-verifier | 10 | 10 | 0 | 0 |
-| completion-verifier | 18 | 18 | 0 | 0 |
+| completion-verifier | 20 | 20 | 0 | 0 |
 | context-recovery | 13 | 13 | 0 | 0 |
-| **Total** | **87** | **87** | **0** | **0** |
+| **Total** | **89** | **89** | **0** | **0** |
 
 Run the suite yourself:
 
@@ -108,7 +108,7 @@ GitHub Actions runs the plugin package regression, marketplace catalog regressio
 
 ## Self-deployment data
 
-Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 87/87 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
+Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 89/89 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
 
 ```bash
 ./testing/analyze-log.py             # last 7 days summary
@@ -159,7 +159,7 @@ For the current marketplace-readiness status, positioning, pre-publish checklist
 - **Async hook stdin bug on macOS** per [Claude Code Issue #38162](https://github.com/anthropics/claude-code/issues/38162) — `"async": true` causes empty stdin on macOS. All our hooks default to synchronous mode (the correct choice).
 - **`construction-gate` is convergent with ecosystem.** Patterns are well-trodden ground (PAI's path protection, claude-warden's argument-aware rules, native Claude Code permission deny rules). Our value-add is the validation suite, not novel patterns.
 - **Validation harness timing includes ~30-40 ms of Python startup overhead** per measurement. Real hook execution overhead when installed in Claude Code is approximately 30-45 ms lower than reported values.
-- **Subdirectory project detection in `completion-verifier`** only checks the immediate `cwd` for project config files (`package.json`, `Cargo.toml`, etc.) — doesn't walk up parent directories the way `npm` and `cargo` do. Workaround: ensure `cwd` is project root, or define a top-level `Makefile test:` target.
+- **Project type ambiguity in `completion-verifier`:** a repo with multiple project config files still uses the first supported config in priority order. Parent discovery now handles subdirectory Stop events, but mixed-language repos should still make their preferred test runner available through the highest-priority detected config.
 - **Race condition window in `context-recovery`** when a user edits CLAUDE.md in another editor while the hook fires. Mitigated by atomic write (`tempfile.mkstemp` + `os.replace`); not eliminated.
 - **CI is limited to GitHub Actions validation on Ubuntu and macOS;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, marketplace catalog validation, release metadata regression, validation harness lock regression, validation harness behavior regression, repository hygiene regression, doctor diagnostic regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no Windows runner, and no multi-Python matrix.
 - **No public marketplace listing.** Install via `git clone` + `install.sh`. A plugin scaffold, marketplace catalog, isolated marketplace install regression, and marketplace-installed smoke evidence for four hooks exist, but public listing/release packaging is future work.

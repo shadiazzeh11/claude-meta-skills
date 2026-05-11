@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block", "intentional failure from project root"],
+  "description": "Python project invoked from subdirectory; parent pyproject root is discovered and failing tests block",
+  "category": "should-block"
+}
