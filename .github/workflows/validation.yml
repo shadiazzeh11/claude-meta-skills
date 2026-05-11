@@ -15,9 +15,15 @@ concurrency:
 
 jobs:
   validation:
-    name: Validation
-    runs-on: ubuntu-latest
+    name: Validation (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
 
     steps:
       - name: Checkout
@@ -28,13 +34,20 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install system dependencies
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
 
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          command -v jq >/dev/null 2>&1 || brew install jq
+
       - name: Show tool versions
         run: |
+          uname -a
           python --version
           python3 --version
           jq --version
