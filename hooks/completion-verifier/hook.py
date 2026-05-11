@@ -89,6 +89,70 @@ PROJECT_TYPES = [
 ]
 
 
+def is_git_root(path):
+    """True if path contains a .git directory or file (worktree)."""
+    if not path:
+        return False
+    return (Path(path) / ".git").exists()
+
+
+def _is_relative_to(path, base):
+    """Return True when path is inside base, using lexical absolute paths."""
+    try:
+        common = os.path.commonpath([str(path), str(base)])
+    except ValueError:
+        return False
+    return common == str(base)
+
+
+def resolve_project_root(cwd):
+    """
+    Return the root to inspect for project config files.
+
+    Claude Code usually sets $CLAUDE_PROJECT_DIR, which is the trusted upper
+    bound for parent discovery. Within that bound, walk upward from cwd until
+    a project config is found or the nearest git root is reached. Without the
+    env var, apply the same search from cwd through its parents. This handles
+    subdirectory Stop events without leaking into unrelated parent repos.
+    """
+    root = Path(cwd)
+    try:
+        root = root.expanduser().resolve(strict=False)
+    except OSError:
+        root = root.expanduser()
+
+    env_root = None
+    project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
+    if project_dir and os.path.isdir(project_dir):
+        try:
+            env_root = Path(project_dir).expanduser().resolve(strict=False)
+        except OSError:
+            env_root = Path(project_dir).expanduser()
+
+    if env_root is not None:
+        if _is_relative_to(root, env_root):
+            candidates = []
+            current = root
+            while True:
+                candidates.append(current)
+                if current == env_root:
+                    break
+                current = current.parent
+        else:
+            candidates = [env_root]
+    else:
+        candidates = [root] + list(root.parents)
+
+    config_names = [config for config, _cmd in PROJECT_TYPES]
+    for candidate in candidates:
+        if any((candidate / config).is_file() for config in config_names):
+            return str(candidate)
+        if is_git_root(candidate):
+            return str(candidate)
+
+    return str(env_root or root)
+
+
 def project_uses_pytest(cwd):
     """Return True when Python project metadata points at pytest."""
     root = Path(cwd)
@@ -175,13 +239,14 @@ def python_test_command(cwd, config):
 
 
 def detect_project_type(cwd):
-    """Return (config_file, test_command) or (None, None)."""
+    """Return (project_root, config_file, test_command)."""
+    project_root = resolve_project_root(cwd)
     for config, cmd in PROJECT_TYPES:
-        if (Path(cwd) / config).is_file():
+        if (Path(project_root) / config).is_file():
             if config in ("pyproject.toml", "setup.py"):
-                return config, python_test_command(cwd, config)
-            return config, cmd
-    return None, None
+                return project_root, config, python_test_command(project_root, config)
+            return project_root, config, cmd
+    return project_root, None, None
 
 
 FILE_MODIFYING_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
@@ -302,7 +367,7 @@ def main():
         return 0
 
     # Project type detection
-    config, cmd = detect_project_type(cwd)
+    project_root, config, cmd = detect_project_type(cwd)
     if config is None:
         return 0  # No recognizable project; allow stop
     messages = load_messages()
@@ -316,7 +381,7 @@ def main():
         log_fire(
             hook_name="completion-verifier",
             action="warn-cmd-missing",
-            project=cwd,
+            project=project_root,
             detail=f"project_type={config} cmd=pytest",
             session_id=payload.get("session_id", ""),
         )
@@ -335,7 +400,7 @@ def main():
     try:
         result = subprocess.run(
             cmd,
-            cwd=cwd,
+            cwd=project_root,
             timeout=TIMEOUT_SECS,
             capture_output=True,
             text=True,
@@ -350,7 +415,7 @@ def main():
         log_fire(
             hook_name="completion-verifier",
             action="warn-timeout",
-            project=cwd,
+            project=project_root,
             detail=f"project_type={config} timeout={TIMEOUT_SECS}s",
             session_id=payload.get("session_id", ""),
         )
@@ -365,7 +430,7 @@ def main():
         log_fire(
             hook_name="completion-verifier",
             action="warn-cmd-missing",
-            project=cwd,
+            project=project_root,
             detail=f"project_type={config} cmd={' '.join(cmd)}",
             session_id=payload.get("session_id", ""),
         )
@@ -392,7 +457,7 @@ def main():
     log_fire(
         hook_name="completion-verifier",
         action="block",
-        project=cwd,
+        project=project_root,
         detail=f"project_type={config} test_exit_code={result.returncode}",
         session_id=payload.get("session_id", ""),
     )

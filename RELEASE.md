@@ -80,8 +80,8 @@ Expected:
 - validation harness lock regression passes
 - analyzer regression passes
 - installer lifecycle regression passes
-- `make test` passes `87/87`
-- `make test-stop-env` passes `87/87`
+- `make test` passes `89/89`
+- `make test-stop-env` passes `89/89`
 - real dogfood log line count does not change during validation
 
 ## Dogfood evidence refresh
@@ -184,7 +184,7 @@ Technical preview of claude-meta-skills: a local Claude Code reliability hook su
 ## Highlights
 
 - 5 hooks covering edit verification, protected paths, ghost writes, completion tests, and pre-compaction recovery.
-- 87/87 synthetic harness validation tests.
+- 89/89 synthetic harness validation tests.
 - Controlled live Claude Code session evidence for all five hooks.
 - Local installer/uninstaller with lifecycle tests.
 - GitHub Actions validation on PRs and main.

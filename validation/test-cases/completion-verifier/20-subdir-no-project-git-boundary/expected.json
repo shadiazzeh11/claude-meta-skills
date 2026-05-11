@@ -1,0 +1,9 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_empty": true,
+  "description": "Subdirectory with CLAUDE_PROJECT_DIR set above a nested git root; hook stops at the nested repo and does not run parent tests",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "{{PROJECT_PATH}}"
+  },
+  "category": "should-pass"
+}

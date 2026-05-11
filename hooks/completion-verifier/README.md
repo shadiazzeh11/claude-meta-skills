@@ -11,7 +11,7 @@ Stop hook that runs the project's test command before allowing Claude to finish 
 ## What it intentionally doesn't catch
 
 - Projects with no recognizable type (no `package.json`, `Cargo.toml`, `pyproject.toml`, `setup.py`, `go.mod`, or `Makefile`) → pass-through.
-- Exploration sessions with no Write/Edit usage (when transcript is readable) → pass-through.
+- Exploration sessions with no file-modifying tool usage (when transcript is readable) → pass-through.
 - Sessions where the test command isn't installed → pass-through with warning.
 - Long-running test suites exceeding 30s → pass-through with timeout warning.
 
@@ -42,7 +42,10 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 
 1. Reads JSON from stdin.
 2. **Anti-loop check (mandatory):** if `stop_hook_active` is `true`, exit 0 immediately. Without this, the hook creates an infinite loop (issues #3573, #10205).
-3. Detects project type via config-file presence, in this priority order:
+3. Resolves the project root for test detection:
+   - `$CLAUDE_PROJECT_DIR` is used as the trusted upper bound when present.
+   - Otherwise, the hook walks upward from `cwd` until it finds a supported config file or reaches the nearest git root.
+4. Detects project type via config-file presence at that resolved root, in this priority order:
    - `package.json` → `npm test`
    - `Cargo.toml` → `cargo test`
    - `pyproject.toml` / `setup.py` → Python test command:
@@ -50,10 +53,10 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
      - otherwise → `python3 -m unittest discover -v`
    - `go.mod` → `go test ./...`
    - `Makefile` → `make test`
-4. Reads `transcript_path` to check whether any Write or Edit calls happened in the session. If transcript readable AND no writes → exit 0 (exploration session).
-5. Runs the test command with a 30s timeout from `cwd`.
-6. Allow on success (exit 0). Block on failure with JSON `{"decision": "block", "reason": ...}` containing the last 50 lines of test output.
-7. Timeout or command-not-found → exit 0 with `additionalContext` warning (don't block when can't verify).
+5. Reads `transcript_path` to check whether any `Write`, `Edit`, `MultiEdit`, or `NotebookEdit` calls happened in the session. If transcript readable AND no writes → exit 0 (exploration session).
+6. Runs the test command with a 30s timeout from the resolved project root.
+7. Allow on success (exit 0). Block on failure with JSON `{"decision": "block", "reason": ...}` containing the last 50 lines of test output.
+8. Timeout or command-not-found → exit 0 with `additionalContext` warning (don't block when can't verify).
 
 ## Design decisions
 
@@ -68,6 +71,8 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 - **JSON `decision: block` over exit 2.** Stop hooks have well-documented JSON-decision blocking; exit 2 also works but JSON is more explicit and permits the `reason` field.
 
 - **Project priority: spec order.** First config file found wins. Document this so users know which command runs in mixed-config repos.
+
+- **Parent discovery is bounded.** Subdirectory Stop events walk upward to find the project config, but `$CLAUDE_PROJECT_DIR` and nearest-git-root boundaries prevent leaking into unrelated parent repositories.
 
 - **Constructive feedback default.** `messages.json` defines `constructive` and `punitive` versions for A/B testing in Phase 2+.
 
@@ -96,7 +101,6 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 ## Additional known limitations
 
-- **Subdirectory project detection: only checks immediate cwd.** If Claude is in `src/` but `package.json` is at the project root, this hook will not detect the project type and will pass through silently. npm and cargo themselves walk up parent directories to find their config files; this hook does not. Workaround: invoke Claude from project root, or define a `Makefile test:` target at every level. Phase 3 fix candidate: walk up parent directories until a config file is found or git root reached.
 - **Transcript schema drift risk.** `transcript_has_writes` parses the JSONL transcript by looking for `message.content[].type == "tool_use"` with `name in ("Write", "Edit", "MultiEdit", "NotebookEdit")`. If Claude Code changes the transcript format (e.g., to `tool_call` instead of `tool_use`, or wraps blocks differently), the function returns `False` (no writes found) and the hook silently skips test running on real edit sessions. This is a quiet failure mode worth monitoring; consider periodic spot-checks against actual session transcripts.
 - **Test command timeout truncates output capture.** When `subprocess.TimeoutExpired` fires, Python's subprocess returns no captured output for the truncated portion. The hook emits a "test timed out" warning but doesn't include the partial test output that ran before timeout. Future enhancement: capture partial output from `TimeoutExpired.stdout`.
 - **Anti-loop check only catches the documented loop pattern.** `stop_hook_active=true` is the documented signal Claude Code sends when forced-continuation is in progress. If a future Claude Code version changes this signal (e.g., to a different field name), the anti-loop protection silently degrades.
@@ -114,4 +118,4 @@ cd validation
 ./harness.sh completion-verifier
 ```
 
-18 test cases. See `validation/test-cases/completion-verifier/`.
+20 test cases. See `validation/test-cases/completion-verifier/`.
