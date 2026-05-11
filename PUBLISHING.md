@@ -41,7 +41,7 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 
 | Area | Evidence |
 |---|---|
-| Synthetic validation | `make test` and `make test-stop-env` pass 67/67. |
+| Synthetic validation | `make test` and `make test-stop-env` pass 70/70. |
 | Installer lifecycle | `make test-installer` passes repeat-install, merge, uninstall, no-op uninstall, and preservation scenarios. |
 | CI | GitHub Actions runs plugin package checks, marketplace catalog checks, release metadata checks, validation harness lock checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. The latest clean post-`v0.1.2` window produced 6 real fires across all five hooks in one disposable Claude Code session with `non_real_ratio=0.0%`. |
@@ -79,7 +79,7 @@ Do not claim:
 
 Safe claims:
 
-- "67/67 synthetic validation tests pass."
+- "70/70 synthetic validation tests pass."
 - "All five hooks have controlled live Claude Code session evidence."
 - "The plugin scaffold has local `--plugin-dir` smoke evidence for four of five hooks; `edit-drift-detector` remains covered by non-plugin controlled dogfood and harness validation."
 - "The marketplace catalog has isolated local CLI add/install/uninstall validation when Claude Code is available."

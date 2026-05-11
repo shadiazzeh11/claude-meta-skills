@@ -1,0 +1,6 @@
+[project]
+name = "test-fixture-pytest-declared-missing"
+version = "0.0.1"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
