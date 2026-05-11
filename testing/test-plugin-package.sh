@@ -104,7 +104,7 @@ PY
 
 echo "Test: claude plugin validate, when Claude Code is available"
 if command -v claude >/dev/null 2>&1; then
-  claude plugin validate .
+  claude plugin validate .claude-plugin/plugin.json
 else
   echo "SKIP: claude command not found; JSON and hook mapping checks passed"
 fi

@@ -9,9 +9,11 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 ### Added
 
 - Added `make report-dogfood` for generating ignored redacted Markdown and JSON dogfood evidence reports.
+- Added `TROUBLESHOOTING.md` for pausing, uninstalling, debugging, and reporting hook behavior across local and plugin installs.
 
 ### Changed
 
+- Corrected plugin package validation guidance and regression coverage to validate `.claude-plugin/plugin.json` explicitly instead of relying on repo-root validation.
 - Expanded GitHub Actions validation from Ubuntu-only to an Ubuntu + macOS runner matrix.
 
 ## [0.1.1] - 2026-05-11
@@ -69,7 +71,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 - Plugin package validation:
   - `make test-plugin`
   - `testing/test-plugin-package.sh`
-  - `claude plugin validate .` when Claude Code is available
+  - `claude plugin validate .claude-plugin/plugin.json` when Claude Code is available
 - Local marketplace catalog:
   - `.claude-plugin/marketplace.json`
   - `make test-marketplace`

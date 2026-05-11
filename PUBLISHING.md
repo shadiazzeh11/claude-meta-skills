@@ -35,7 +35,7 @@ The repository now also includes an experimental plugin scaffold and local marke
 
 This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. `make test-marketplace` validates the marketplace manifest and, when `claude` is available locally, exercises `plugin marketplace add`, `plugin list --available`, `plugin install`, `plugin uninstall`, and `plugin marketplace remove` inside isolated temp config/cache directories. A disposable marketplace-installed smoke project has also proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery from the installed plugin path. The `install.sh` path remains the recommended user install path until public marketplace packaging is complete.
 
-Expected validation caveat: `claude plugin validate .` warns that the repo-root `CLAUDE.md` is not loaded as plugin context. That is acceptable for this scaffold; plugin-shipped context should live in `skills/`, and this repo already has `skills/verification-before-recommend/`.
+Expected validation caveat: direct plugin-manifest validation with `claude plugin validate .claude-plugin/plugin.json` warns that the repo-root `CLAUDE.md` is not loaded as plugin context. That is acceptable for this scaffold; plugin-shipped context should live in `skills/`, and this repo already has `skills/verification-before-recommend/`. Running `claude plugin validate .` from this repo validates the marketplace manifest instead.
 
 ## Current evidence snapshot
 
@@ -95,12 +95,13 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Keep the plugin layout (`.claude-plugin/plugin.json`) valid.
 - Bump `.claude-plugin/plugin.json` `version` for every public plugin release.
 - Keep hook declarations in the standard plugin hook file (`hooks/hooks.json`) and ensure bundled hook commands use `${CLAUDE_PLUGIN_ROOT}`.
-- Validate the plugin package with `make test-plugin` and `claude plugin validate .`.
+- Validate the plugin package with `make test-plugin` and `claude plugin validate .claude-plugin/plugin.json`.
 - Keep `.claude-plugin/marketplace.json` valid with `make test-marketplace`.
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
 - Decide whether to add a marketplace-installed `edit-drift-detector` proof or keep the current non-marketplace live proof plus harness coverage as the documented caveat.
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
+- Keep [TROUBLESHOOTING.md](TROUBLESHOOTING.md) current with Claude Code hook, settings, and plugin command changes before publishing.
 - Keep `CHANGELOG.md` and `RELEASE.md` current, then add a release tag only after the release gate in `RELEASE.md` passes.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
 - Keep GitHub Actions green on Ubuntu and macOS for `main`.
