@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **technical preview, local install recommended**. The repo has a tested installer/uninstaller, CI, controlled live-session dogfood evidence for all five hooks, local report export, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until release docs and public marketplace packaging are finished.
+Current status: **technical preview, local install recommended**. The repo has a tested installer/uninstaller, CI, controlled live-session dogfood evidence for all five hooks, local report export, release checklist, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
 
 ## Current distribution model
 
@@ -33,7 +33,7 @@ The repository now also includes an experimental plugin scaffold and local marke
 - `hooks/hooks.json` uses the standard Claude Code plugin hook location and declares the same five hook entries using `${CLAUDE_PLUGIN_ROOT}` paths.
 - `skills/verification-before-recommend/` is discovered as a bundled plugin skill when the repo is loaded as a plugin.
 
-This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. `make test-marketplace` validates the marketplace manifest and, when `claude` is available locally, exercises `plugin marketplace add`, `plugin list --available`, `plugin install`, `plugin uninstall`, and `plugin marketplace remove` inside isolated temp config/cache directories. A disposable marketplace-installed smoke project has also proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery from the installed plugin path. The `install.sh` path remains the recommended user install path until public release docs and marketplace packaging are complete.
+This scaffold is intended for validation and smoke testing. Local `claude --plugin-dir .` smoke tests have proved plugin-path hook loading for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. `make test-marketplace` validates the marketplace manifest and, when `claude` is available locally, exercises `plugin marketplace add`, `plugin list --available`, `plugin install`, `plugin uninstall`, and `plugin marketplace remove` inside isolated temp config/cache directories. A disposable marketplace-installed smoke project has also proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery from the installed plugin path. The `install.sh` path remains the recommended user install path until public marketplace packaging is complete.
 
 Expected validation caveat: `claude plugin validate .` warns that the repo-root `CLAUDE.md` is not loaded as plugin context. That is acceptable for this scaffold; plugin-shipped context should live in `skills/`, and this repo already has `skills/verification-before-recommend/`.
 
@@ -50,6 +50,7 @@ As of the first complete dogfood baseline:
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
+| Release docs | `CHANGELOG.md` and `RELEASE.md` define the first technical-preview release scope and tag checklist. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
 
 The baseline proves lifecycle reachability and observable behavior under controlled live Claude Code dogfood probes. It does not prove production false-positive rate, exhaustive real-world coverage, or organic frequency of each failure mode.
@@ -102,7 +103,7 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
 - Decide whether to add a marketplace-installed `edit-drift-detector` proof or keep the current non-marketplace live proof plus harness coverage as the documented caveat.
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
-- Add a release tag and changelog entry for the first public release.
+- Keep `CHANGELOG.md` and `RELEASE.md` current, then add a release tag for the first public release.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
 - Keep GitHub Actions green on `main`.
 - Generate fresh dogfood reports:
@@ -118,7 +119,7 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 
 ## Sources checked
 
-Sources checked on 2026-05-09 and refreshed on 2026-05-10:
+Sources checked on 2026-05-09 and refreshed through 2026-05-11:
 
 - Claude Code hooks reference: https://code.claude.com/docs/en/hooks
 - Claude Code hooks guide: https://code.claude.com/docs/en/hooks-guide
@@ -139,5 +140,7 @@ Sources checked on 2026-05-09 and refreshed on 2026-05-10:
 - Multi-agent observability example: https://github.com/disler/claude-code-hooks-multi-agent-observability
 - Claude Code Stack directory: https://www.claudecodestack.com/
 - ClaudePluginHub directory: https://www.claudepluginhub.com/marketplaces
+- Keep a Changelog: https://keepachangelog.com/en/1.0.0/
+- Semantic Versioning 2.0.0: https://semver.org/
 
 These sources informed the scope boundaries above: hooks lifecycle support is official; plugin/marketplace packaging is a distinct distribution step; broad workflow, command-safety, memory, and observability systems solve adjacent problems that this repo should not overclaim.
