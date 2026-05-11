@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "description": "Pytest-configured pyproject with local .venv pytest runner passing; hook should use the local runner and allow stop silently",
+  "category": "should-pass"
+}
