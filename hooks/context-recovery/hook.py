@@ -92,14 +92,48 @@ CUSTOM_INSTRUCTION_REDACTIONS = [
 def resolve_claude_md_path(cwd):
     """
     Return the path where CLAUDE.md should be (whether or not it exists).
-    Priority: $CLAUDE_PROJECT_DIR/CLAUDE.md > cwd/CLAUDE.md.
+    Priority: $CLAUDE_PROJECT_DIR/CLAUDE.md > nearest project marker
+    (CLAUDE.md or .git) > cwd/CLAUDE.md.
+    """
+    return resolve_project_root(cwd) / "CLAUDE.md"
+
+
+def resolve_project_root(cwd):
+    """
+    Return the best project root for recovery writes and git context.
+
+    Claude Code normally sets $CLAUDE_PROJECT_DIR, which remains the
+    authoritative root. If it is absent, handle subdirectory sessions by
+    walking upward to the nearest project marker: an existing CLAUDE.md or
+    a .git entry. Falling back to cwd preserves non-git scratch-directory
+    behavior.
     """
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
     if project_dir and os.path.isdir(project_dir):
-        return Path(project_dir) / "CLAUDE.md"
+        try:
+            return Path(project_dir).expanduser().resolve(strict=False)
+        except OSError:
+            return Path(project_dir).expanduser()
+
     if cwd:
-        return Path(cwd) / "CLAUDE.md"
-    return Path("CLAUDE.md")
+        root = Path(cwd)
+    else:
+        root = Path.cwd()
+
+    try:
+        root = root.expanduser().resolve(strict=False)
+    except OSError:
+        root = root.expanduser()
+
+    if root.exists() and not root.is_dir():
+        root = root.parent
+
+    candidates = [root] + list(root.parents)
+    for candidate in candidates:
+        if (candidate / "CLAUDE.md").is_file() or is_git_root(candidate):
+            return candidate
+
+    return root
 
 
 def run_git_command(args, cwd):
@@ -129,26 +163,23 @@ def is_git_root(path):
     return (Path(path) / ".git").exists()
 
 
-def gather_git_context(cwd):
+def gather_git_context(project_root):
     """
     Return dict with branch, commits, modified_files (each may be None).
 
-    Only collects git context if cwd OR $CLAUDE_PROJECT_DIR contains a
-    .git directly. Avoids picking up unrelated parent-repo context when
-    cwd is a subdirectory of a different git repo (e.g., test fixtures
-    or scratch dirs inside home directories that happen to be repos).
+    Only collects git context if the resolved project root contains a
+    .git directly. Root discovery already chooses either $CLAUDE_PROJECT_DIR,
+    an existing CLAUDE.md parent, a nearest .git parent, or cwd; this direct
+    check keeps git commands scoped to that chosen root.
 
     Real-world: Claude Code typically sets $CLAUDE_PROJECT_DIR to project
     root, which has .git, so this check passes. Subdirectory invocations
-    without $CLAUDE_PROJECT_DIR fall through to skip (safe failure mode —
-    surface no git context rather than the wrong context).
+    without $CLAUDE_PROJECT_DIR now also recover git context when root
+    discovery finds a parent git root.
     """
-    project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
     git_cwd = None
-    if project_dir and is_git_root(project_dir):
-        git_cwd = project_dir
-    elif is_git_root(cwd):
-        git_cwd = cwd
+    if project_root and is_git_root(project_root):
+        git_cwd = str(project_root)
 
     if git_cwd is None:
         return {"branch": None, "commits": None, "modified_files": None}
@@ -371,10 +402,11 @@ def main():
         payload.get("custom_instructions", "") or ""
     )
 
-    claude_md_path = resolve_claude_md_path(cwd)
-    project = os.environ.get("CLAUDE_PROJECT_DIR") or cwd
+    project_root = resolve_project_root(cwd)
+    claude_md_path = project_root / "CLAUDE.md"
+    project = str(project_root)
 
-    git_context = gather_git_context(cwd)
+    git_context = gather_git_context(project_root)
     reminders = load_reminders()
     recovery_section = build_recovery_section(
         git_context, reminders, custom_instructions

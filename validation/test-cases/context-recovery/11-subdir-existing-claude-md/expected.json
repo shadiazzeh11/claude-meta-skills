@@ -1,0 +1,14 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["Session Recovery", "Branch:", "Recent commits:", "Modified files", "DOGFOOD_CONTEXT_ROOT_SENTINEL=subdir-existing", "Root CLAUDE content"]
+  },
+  "expected_file_not_contains": {
+    "path": "{{TEST_DIR}}/project/src/nested/CLAUDE.md",
+    "patterns": ["Session Recovery", "post-compact-recovery-start"]
+  },
+  "description": "No CLAUDE_PROJECT_DIR + subdirectory cwd: existing parent CLAUDE.md is discovered and updated",
+  "category": "should-write"
+}

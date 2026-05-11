@@ -1,0 +1,8 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "PreCompact",
+  "trigger": "manual",
+  "custom_instructions": "DOGFOOD_CONTEXT_ROOT_SENTINEL=env-wins",
+  "cwd": "{{TEST_DIR}}/project/src/nested",
+  "transcript_path": ""
+}
