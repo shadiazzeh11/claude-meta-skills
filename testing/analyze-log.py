@@ -31,8 +31,9 @@ proof or harness/validation noise:
 macOS /private/tmp paths are normalized to /tmp before grouping so the same
 disposable project does not appear under two project keys.
 
-The summary includes real dogfood hook coverage and live-session grouping so it
-answers both "what fired?" and "which hooks still lack real-session evidence?"
+The summary includes an evidence scorecard, deterministic recommendations, real
+dogfood hook coverage, and live-session grouping so it answers "what fired?",
+"how strong is the evidence?", and "what should I do next?"
 """
 import json
 import os
@@ -208,8 +209,175 @@ def classify(session_id, project, file_path):
 def sorted_action_breakdown(actions):
     return [
         {"action": action, "count": count}
-        for action, count in sorted(actions.items(), key=lambda x: -x[1])
+        for action, count in sorted(actions.items(), key=lambda x: (-x[1], x[0]))
     ]
+
+
+def percent(numerator, denominator):
+    if denominator <= 0:
+        return None
+    return round((numerator / denominator) * 100, 1)
+
+
+def build_evidence_scorecard(
+    *,
+    real_count,
+    non_real_count,
+    classification_total,
+    real_session_stats,
+    observed_hooks,
+    missing_hooks,
+):
+    real_projects = set()
+    for stats in real_session_stats.values():
+        real_projects.update(stats["projects"].keys())
+
+    if not real_count:
+        status = "empty"
+    elif missing_hooks:
+        status = "partial"
+    else:
+        status = "complete"
+
+    return {
+        "status": status,
+        "expected_hooks": len(EXPECTED_HOOKS),
+        "observed_real_hooks": len(observed_hooks),
+        "missing_real_hooks": len(missing_hooks),
+        "hook_coverage_percent": percent(len(observed_hooks), len(EXPECTED_HOOKS)),
+        "real_fires": real_count,
+        "non_real_fires": non_real_count,
+        "classification_total": classification_total,
+        "non_real_ratio_percent": percent(non_real_count, classification_total),
+        "real_session_count": len(real_session_stats),
+        "real_project_count": len(real_projects),
+    }
+
+
+def build_recommendations(
+    *,
+    report_filter,
+    missing_hooks,
+    real_count,
+    non_real_count,
+    classification_total,
+    by_classification,
+    real_hook_actions,
+    top_files,
+    parse_errors,
+    timestamp_errors,
+):
+    recommendations = []
+
+    if not real_count:
+        recommendations.append(
+            {
+                "severity": "high",
+                "topic": "dogfood-evidence",
+                "message": (
+                    "No real Claude Code hook fires were observed in this window. "
+                    "Run a disposable-project smoke session before using this report as release evidence."
+                ),
+            }
+        )
+    elif missing_hooks:
+        recommendations.append(
+            {
+                "severity": "medium",
+                "topic": "dogfood-coverage",
+                "message": (
+                    "Collect live-session evidence for missing hooks: "
+                    + ", ".join(missing_hooks)
+                    + "."
+                ),
+            }
+        )
+
+    # Keep this order aligned with testing/README.md: missing real evidence,
+    # repeated high-fire paths, then context-recovery skip actions.
+    context_actions = real_hook_actions.get("context-recovery", {})
+    skip_count = sum(
+        count for action, count in context_actions.items() if action.startswith("skip-")
+    )
+    noisy_file = next((item for item in top_files if item["count"] >= 5), None)
+    if noisy_file:
+        recommendations.append(
+            {
+                "severity": "low",
+                "topic": "hot-path",
+                "message": (
+                    f"{noisy_file['path']} appears {noisy_file['count']} times in top triggered files. "
+                    "Review whether this is expected friction, a project-specific rule issue, or repeated useful protection."
+                ),
+            }
+        )
+
+    if skip_count:
+        recommendations.append(
+            {
+                "severity": "high",
+                "topic": "context-recovery",
+                "message": (
+                    "context-recovery skip actions appeared in real dogfood. Inspect CLAUDE.md "
+                    "permissions and atomic-write failures before relying on compaction recovery."
+                ),
+            }
+        )
+
+    if (
+        classification_total
+        and non_real_count
+        and non_real_count >= real_count
+        and report_filter == "all"
+    ):
+        recommendations.append(
+            {
+                "severity": "medium",
+                "topic": "noise-filtering",
+                "message": (
+                    "Non-real entries dominate or equal the real signal. Use --real-only "
+                    "for dogfood evidence, or archive/reset old synthetic logs before a new measurement window."
+                ),
+            }
+        )
+
+    if by_classification.get(CLASS_UNKNOWN, 0):
+        recommendations.append(
+            {
+                "severity": "low",
+                "topic": "unknown-entries",
+                "message": (
+                    "Unknown entries are present. Inspect their session_id/project fields to decide "
+                    "whether the classifier needs a new rule or the source should be fixed."
+                ),
+            }
+        )
+
+    if parse_errors or timestamp_errors:
+        recommendations.append(
+            {
+                "severity": "low",
+                "topic": "log-integrity",
+                "message": (
+                    "Some log lines were skipped because they were not parseable JSON or had invalid timestamps. "
+                    "Inspect the raw JSONL before using the report as an audit artifact."
+                ),
+            }
+        )
+
+    if not recommendations:
+        recommendations.append(
+            {
+                "severity": "info",
+                "topic": "evidence",
+                "message": (
+                    "Real dogfood evidence covers all expected hooks in this window. "
+                    "Use the redacted Markdown or JSON report as the release evidence artifact."
+                ),
+            }
+        )
+
+    return recommendations
 
 
 def summarize_report(
@@ -224,6 +392,7 @@ def summarize_report(
     by_classification,
     real_session_stats,
     real_hook_counts,
+    real_hook_actions,
     total,
     parse_errors,
     timestamp_errors,
@@ -258,7 +427,7 @@ def summarize_report(
     for sid, stats in sorted_sessions:
         project = ""
         if stats["projects"]:
-            project = max(stats["projects"].items(), key=lambda x: (x[1], x[0]))[0]
+            project = sorted(stats["projects"].items(), key=lambda x: (-x[1], x[0]))[0][0]
         sessions.append(
             {
                 "session_id": sid,
@@ -274,7 +443,7 @@ def summarize_report(
 
     files = []
     for file_path, hook_counts in sorted(
-        by_file.items(), key=lambda x: -sum(x[1].values())
+        by_file.items(), key=lambda x: (-sum(x[1].values()), x[0])
     )[:10]:
         files.append(
             {
@@ -286,13 +455,34 @@ def summarize_report(
         )
 
     projects = []
-    for project, count in sorted(by_project.items(), key=lambda x: -x[1])[:10]:
+    for project, count in sorted(by_project.items(), key=lambda x: (-x[1], x[0]))[:10]:
         projects.append(
             {
                 "path": redact_path(project, home) if redact else project,
                 "count": count,
             }
         )
+
+    scorecard = build_evidence_scorecard(
+        real_count=real_count,
+        non_real_count=non_real_count,
+        classification_total=classification_total,
+        real_session_stats=real_session_stats,
+        observed_hooks=observed_hooks,
+        missing_hooks=missing_hooks,
+    )
+    recommendations = build_recommendations(
+        report_filter="real dogfood only" if real_only else "all",
+        missing_hooks=missing_hooks,
+        real_count=real_count,
+        non_real_count=non_real_count,
+        classification_total=classification_total,
+        by_classification=classifications,
+        real_hook_actions=real_hook_actions,
+        top_files=files,
+        parse_errors=parse_errors,
+        timestamp_errors=timestamp_errors,
+    )
 
     return {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -307,6 +497,8 @@ def summarize_report(
         "classification_total": classification_total,
         "real_dogfood_count": real_count,
         "non_real_count": non_real_count,
+        "evidence_scorecard": scorecard,
+        "recommendations": recommendations,
         "real_session_count": len(real_session_stats),
         "observed_real_hooks": [
             {"hook": hook, "count": real_hook_counts[hook]} for hook in observed_hooks
@@ -325,6 +517,23 @@ def summarize_report(
 
 def format_action_breakdown(actions):
     return ", ".join(f"{a['count']} {a['action']}" for a in actions)
+
+
+def format_scorecard_line(scorecard):
+    noise = scorecard["non_real_ratio_percent"]
+    noise_text = "n/a" if noise is None else f"{noise}%"
+    return (
+        f"status={scorecard['status']}; "
+        f"hooks={scorecard['observed_real_hooks']}/{scorecard['expected_hooks']} real; "
+        f"real_fires={scorecard['real_fires']}; "
+        f"real_sessions={scorecard['real_session_count']}; "
+        f"real_projects={scorecard['real_project_count']}; "
+        f"non_real_ratio={noise_text}"
+    )
+
+
+def format_recommendation(item):
+    return f"[{item['severity']}] {item['topic']}: {item['message']}"
 
 
 def format_text_report(report):
@@ -347,6 +556,10 @@ def format_text_report(report):
         lines.append(f"  (skipped {report['parse_errors']} unparseable lines)")
     if report["timestamp_errors"]:
         lines.append(f"  (skipped {report['timestamp_errors']} lines with invalid timestamps)")
+    lines.append("")
+
+    lines.append("Evidence scorecard (real lifecycle evidence, not production FP/FN rate):")
+    lines.append(f"  {format_scorecard_line(report['evidence_scorecard'])}")
     lines.append("")
 
     lines.append("Classification totals (all matching log entries, before --real-only display filter):")
@@ -378,6 +591,11 @@ def format_text_report(report):
         lines.append(f"  Missing real-session evidence: {', '.join(report['missing_real_hooks'])}")
     else:
         lines.append("  Missing real-session evidence: (none)")
+    lines.append("")
+
+    lines.append("Recommendations:")
+    for item in report["recommendations"]:
+        lines.append(f"  - {format_recommendation(item)}")
     lines.append("")
 
     if report["real_sessions"]:
@@ -438,9 +656,61 @@ def format_markdown_report(report):
         f"- Total displayed fires: {report['total_fires']}",
         f"- Real Claude Code sessions: {report['real_session_count']}",
         "",
-        "## Hook Summary",
+        "## Executive Summary",
+        "",
+        f"- Evidence status: **{report['evidence_scorecard']['status']}**",
+        "- Evidence type: real Claude Code lifecycle evidence, not production false-positive/false-negative rate",
+        (
+            f"- Real hook coverage: "
+            f"{report['evidence_scorecard']['observed_real_hooks']}/"
+            f"{report['evidence_scorecard']['expected_hooks']} hooks"
+        ),
+        f"- Real fires: {report['evidence_scorecard']['real_fires']}",
+        f"- Real projects: {report['evidence_scorecard']['real_project_count']}",
+        "",
+        "## Evidence Scorecard",
+        "",
+        markdown_table(
+            ["Metric", "Value"],
+            [
+                ["Status", report["evidence_scorecard"]["status"]],
+                [
+                    "Hook coverage",
+                    (
+                        f"{report['evidence_scorecard']['observed_real_hooks']} / "
+                        f"{report['evidence_scorecard']['expected_hooks']} "
+                        f"({report['evidence_scorecard']['hook_coverage_percent']}%)"
+                    ),
+                ],
+                ["Real fires", report["evidence_scorecard"]["real_fires"]],
+                ["Non-real fires", report["evidence_scorecard"]["non_real_fires"]],
+                [
+                    "Non-real ratio",
+                    (
+                        "n/a"
+                        if report["evidence_scorecard"]["non_real_ratio_percent"] is None
+                        else f"{report['evidence_scorecard']['non_real_ratio_percent']}%"
+                    ),
+                ],
+                ["Real sessions", report["evidence_scorecard"]["real_session_count"]],
+                ["Real projects", report["evidence_scorecard"]["real_project_count"]],
+            ],
+        ),
+        "",
+        "## Recommendations",
         "",
     ]
+
+    for item in report["recommendations"]:
+        lines.append(f"- **{item['severity']} / {item['topic']}**: {item['message']}")
+
+    lines.extend(
+        [
+            "",
+            "## Hook Summary",
+            "",
+        ]
+    )
 
     if report["hooks"]:
         lines.append(
@@ -574,25 +844,72 @@ def emit_output(content, output_path):
         sys.exit(1)
 
 
+def missing_log_payload():
+    scorecard = build_evidence_scorecard(
+        real_count=0,
+        non_real_count=0,
+        classification_total=0,
+        real_session_stats={},
+        observed_hooks=[],
+        missing_hooks=EXPECTED_HOOKS,
+    )
+    recommendations = build_recommendations(
+        report_filter="all",
+        missing_hooks=EXPECTED_HOOKS,
+        real_count=0,
+        non_real_count=0,
+        classification_total=0,
+        by_classification={label: 0 for label in CLASS_ORDER},
+        real_hook_actions={},
+        top_files=[],
+        parse_errors=0,
+        timestamp_errors=0,
+    )
+    return scorecard, recommendations
+
+
 def format_missing_log(log_path, output_format, redact):
     home = str(Path.home())
     display_path = redact_path(str(log_path), home) if redact else str(log_path)
     message = f"No log file at {display_path}."
     hint = "Logging activates the first time a hook fires after install."
+    scorecard, recommendations = missing_log_payload()
     if output_format == "json":
         return json.dumps(
             {
+                "evidence_scorecard": scorecard,
                 "error": "log_not_found",
                 "log_path": display_path,
                 "message": message,
+                "recommendations": recommendations,
                 "hint": hint,
             },
             indent=2,
             sort_keys=True,
         ) + "\n"
     if output_format == "markdown":
-        return f"# Meta-skills Hook Fire Report\n\n{message}\n\n{hint}\n"
-    return f"{message}\n{hint}\n"
+        recommendation_lines = "\n".join(
+            f"- **{item['severity']} / {item['topic']}**: {item['message']}"
+            for item in recommendations
+        )
+        return (
+            "# Meta-skills Hook Fire Report\n\n"
+            f"{message}\n\n{hint}\n\n"
+            "## Evidence Scorecard\n\n"
+            f"- Status: {scorecard['status']}\n"
+            f"- Real hook coverage: {scorecard['observed_real_hooks']} / {scorecard['expected_hooks']}\n\n"
+            "## Recommendations\n\n"
+            f"{recommendation_lines}\n"
+        )
+    recommendation_lines = "\n".join(
+        f"  - {format_recommendation(item)}" for item in recommendations
+    )
+    return (
+        f"{message}\n{hint}\n\n"
+        f"Evidence scorecard: {format_scorecard_line(scorecard)}\n"
+        "Recommendations:\n"
+        f"{recommendation_lines}\n"
+    )
 
 
 def main():
@@ -610,6 +927,7 @@ def main():
     by_classification = defaultdict(int)
     real_session_stats = {}
     real_hook_counts = defaultdict(int)
+    real_hook_actions = defaultdict(lambda: defaultdict(int))
     total = 0
     parse_errors = 0
     timestamp_errors = 0
@@ -662,6 +980,7 @@ def main():
                     if ts > stats["last_ts"]:
                         stats["last_ts"] = ts
                     real_hook_counts[hook] += 1
+                    real_hook_actions[hook][action] += 1
 
             if real_only and classification != CLASS_REAL:
                 continue
@@ -684,6 +1003,7 @@ def main():
         by_classification=by_classification,
         real_session_stats=real_session_stats,
         real_hook_counts=real_hook_counts,
+        real_hook_actions=real_hook_actions,
         total=total,
         parse_errors=parse_errors,
         timestamp_errors=timestamp_errors,
