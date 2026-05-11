@@ -53,7 +53,7 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
      - otherwise → `python3 -m unittest discover -v`
    - `go.mod` → `go test ./...`
    - `Makefile` → `make test`
-5. Reads `transcript_path` to check whether any `Write`, `Edit`, `MultiEdit`, or `NotebookEdit` calls happened in the session. If transcript readable AND no writes → exit 0 (exploration session).
+5. Reads `transcript_path` to check whether any `Write`, `Edit`, `MultiEdit`, or `NotebookEdit` calls happened in the session. The scanner accepts current `tool_use` blocks plus common `tool_call` wrapper shapes. If transcript readable AND no writes → exit 0 (exploration session).
 6. Runs the test command with a 30s timeout from the resolved project root.
 7. Allow on success (exit 0). Block on failure with JSON `{"decision": "block", "reason": ...}` containing the last 50 lines of test output.
 8. Timeout or command-not-found → exit 0 with `additionalContext` warning (don't block when can't verify).
@@ -96,14 +96,14 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 When this hook is installed alongside `edit-drift-detector` and `silent-file-verifier`:
 
 - This hook fires only at Stop (after Claude finishes responding). Independent of any PreToolUse/PostToolUse hooks during the response.
-- If edit-drift-detector blocked an Edit during the response, the corresponding tool_use entry would still appear in the transcript (PreToolUse fires after Claude proposes the tool call but before it executes; the proposal is visible in transcript regardless of block outcome). transcript_has_writes treats this as a write attempt and runs tests.
+- If edit-drift-detector blocked an Edit during the response, the corresponding transcript tool-call entry would still appear in the transcript (PreToolUse fires after Claude proposes the tool call but before it executes; the proposal is visible in transcript regardless of block outcome). transcript_has_writes treats this as a write attempt and runs tests.
 - silent-file-verifier never blocks (PostToolUse can't undo); its `additionalContext` warnings are visible to Claude on subsequent turns but don't affect this hook's behavior.
 
 Behavior documented per Claude Code lifecycle docs; not validated by the harness.
 
 ## Additional known limitations
 
-- **Transcript schema drift risk.** `transcript_has_writes` parses the JSONL transcript by looking for `message.content[].type == "tool_use"` with `name in ("Write", "Edit", "MultiEdit", "NotebookEdit")`. If Claude Code changes the transcript format (e.g., to `tool_call` instead of `tool_use`, or wraps blocks differently), the function returns `False` (no writes found) and the hook silently skips test running on real edit sessions. This is a quiet failure mode worth monitoring; consider periodic spot-checks against actual session transcripts.
+- **Transcript schema drift risk is reduced, not eliminated.** `transcript_has_writes` recursively scans parsed JSONL lines for explicit file-modifying tool calls across `tool_use`, `tool_call`, `tool_call_delta`, and common wrapper/name fields. Unknown future transcript schemas can still be missed if they are readable but do not expose recognizable tool-call metadata. Keep periodic spot-checks against actual session transcripts.
 - **Timeout output is best-effort.** When `subprocess.TimeoutExpired` fires, the hook includes any captured stdout/stderr that Python exposes on the exception. Output emitted but not flushed by the timed-out process may still be missing.
 - **Anti-loop check only catches the documented loop pattern.** `stop_hook_active=true` is the documented signal Claude Code sends when forced-continuation is in progress. If a future Claude Code version changes this signal (e.g., to a different field name), the anti-loop protection silently degrades.
 
@@ -120,4 +120,4 @@ cd validation
 ./harness.sh completion-verifier
 ```
 
-20 test cases. See `validation/test-cases/completion-verifier/`.
+24 test cases. See `validation/test-cases/completion-verifier/`.

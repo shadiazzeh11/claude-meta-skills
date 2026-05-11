@@ -1,0 +1,1 @@
+{"message": {"role": "assistant", "content": [{"type": "text", "text": "Updating the notebook."}, {"tool_call": {"id": "toolu_22", "function": {"name": "NotebookEdit"}, "arguments": {"notebook_path": "/tmp/probe.ipynb"}}}]}}

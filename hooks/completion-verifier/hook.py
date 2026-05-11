@@ -250,11 +250,56 @@ def detect_project_type(cwd):
 
 
 FILE_MODIFYING_TOOLS = ("Write", "Edit", "MultiEdit", "NotebookEdit")
+TOOL_CALL_TYPES = ("tool_use", "tool_call", "tool_call_delta")
+TOOL_CALL_WRAPPER_KEYS = (
+    "tool_use",
+    "toolUse",
+    "tool_call",
+    "toolCall",
+    "tool_calls",
+    "toolCalls",
+)
+
+
+def tool_name_from_block(block):
+    """Extract a tool name from common transcript tool-call shapes."""
+    if not isinstance(block, dict):
+        return None
+    for key in ("name", "tool_name", "toolName"):
+        value = block.get(key)
+        if isinstance(value, str):
+            return value
+    for key in ("tool", "function"):
+        value = block.get(key)
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            nested_name = tool_name_from_block(value)
+            if nested_name:
+                return nested_name
+    return None
+
+
+def contains_file_modifying_tool(value, in_tool_wrapper=False):
+    """Recursively detect explicit file-modifying tool calls in transcript JSON."""
+    if isinstance(value, dict):
+        block_type = value.get("type")
+        if in_tool_wrapper or block_type in TOOL_CALL_TYPES:
+            if tool_name_from_block(value) in FILE_MODIFYING_TOOLS:
+                return True
+        for key, child in value.items():
+            if contains_file_modifying_tool(child, key in TOOL_CALL_WRAPPER_KEYS):
+                return True
+    elif isinstance(value, list):
+        for child in value:
+            if contains_file_modifying_tool(child, in_tool_wrapper):
+                return True
+    return False
 
 
 def transcript_has_writes(transcript_path):
     """
-    Inspect the JSONL transcript for file-modifying tool_use entries.
+    Inspect the JSONL transcript for explicit file-modifying tool calls.
     Returns:
       True  - at least one file-modifying tool found
       False - transcript was parseable but no file-modifying tools observed
@@ -277,16 +322,11 @@ def transcript_has_writes(transcript_path):
                 except (json.JSONDecodeError, ValueError):
                     continue
                 valid_lines += 1
-                # Transcript format: each line is a message; content can be
-                # a list of blocks including tool_use entries.
-                msg = entry.get("message") or entry
-                content = msg.get("content") if isinstance(msg, dict) else None
-                if isinstance(content, list):
-                    for block in content:
-                        if not isinstance(block, dict):
-                            continue
-                        if block.get("type") == "tool_use" and block.get("name") in FILE_MODIFYING_TOOLS:
-                            return True
+                # Current Claude Code transcripts use message.content[] tool_use
+                # blocks. Walk the parsed JSON defensively so benign wrapper
+                # changes do not silently skip test verification.
+                if contains_file_modifying_tool(entry):
+                    return True
         # Parseable transcript with no file-modifying tools observed.
         if valid_lines > 0:
             return False
