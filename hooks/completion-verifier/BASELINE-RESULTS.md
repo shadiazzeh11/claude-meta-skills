@@ -1,6 +1,6 @@
 # Baseline validation — completion-verifier
 
-Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing + cargo-missing tests), Phase 2B dogfood follow-up (pytest-configured local-venv projects), the missing-pytest warning regression, timeout-env hardening, and subdirectory project-root discovery. Re-run via `cd validation && ./harness.sh completion-verifier`.
+Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing + cargo-missing tests), Phase 2B dogfood follow-up (pytest-configured local-venv projects), the missing-pytest warning regression, timeout-env hardening, subdirectory project-root discovery, and timeout partial-output warnings. Re-run via `cd validation && ./harness.sh completion-verifier`.
 
 | Metric | Value |
 |---|---|
@@ -29,7 +29,7 @@ Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing
 | 05 | python-passing | should-pass | 0 | 173 | unittest passes |
 | 06 | no-project | should-pass | 0 | 104 | git-bounded directory with no recognizable config |
 | 07 | stop-hook-active | should-pass | 0 | 104 | anti-loop check returns immediately |
-| 08 | timeout | should-pass (warn) | 0 | 2117 | sleep 5 + timeout=2; emits additionalContext warning |
+| 08 | timeout | should-pass (warn) | 0 | 2117 | sleep 5 + timeout=2; emits warning with partial pre-timeout output |
 | 09 | transcript-with-writes | should-block | 0 (block) | 125 | transcript shows Edit; runs failing tests, blocks |
 | 10 | transcript-without-writes | should-pass | 0 | 104 | exploration session: skips tests despite project failing |
 | 11 | malformed-transcript | should-block | 0 (block) | 121 | unparseable transcript -> fall back to running tests |
@@ -54,7 +54,7 @@ Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing
 
 - Stop-hook blocking via JSON `{"decision": "block", "reason": ...}` works as expected. Constructive feedback (last 50 lines of test output + remediation guidance) verified in stdout for blocking cases.
 - `stop_hook_active: true` correctly short-circuits before any test execution.
-- Test command not found and timeout paths emit `additionalContext` warnings rather than blocking.
+- Test command not found and timeout paths emit `additionalContext` warnings rather than blocking. Timeout warnings include captured partial output when the timed-out process flushed any output before termination. As with failing-test snippets, this output is sent to Claude Code as feedback but is not written to the persistent meta-skills log.
 - Transcript parsing critical-path test 10 verifies exploration-session detection: project has failing tests, but transcript shows only Read/Bash/Glob (no writes), so hook skips test execution and exits silently. This was the largest validation gap in the original Phase 2 build.
 
 ## Phase 2.5 additions

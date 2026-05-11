@@ -64,9 +64,11 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 
 - **Transcript-unreadable defaults to running tests.** Per spec: "accept this limitation and document it." False-positive risk acknowledged in Known limitations.
 
-- **30-second timeout.** Long suites get a warning, not a block. Test suites exceeding this should run separately (e.g., CI), not on every Claude stop.
+- **30-second timeout.** Long suites get a warning, not a block. When the process emits output before timing out, the warning includes the last output lines so Claude has useful context. Test suites exceeding this should run separately (e.g., CI), not on every Claude stop.
 
 - **Last 50 lines of output.** Per HumanLayer's lesson: full test output (often thousands of lines) floods Claude's context and makes the failure harder to read, not easier.
+
+- **Test output is context, not telemetry.** Failing-test and timeout snippets are sent to Claude Code as hook feedback so the agent can fix the problem. They are not written to `~/.claude/meta-skills-log.jsonl`, which records metadata only.
 
 - **JSON `decision: block` over exit 2.** Stop hooks have well-documented JSON-decision blocking; exit 2 also works but JSON is more explicit and permits the `reason` field.
 
@@ -102,7 +104,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 ## Additional known limitations
 
 - **Transcript schema drift risk.** `transcript_has_writes` parses the JSONL transcript by looking for `message.content[].type == "tool_use"` with `name in ("Write", "Edit", "MultiEdit", "NotebookEdit")`. If Claude Code changes the transcript format (e.g., to `tool_call` instead of `tool_use`, or wraps blocks differently), the function returns `False` (no writes found) and the hook silently skips test running on real edit sessions. This is a quiet failure mode worth monitoring; consider periodic spot-checks against actual session transcripts.
-- **Test command timeout truncates output capture.** When `subprocess.TimeoutExpired` fires, Python's subprocess returns no captured output for the truncated portion. The hook emits a "test timed out" warning but doesn't include the partial test output that ran before timeout. Future enhancement: capture partial output from `TimeoutExpired.stdout`.
+- **Timeout output is best-effort.** When `subprocess.TimeoutExpired` fires, the hook includes any captured stdout/stderr that Python exposes on the exception. Output emitted but not flushed by the timed-out process may still be missing.
 - **Anti-loop check only catches the documented loop pattern.** `stop_hook_active=true` is the documented signal Claude Code sends when forced-continuation is in progress. If a future Claude Code version changes this signal (e.g., to a different field name), the anti-loop protection silently degrades.
 
 ## Performance

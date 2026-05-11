@@ -9,7 +9,7 @@ test command and blocks completion if tests are failing. Addresses the
 Exit semantics:
   - Anti-loop: if stop_hook_active is true, exit 0 immediately (mandatory).
   - No project type: exit 0 (allow stop).
-  - Transcript shows no Write/Edit usage: exit 0 (exploration session).
+  - Transcript shows no file-modifying tool usage: exit 0 (exploration session).
   - Test command not installed: exit 0 with additionalContext warning.
   - Test command times out: exit 0 with additionalContext warning.
   - Tests pass: exit 0 (allow stop).
@@ -256,7 +256,7 @@ def transcript_has_writes(transcript_path):
     """
     Inspect the JSONL transcript for file-modifying tool_use entries.
     Returns:
-      True  - at least one Write/Edit/MultiEdit/NotebookEdit found
+      True  - at least one file-modifying tool found
       False - transcript was parseable but no file-modifying tools observed
       None  - transcript missing, IO error, or no valid JSON lines (unreadable)
 
@@ -336,6 +336,28 @@ def emit_block(reason):
     print(json.dumps(output))
 
 
+def output_text(value):
+    """Return subprocess output as text; TimeoutExpired can keep bytes despite text=True."""
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
+
+
+def last_output_lines(stdout, stderr, limit=LAST_N_LINES):
+    """Return the last output lines from stdout/stderr without raising."""
+    stdout_text = output_text(stdout)
+    stderr_text = output_text(stderr)
+    if stdout_text and stderr_text and not stdout_text.endswith(("\n", "\r")):
+        combined = stdout_text + "\n" + stderr_text
+    else:
+        combined = stdout_text + stderr_text
+    if not combined:
+        return ""
+    return "\n".join(combined.splitlines()[-limit:])
+
+
 def main():
     # Read JSON from stdin. Malformed → exit 0 (don't block on hook errors).
     try:
@@ -387,9 +409,9 @@ def main():
         )
         return 0
 
-    # If transcript readable AND no Write/Edit calls observed → exploration
-    # session, allow stop. If transcript unreadable, accept the false-positive
-    # risk and run tests anyway (per spec).
+    # If transcript readable AND no file-modifying tools were observed, this
+    # was an exploration session; allow stop. If transcript unreadable, accept
+    # the false-positive risk and run tests anyway (per spec).
     writes_check = transcript_has_writes(transcript_path)
     if writes_check is False:
         return 0
@@ -405,12 +427,18 @@ def main():
             capture_output=True,
             text=True,
         )
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
         timeout_template = messages.get("timeout", "")
         try:
             msg = timeout_template.format(timeout=TIMEOUT_SECS)
         except (KeyError, IndexError):
             msg = timeout_template
+        partial_output = last_output_lines(
+            exc.stdout if exc.stdout is not None else exc.output,
+            exc.stderr,
+        )
+        if partial_output:
+            msg = msg + "\n\nPartial output before timeout:\n\n" + partial_output
         emit_warning(msg)
         log_fire(
             hook_name="completion-verifier",
@@ -443,9 +471,7 @@ def main():
         return 0
 
     # Tests failed → block with last N lines of output
-    combined = (result.stdout or "") + (result.stderr or "")
-    lines = combined.split("\n")
-    last_lines = "\n".join(lines[-LAST_N_LINES:])
+    last_lines = last_output_lines(result.stdout, result.stderr)
 
     template = messages.get(default_version, "")
     try:
