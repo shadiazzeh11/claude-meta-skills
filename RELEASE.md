@@ -80,9 +80,7 @@ Expected:
 Generate redacted local reports:
 
 ```bash
-mkdir -p .context/reports
-./testing/analyze-log.py --real-only --redact --format markdown --output .context/reports/dogfood-report.md
-./testing/analyze-log.py --real-only --redact --format json --output .context/reports/dogfood-report.json
+make report-dogfood
 ```
 
 Expected:
