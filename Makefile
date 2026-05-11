@@ -59,7 +59,7 @@ install:
 		echo "         make install TARGET=/path/to/project INSTALL_FLAGS=--with-claude-md" >&2; \
 		exit 1; \
 	fi
-	./install.sh $(TARGET) $(INSTALL_FLAGS)
+	./install.sh "$(TARGET)" $(INSTALL_FLAGS)
 
 uninstall:
 	@if [ -z "$(TARGET)" ]; then \
@@ -67,4 +67,4 @@ uninstall:
 		echo "Example: make uninstall TARGET=/path/to/project" >&2; \
 		exit 1; \
 	fi
-	./install.sh $(TARGET) --uninstall
+	./install.sh "$(TARGET)" --uninstall

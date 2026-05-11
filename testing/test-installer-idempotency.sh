@@ -487,5 +487,21 @@ assert_eq "$(meta_signature_count "$T_J/.claude/settings.json")" "1" "Test J: me
 assert_path_exists "$T_J/.claude/hooks/meta-skills" "Test J: copied hook dir must remain when jq is unavailable"
 echo "PASS Test J"
 
+# -----------------------------------------------------------------------------
+echo "Test K — make install/uninstall handles target paths with spaces"
+T_K="$(mktemp_target "K parent")/project with spaces"
+mkdir -p "$T_K"
+
+make -C "$REPO_DIR" install TARGET="$T_K" >/dev/null
+jq -e . "$T_K/.claude/settings.json" >/dev/null
+assert_eq "$(meta_signature_count "$T_K/.claude/settings.json")" "5" "Test K: make install must install meta-skills entries with space-containing target path"
+assert_path_exists "$T_K/.claude/hooks/meta-skills" "Test K: make install must copy hook dir with space-containing target path"
+
+make -C "$REPO_DIR" uninstall TARGET="$T_K" >/dev/null
+jq -e . "$T_K/.claude/settings.json" >/dev/null
+assert_eq "$(meta_signature_count "$T_K/.claude/settings.json")" "0" "Test K: make uninstall must remove meta-skills entries with space-containing target path"
+assert_path_absent "$T_K/.claude/hooks/meta-skills" "Test K: make uninstall must remove hook dir with space-containing target path"
+echo "PASS Test K"
+
 echo
 echo "All installer tests passed."
