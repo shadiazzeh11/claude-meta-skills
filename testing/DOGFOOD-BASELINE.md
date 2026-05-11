@@ -1,6 +1,6 @@
 # Dogfood baseline - 2026-05-11
 
-This is the complete live-session baseline after Phase 2B hardening and the clean post-`v0.1.2` dogfood window.
+This is the complete live-session baseline after Phase 2B hardening, the clean post-`v0.1.2` dogfood window, and the follow-up LOGOS real-project dogfood pass.
 
 The canonical command is:
 
@@ -8,7 +8,33 @@ The canonical command is:
 ./testing/analyze-log.py --real-only --redact
 ```
 
-## Latest clean window after v0.1.2
+## Latest active window after v0.1.2
+
+After the clean disposable-project pass, LOGOS dogfood extended the same active measurement window to:
+
+```text
+Total: 12 fires across 5 hooks
+Evidence scorecard: status=complete; hooks=5/5 real; real_fires=12; real_sessions=3; real_projects=2; non_real_ratio=70.0%
+Missing real-session evidence: (none)
+```
+
+| Hook | Real fires | Actions observed | Evidence shape |
+|---|---:|---|---|
+| `edit-drift-detector` | 1 | `block-fuzzy` | Controlled induced-drift proof from the disposable post-`v0.1.2` project |
+| `construction-gate` | 1 | `block` | Protected `package-lock.json` Write blocked in the disposable post-`v0.1.2` project |
+| `silent-file-verifier` | 2 | `warn-missing`, `warn-empty` | Fault-watcher induced missing-file and 0-byte Write anomalies in the disposable post-`v0.1.2` project |
+| `completion-verifier` | 6 | `block` | One disposable failing-test Stop block, four LOGOS stale-install runner false positives before doctor/reinstall, and one LOGOS intentional F7 broken-state catch after reinstall |
+| `context-recovery` | 2 | `modify` | One disposable `/compact` recovery block plus one LOGOS `/compact` recovery block |
+
+The active-window projects are:
+
+- `/tmp/claude-meta-v012-dogfood-1.X6bEWJ`, session `577ea11f...`, `6` fires across all five hooks, spanning `2026-05-11T05:38:38Z..2026-05-11T06:00:40Z`.
+- `~/conductor/workspaces/logos/dallas`, session `111b5e9b...`, `4` `completion-verifier` fires from the stale installed-hook false-positive window, spanning `2026-05-11T06:57:50Z..2026-05-11T07:12:46Z`.
+- `~/conductor/workspaces/logos/dallas`, session `e3c481b8...`, `2` fires (`completion-verifier`, `context-recovery`), spanning `2026-05-11T11:39:55Z..2026-05-11T11:42:37Z`.
+
+The `non_real_ratio=70.0%` comes from 28 historical harness/validation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
+
+## Clean disposable window after v0.1.2
 
 After tagging `v0.1.2`, the active hook log was archived and reset before a fresh disposable Claude Code dogfood pass. That clean window produced:
 
@@ -32,7 +58,7 @@ The `edit-drift-detector` entry is a controlled lifecycle proof, not an organic 
 
 ## Historical release snapshot before v0.1.2
 
-The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 6-fire clean window above unless the archived release log is restored.
+The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 12-fire active window above unless the archived release log is restored.
 
 As of that release baseline snapshot:
 
@@ -55,6 +81,13 @@ Missing real-session evidence: (none)
 ## Interpretation
 
 This baseline proves that each hook has fired from a live Claude Code session, reached its intended lifecycle event, emitted the expected action, and was classified by the analyzer as real dogfood.
+
+The LOGOS extension adds real-project evidence on top of disposable probes:
+
+- `completion-verifier` caught an intentional broken-state refactor in a `uv`-managed project. The operator intentionally inverted the new `_maybe_add` helper in `logos/io.py`, which produced eight LOGOS test failures across serialization and integration coverage. The Stop hook surfaced the failure as related work to address, not as a runner/configuration false positive.
+- After `doctor.sh` detected stale installed hook copies and the project-local hooks were reinstalled, the old LOGOS false positive (`python3.14 -m unittest` without project pytest) did not reappear.
+- `context-recovery` wrote a bounded Session Recovery block to LOGOS `CLAUDE.md` on manual `/compact`, preserving the branch, modified file, and sentinel. The transient block was restored before the LOGOS F7 PR was committed.
+- The LOGOS F7 refactor (`logos/io.py` optional-field helper) was merged upstream after the dogfood pass, proving the hooks could assist a real task without leaving `.claude/`, recovery-block, data, catalog, cron, collector, or `uv.lock` artifacts in the PR.
 
 The plugin-path extension proves the scaffold can load hooks through `claude --plugin-dir /path/to/claude-meta-skills` and produce real hook interventions for:
 
@@ -79,6 +112,7 @@ It does not prove:
 - Organic frequency of each failure mode.
 - Exhaustive coverage of every hook branch in live sessions.
 - Public marketplace listing behavior.
+- That every project runner is detected correctly. LOGOS now has positive `uv` evidence after reinstall, but broader runner diversity still needs more projects.
 
 The synthetic validation suite remains the source for branch-level expected behavior. Dogfood evidence answers a different question: whether the hooks are actually reachable and observable in real Claude Code sessions.
 
@@ -89,6 +123,10 @@ The synthetic validation suite remains the source for branch-level expected beha
 `silent-file-verifier` warning evidence is controlled anomaly evidence. A local fault watcher deleted one Write target and truncated another after Claude Code reported Write success. That proves the PostToolUse warning branches can fire in live sessions, not that ghost writes are common.
 
 `context-recovery` evidence came from a manual `/compact` flow in a disposable project. The important signal is that the hook wrote the expected recovery block and the analyzer classified the log entry as real.
+
+The LOGOS `context-recovery` proof also came from a manual `/compact` flow. The important added signal is real-project behavior: the hook captured a Conductor worktree branch and modified source file without committing the transient recovery block.
+
+The LOGOS `completion-verifier` evidence has two phases. Session `111b5e9b...` records the stale-installed-hook failure mode that `doctor.sh` later made visible. Session `e3c481b8...` records the post-reinstall positive proof: the block corresponded to eight related LOGOS test failures caused by an intentionally inverted helper predicate, then stayed quiet after the code was fixed and tests passed.
 
 Plugin-path `construction-gate` evidence did not include a live `MultiEdit` invocation because `MultiEdit` was not registered in that Claude Code session. `MultiEdit` remains covered by the synthetic validation harness; the plugin-path live proof covers `Write`, `Edit`, and `NotebookEdit`.
 

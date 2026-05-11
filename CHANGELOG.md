@@ -9,6 +9,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 ### Added
 
 - Documented the clean post-`v0.1.2` dogfood window: 6 real fires across all five hooks in one disposable Claude Code session with `non_real_ratio=0.0%`.
+- Documented the LOGOS real-project dogfood extension: four stale-installed-hook `completion-verifier` false positives before `doctor.sh`/reinstall, then a post-reinstall intentional broken-state catch in a `uv` project plus `context-recovery` `/compact` proof.
 - Added construction-gate validation cases for cwd-relative protected paths and false-positive guards around protected-looking parent directories.
 - Added completion-verifier validation cases for invalid, zero, and negative timeout environment values.
 - Added validation harness behavior and repository hygiene regression targets.
