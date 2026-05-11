@@ -1,0 +1,9 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["additionalContext", "pytest", "not found"],
+  "env": {
+    "PATH": "/usr/bin:/bin"
+  },
+  "description": "Pytest-configured pyproject with no local pytest runner and pytest hidden from PATH; hook should warn without crashing or blocking",
+  "category": "should-pass"
+}

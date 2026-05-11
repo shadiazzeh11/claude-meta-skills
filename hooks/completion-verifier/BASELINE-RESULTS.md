@@ -1,45 +1,46 @@
 # Baseline validation — completion-verifier
 
-Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing + cwd-missing + cargo-missing tests) and Phase 2B dogfood follow-up (pytest-configured local-venv projects). Re-run via `cd validation && ./harness.sh completion-verifier`.
+Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing + cwd-missing + cargo-missing tests), Phase 2B dogfood follow-up (pytest-configured local-venv projects), and the missing-pytest warning regression. Re-run via `cd validation && ./harness.sh completion-verifier`.
 
 | Metric | Value |
 |---|---|
-| Test date | 2026-05-11 (pytest local-venv update) |
+| Test date | 2026-05-11 (missing-pytest warning regression) |
 | Claude Code version | 2.1.128 |
 | Python | 3.14.2 |
 | Node | v20.20.2 |
 | OS | Darwin 25.3.0 |
-| Test cases | 14 (6 should-block, 8 should-pass) |
-| Pass rate | 14 / 14 |
+| Test cases | 15 (6 should-block, 9 should-pass) |
+| Pass rate | 15 / 15 |
 | False positives | 0 |
 | False negatives | 0 |
-| Avg duration / case | 428 ms |
-| Min duration / case | 80 ms |
-| Max duration / case | 2096 ms (test 08 — timeout, waits 2s) |
-| Total duration | 6002 ms |
+| Avg duration / case | 351 ms |
+| Min duration / case | 81 ms |
+| Max duration / case | 2088 ms (test 08 — timeout, waits 2s) |
+| Total duration | 5275 ms |
 
 ## Per-case results
 
 | # | Case | Category | Exit | ms | Notes |
 |---|---|---|---|---|---|
-| 01 | node-failing | should-block | 0 (block via JSON) | 972 | npm test exits 1 |
-| 02 | python-failing | should-block | 0 (block via JSON) | 167 | python -m unittest fails |
-| 03 | build-failure | should-block | 0 (block via JSON) | 106 | make test exits 1 |
-| 04 | node-passing | should-pass | 0 | 241 | npm test exits 0 |
-| 05 | python-passing | should-pass | 0 | 154 | unittest passes |
-| 06 | no-project | should-pass | 0 | 82 | no recognizable config |
-| 07 | stop-hook-active | should-pass | 0 | 80 | anti-loop check returns immediately |
-| 08 | timeout | should-pass (warn) | 0 | 2096 | sleep 5 + timeout=2; emits additionalContext warning |
-| 09 | transcript-with-writes | should-block | 0 (block) | 101 | transcript shows Edit; runs failing tests, blocks |
-| 10 | transcript-without-writes | should-pass | 0 | 84 | exploration session: skips tests despite project failing |
-| 11 | malformed-transcript | should-block | 0 (block) | 106 | unparseable transcript → fall back to running tests |
-| 12 | cargo-not-installed | should-pass (warn) | 0 | 382 | FileNotFoundError handler emits command-not-found warning |
-| 13 | pytest-venv-passing | should-pass | 0 | 915 | pytest-configured pyproject uses local .venv Python and passes |
-| 14 | pytest-venv-failing | should-block | 0 (block) | 516 | pytest-configured pyproject uses local .venv Python and blocks on pytest failure |
+| 01 | node-failing | should-block | 0 (block via JSON) | 606 | npm test exits 1 |
+| 02 | python-failing | should-block | 0 (block via JSON) | 156 | python -m unittest fails |
+| 03 | build-failure | should-block | 0 (block via JSON) | 237 | make test exits 1 |
+| 04 | node-passing | should-pass | 0 | 239 | npm test exits 0 |
+| 05 | python-passing | should-pass | 0 | 150 | unittest passes |
+| 06 | no-project | should-pass | 0 | 81 | no recognizable config |
+| 07 | stop-hook-active | should-pass | 0 | 82 | anti-loop check returns immediately |
+| 08 | timeout | should-pass (warn) | 0 | 2088 | sleep 5 + timeout=2; emits additionalContext warning |
+| 09 | transcript-with-writes | should-block | 0 (block) | 104 | transcript shows Edit; runs failing tests, blocks |
+| 10 | transcript-without-writes | should-pass | 0 | 83 | exploration session: skips tests despite project failing |
+| 11 | malformed-transcript | should-block | 0 (block) | 102 | unparseable transcript -> fall back to running tests |
+| 12 | cargo-not-installed | should-pass (warn) | 0 | 257 | FileNotFoundError handler emits command-not-found warning |
+| 13 | pytest-venv-passing | should-pass | 0 | 626 | pytest-configured pyproject uses local .venv Python and passes |
+| 14 | pytest-venv-failing | should-block | 0 (block) | 309 | pytest-configured pyproject uses local .venv Python and blocks on pytest failure |
+| 15 | pytest-declared-missing | should-pass (warn) | 0 | 155 | pytest declared but unavailable; emits command-not-found warning without crashing |
 
 ## Notes on performance
 
-- 11 of 14 cases under 500ms. The exceptions are npm startup (test 01), local-venv pytest wrapper startup (tests 13-14), and the intentional timeout (test 08).
+- 12 of 15 cases under 500ms. The exceptions in this run are npm startup (test 01), local-venv pytest wrapper startup (test 13), and the intentional timeout (test 08).
 - Test 08 (timeout) intentionally waits the configured 2-second timeout. Production deployments using the default 30s timeout would experience up to 30s wall-clock when test commands hang, by design.
 - **Timing caveat:** durations include ~30-40ms of Python startup overhead from the harness measurement method. Actual hook execution overhead when installed in Claude Code is approximately 30-45ms lower than reported values.
 - Anti-loop check (test 07) returns in 55ms — under load this matters because the hook fires on every Stop attempt during forced-continuation.
@@ -56,6 +57,7 @@ Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing
 - **Tests 09-11 (transcript parsing):** Validate the previously-untested transcript_has_writes feature. Test 10 is the load-bearing case (exploration session detection). Test 11 verifies fallback to running tests when transcript is unreadable.
 - **Test 12 (cargo-not-installed):** Validates FileNotFoundError handler. The fixture hides Cargo from PATH (via `env.PATH = "/usr/bin:/bin"` in `expected.json`) so the FileNotFoundError path is deterministic both locally and in CI runners that ship Cargo by default. The hook correctly emits a "command not found" `additionalContext` warning.
 - **Tests 13-14 (pytest local venv):** Validate pytest-configured `pyproject.toml` projects use an already-installed local `.venv` Python with `-m pytest` instead of system `python3 -m unittest`. This covers the LOGOS dogfood false positive where system Python lacked pytest while the project `.venv` had the correct runner.
+- **Test 15 (pytest declared missing):** Validates the warning path for pytest-configured projects when neither a local `.venv` runner nor system `python3 -m pytest` is available. This guards against crashing while constructing the command-not-found warning.
 - **Code change:** transcript_has_writes now distinguishes "transcript parseable but no writes" (returns False → skip tests) from "transcript unreadable" (returns None → run tests). Previously both paths returned False, causing malformed-transcript scenarios to be misclassified as exploration sessions.
 - **Code change:** cwd-missing now emits a distinct warning instead of being misreported as "command not found." Cleaner debugging when cwd resolution fails.
 - **Code change:** transcript scanner extended to detect `MultiEdit` and `NotebookEdit` (in addition to `Write` and `Edit`) so sessions using batch-edit tools are correctly classified as having writes.

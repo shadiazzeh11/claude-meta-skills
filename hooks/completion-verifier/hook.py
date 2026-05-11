@@ -294,6 +294,7 @@ def main():
     config, cmd = detect_project_type(cwd)
     if config is None:
         return 0  # No recognizable project; allow stop
+    messages = load_messages()
     if cmd is None:
         notfound_template = messages.get("command_not_found", "")
         try:
@@ -317,7 +318,6 @@ def main():
     if writes_check is False:
         return 0
 
-    messages = load_messages()
     default_version = messages.get("default", "constructive")
 
     # Run the test command

@@ -114,4 +114,4 @@ cd validation
 ./harness.sh completion-verifier
 ```
 
-14 test cases. See `validation/test-cases/completion-verifier/`.
+15 test cases. See `validation/test-cases/completion-verifier/`.
