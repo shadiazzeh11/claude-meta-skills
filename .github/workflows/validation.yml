@@ -71,6 +71,9 @@ jobs:
       - name: Repository hygiene regression
         run: make test-repo-hygiene
 
+      - name: Doctor diagnostic regression
+        run: make test-doctor
+
       - name: Analyzer regression
         run: make test-analyzer
 

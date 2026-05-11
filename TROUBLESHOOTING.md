@@ -19,6 +19,19 @@ test -f .claude/settings.local.json && jq '.hooks // {}, .disableAllHooks // fal
 claude plugin list --json 2>/dev/null || true
 ```
 
+If this repository is available locally, run the read-only doctor from the
+source checkout:
+
+```bash
+cd /path/to/claude-meta-skills
+make doctor TARGET=/path/to/project
+```
+
+The doctor checks source files, expected local install wiring, copied hook
+files, `disableAllHooks`, optional tool availability, and the metadata log
+location. It does not install, uninstall, invoke hooks, or print raw log
+contents.
+
 Then open Claude Code's `/hooks` menu. The menu is read-only, but it shows
 which hook event, matcher, handler, command, and source file are active. Sources
 to look for:

@@ -1,6 +1,6 @@
 HOOKS := edit-drift-detector construction-gate silent-file-verifier completion-verifier context-recovery
 
-.PHONY: test test-stop-env test-installer test-analyzer test-plugin test-marketplace test-release test-validation-lock test-validation-harness test-repo-hygiene report-dogfood test-% clean install uninstall help
+.PHONY: test test-stop-env test-installer test-analyzer test-plugin test-marketplace test-release test-validation-lock test-validation-harness test-repo-hygiene test-doctor doctor report-dogfood test-% clean install uninstall help
 
 help:
 	@echo "claude-meta-skills make targets:"
@@ -14,6 +14,8 @@ help:
 	@echo "  make test-validation-lock - verify validation harness lock behavior"
 	@echo "  make test-validation-harness - verify validation harness failure reporting"
 	@echo "  make test-repo-hygiene - verify cleanup targets preserve tracked placeholders"
+	@echo "  make test-doctor     - run doctor diagnostic regression tests"
+	@echo "  make doctor TARGET=<path> - diagnose source checkout and optional local install"
 	@echo "  make report-dogfood  - write redacted real-dogfood reports to .context/reports/"
 	@echo "  make test-<hook>     - run validation harness for one hook"
 	@echo "                         (e.g., make test-edit-drift-detector)"
@@ -62,6 +64,16 @@ test-validation-harness:
 
 test-repo-hygiene:
 	@bash testing/test-repo-hygiene.sh
+
+test-doctor:
+	@bash testing/test-doctor.sh
+
+doctor:
+	@if [ -n "$(TARGET)" ]; then \
+		./doctor.sh "$(TARGET)"; \
+	else \
+		./doctor.sh; \
+	fi
 
 report-dogfood:
 	@mkdir -p .context/reports

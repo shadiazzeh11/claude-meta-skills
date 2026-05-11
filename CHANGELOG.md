@@ -12,6 +12,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 - Added construction-gate validation cases for cwd-relative protected paths and false-positive guards around protected-looking parent directories.
 - Added completion-verifier validation cases for invalid, zero, and negative timeout environment values.
 - Added validation harness behavior and repository hygiene regression targets.
+- Added read-only `doctor.sh` / `make doctor` diagnostics plus `make test-doctor` regression coverage for source and local-install health checks.
 
 ### Fixed
 
