@@ -110,7 +110,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 - Per-fire overhead: typically 100-300ms (Python startup + 3 git commands with sub-100ms each).
 - Test cases that don't run git commands (non-git directories) complete faster.
-- See `validation/results/context-recovery-*.json` for measured durations.
+- Tracked timing snapshots live in `hooks/context-recovery/BASELINE-RESULTS.md`; local per-run JSON files in `validation/results/` are gitignored and regenerated.
 
 ## Testing
 

@@ -9,7 +9,7 @@ Initial validation from Phase 2 build, expanded in Phase 2.5 (transcript parsing
 | Python | 3.14.2 |
 | Node | v20.20.2 |
 | OS | Darwin 25.3.0 |
-| Test cases | 12 (4 should-block, 8 should-pass) |
+| Test cases | 12 (5 should-block, 7 should-pass) |
 | Pass rate | 12 / 12 |
 | False positives | 0 |
 | False negatives | 0 |

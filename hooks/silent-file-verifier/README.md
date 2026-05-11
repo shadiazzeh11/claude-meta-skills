@@ -94,7 +94,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 ## Performance
 
 - Single `os.path.exists` + `os.path.getsize` call. Sub-millisecond.
-- Hook startup (Python interpreter): typically <50ms total.
+- Harness baseline timing is typically ~50-70ms/case including Python startup and harness overhead.
 
 ## Testing
 

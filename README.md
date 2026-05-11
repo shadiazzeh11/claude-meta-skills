@@ -77,16 +77,16 @@ Command-safety (`PreToolUse:Bash`) is deliberately not covered. See [Related wor
 
 ## Validation
 
-Every hook ships with its own test suite. Aggregate results from the latest validation run. The counts below are **harness-measured** — each test case feeds an input payload directly to the hook's stdin, so the numbers reflect the hook's logic on constructed inputs, not in-session lifecycle reachability for every documented case (see each hook's README for real-session caveats — `edit-drift-detector` in particular notes that Claude Code's built-in Edit validation can intercept some payloads before PreToolUse hooks dispatch).
+Every hook ships with its own test suite. The counts below summarize the tracked per-hook baseline snapshots and current validation case inventory. They are **harness-measured** — each test case feeds an input payload directly to the hook's stdin, so the numbers reflect the hook's logic on constructed inputs, not in-session lifecycle reachability for every documented case (see each hook's README for real-session caveats — `edit-drift-detector` in particular notes that Claude Code's built-in Edit validation can intercept some payloads before PreToolUse hooks dispatch).
 
-| Hook | Tests | Pass | False positives | False negatives | Avg duration |
-|---|---|---|---|---|---|
-| edit-drift-detector | 14 | 14 | 0 | 0 | 162 ms |
-| construction-gate | 21 | 21 | 0 | 0 | 85 ms |
-| silent-file-verifier | 10 | 10 | 0 | 0 | 79 ms |
-| completion-verifier | 12 | 12 | 0 | 0 | 471 ms |
-| context-recovery | 10 | 10 | 0 | 0 | 141 ms |
-| **Total** | **67** | **67** | **0** | **0** | — |
+| Hook | Synthetic cases | Pass | False positives | False negatives |
+|---|---|---|---|---|
+| edit-drift-detector | 14 | 14 | 0 | 0 |
+| construction-gate | 21 | 21 | 0 | 0 |
+| silent-file-verifier | 10 | 10 | 0 | 0 |
+| completion-verifier | 12 | 12 | 0 | 0 |
+| context-recovery | 10 | 10 | 0 | 0 |
+| **Total** | **67** | **67** | **0** | **0** |
 
 Run the suite yourself:
 
@@ -97,7 +97,7 @@ cd validation
 make test
 ```
 
-Per-hook baseline results live in each hook directory's `BASELINE-RESULTS.md`. Per-run JSON output goes to `validation/results/` (gitignored, regenerated each run).
+Per-hook baseline results, including timing snapshots, live in each hook directory's `BASELINE-RESULTS.md`. Per-run JSON output goes to `validation/results/` (gitignored, regenerated each run, not part of the release artifact).
 
 GitHub Actions runs the plugin package regression, marketplace catalog regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` (see `.github/workflows/validation.yml`).
 
@@ -105,7 +105,7 @@ GitHub Actions runs the plugin package regression, marketplace catalog regressio
 
 ## Self-deployment data
 
-Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 67/67 tests prove the hooks fire correctly on constructed inputs; the auto-log is what tells you whether they're catching real issues during normal use.
+Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 67/67 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
 
 ```bash
 ./testing/analyze-log.py             # last 7 days summary

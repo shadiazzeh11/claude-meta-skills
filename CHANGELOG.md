@@ -4,6 +4,20 @@ All notable changes to `claude-meta-skills` are documented here.
 
 This project uses a Keep a Changelog-style structure and version numbers intended to follow Semantic Versioning once public release guarantees are established.
 
+## [Unreleased]
+
+### Changed
+
+- Clarified post-`v0.1.0` release and publishing documentation so it reads as a reusable release process rather than only a first-release checklist.
+- Simplified README validation summary by removing stale duration figures from the public table; tracked per-hook baseline files remain the source for timing snapshots.
+- Aligned per-hook README performance notes and baseline category summaries with current tracked validation fixtures.
+- Marked the historical external review package as archived/stale more prominently.
+
+### Fixed
+
+- Fixed a stale validation harness example path in `VALIDATION.md`.
+- Clarified that `validation/results/` files are local regenerated outputs, not tracked release artifacts.
+
 ## [0.1.0] - 2026-05-11
 
 ### Added

@@ -8,7 +8,7 @@ Initial validation from Phase 3 build, expanded with privacy redaction and hard-
 | Claude Code version | 2.1.138 |
 | Python | 3.14.2 |
 | OS | Darwin 25.3.0 |
-| Test cases | 10 (8 should-write, 1 should-pass-silently, 1 idempotency) |
+| Test cases | 10 (9 should-write, 1 should-pass-silently, including one idempotency case) |
 | Pass rate | 10 / 10 |
 | False positives | 0 |
 | False negatives | 0 |
