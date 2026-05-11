@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "description": "Transcript uses tool_call/tool_calls wrappers with read-only tools only; tests would fail if run, so hook must skip silently",
+  "category": "should-pass"
+}

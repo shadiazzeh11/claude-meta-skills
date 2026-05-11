@@ -1,0 +1,1 @@
+{"message": {"role": "assistant", "content": {"type": "tool_call", "id": "toolu_21", "name": "MultiEdit", "input": {"file_path": "/tmp/foo.py", "edits": []}}}}

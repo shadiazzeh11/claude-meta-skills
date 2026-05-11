@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block"],
+  "description": "Transcript wraps a file-modifying tool in a tool_call object; hook should recurse through wrapper and block failing tests",
+  "category": "should-block"
+}

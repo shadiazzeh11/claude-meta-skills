@@ -11,6 +11,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 - Hardened `context-recovery` project-root discovery when `$CLAUDE_PROJECT_DIR` is absent: subdirectory compactions now write to the nearest parent `CLAUDE.md` or git root instead of creating recovery blocks in the nested cwd.
 - Hardened `completion-verifier` project discovery for subdirectory Stop events: it now walks up to the nearest project config within the trusted project root/git boundary before selecting and running tests.
 - Improved `completion-verifier` timeout warnings so they include any captured stdout/stderr emitted before the test command timed out.
+- Hardened `completion-verifier` transcript scanning so file-modifying tool calls are detected across `tool_use`, `tool_call`, and plural `tool_calls` wrapper shapes instead of only `message.content[]` `tool_use` blocks.
 
 ## [0.1.3] - 2026-05-11
 

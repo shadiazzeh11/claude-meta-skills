@@ -1,0 +1,1 @@
+{"message": {"role": "assistant", "tool_calls": [{"id": "toolu_23", "type": "function", "function": {"name": "Edit"}, "arguments": {"file_path": "/tmp/foo.py", "old_string": "x", "new_string": "y"}}]}}

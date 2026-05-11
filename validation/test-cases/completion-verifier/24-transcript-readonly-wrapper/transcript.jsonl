@@ -1,0 +1,1 @@
+{"message": {"role": "assistant", "content": [{"type": "text", "text": "Inspecting files only."}, {"tool_call": {"id": "toolu_24a", "function": {"name": "Read"}, "arguments": {"file_path": "/tmp/foo.py"}}}, {"tool_calls": [{"id": "toolu_24b", "type": "function", "function": {"name": "Glob"}, "arguments": {"pattern": "**/*.py"}}]}]}}

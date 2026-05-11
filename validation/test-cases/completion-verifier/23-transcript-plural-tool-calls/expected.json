@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block"],
+  "description": "Transcript uses a plural tool_calls list with function.name=Edit; hook should treat it as a write and block failing tests",
+  "category": "should-block"
+}

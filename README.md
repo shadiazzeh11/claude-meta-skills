@@ -6,7 +6,7 @@ Five focused hooks covering edit verification, completion gating, file checks, w
 
 | Hooks | Harness tests | Harness false positives | Harness false negatives | Crosley layers |
 |---|---|---|---|---|
-| 5 | 89 | 0 | 0 | 4/4 |
+| 5 | 93 | 0 | 0 | 4/4 |
 
 ## Fit
 
@@ -55,7 +55,7 @@ Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `
 | [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on non-protected Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 14 |
 | [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 32 |
 | [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 10 |
-| [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 20 |
+| [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 24 |
 | [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 13 |
 
 Each hook directory contains its own README with design decisions, known limitations, coexistence notes, and per-hook baseline results.
@@ -87,9 +87,9 @@ Every hook ships with its own test suite. The counts below summarize the tracked
 | edit-drift-detector | 14 | 14 | 0 | 0 |
 | construction-gate | 32 | 32 | 0 | 0 |
 | silent-file-verifier | 10 | 10 | 0 | 0 |
-| completion-verifier | 20 | 20 | 0 | 0 |
+| completion-verifier | 24 | 24 | 0 | 0 |
 | context-recovery | 13 | 13 | 0 | 0 |
-| **Total** | **89** | **89** | **0** | **0** |
+| **Total** | **93** | **93** | **0** | **0** |
 
 Run the suite yourself:
 
@@ -108,7 +108,7 @@ GitHub Actions runs the plugin package regression, marketplace catalog regressio
 
 ## Self-deployment data
 
-Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 89/89 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
+Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 93/93 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
 
 ```bash
 ./testing/analyze-log.py             # last 7 days summary
