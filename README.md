@@ -99,7 +99,7 @@ make test
 
 Per-hook baseline results, including timing snapshots, live in each hook directory's `BASELINE-RESULTS.md`. Per-run JSON output goes to `validation/results/` (gitignored, regenerated each run, not part of the release artifact).
 
-GitHub Actions runs the plugin package regression, marketplace catalog regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` across Ubuntu and macOS runners (see `.github/workflows/validation.yml`).
+GitHub Actions runs the plugin package regression, marketplace catalog regression, release metadata regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` across Ubuntu and macOS runners (see `.github/workflows/validation.yml`).
 
 **The harness is generic.** It tests against assertions on exit code, stdout patterns, stderr patterns, file content, and file pattern counts — applicable to any Claude Code hook, not just ours. See [VALIDATION.md](VALIDATION.md) for how to validate your own hooks against the harness.
 

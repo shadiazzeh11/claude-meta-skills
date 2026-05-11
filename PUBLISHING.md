@@ -43,7 +43,7 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 |---|---|
 | Synthetic validation | `make test` and `make test-stop-env` pass 67/67. |
 | Installer lifecycle | `make test-installer` passes repeat-install, merge, uninstall, no-op uninstall, and preservation scenarios. |
-| CI | GitHub Actions runs plugin package checks, marketplace catalog checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
+| CI | GitHub Actions runs plugin package checks, marketplace catalog checks, release metadata checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
@@ -97,6 +97,7 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Keep hook declarations in the standard plugin hook file (`hooks/hooks.json`) and ensure bundled hook commands use `${CLAUDE_PLUGIN_ROOT}`.
 - Validate the plugin package with `make test-plugin` and `claude plugin validate .claude-plugin/plugin.json`.
 - Keep `.claude-plugin/marketplace.json` valid with `make test-marketplace`.
+- Keep explicit plugin versioning honest with `VERSION=vX.Y.Z make test-release`; Claude Code uses `plugin.json` `version` before marketplace entry versions or source commits.
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
 - Decide whether to add a marketplace-installed `edit-drift-detector` proof or keep the current non-marketplace live proof plus harness coverage as the documented caveat.
