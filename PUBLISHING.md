@@ -37,15 +37,13 @@ This scaffold is intended for validation and smoke testing. Local `claude --plug
 
 Expected validation caveat: `claude plugin validate .` warns that the repo-root `CLAUDE.md` is not loaded as plugin context. That is acceptable for this scaffold; plugin-shipped context should live in `skills/`, and this repo already has `skills/verification-before-recommend/`.
 
-## Evidence snapshot
-
-As of the first complete dogfood baseline:
+## Current evidence snapshot
 
 | Area | Evidence |
 |---|---|
 | Synthetic validation | `make test` and `make test-stop-env` pass 67/67. |
 | Installer lifecycle | `make test-installer` passes repeat-install, merge, uninstall, no-op uninstall, and preservation scenarios. |
-| CI | GitHub Actions runs plugin package checks, marketplace catalog checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on PRs and pushes to `main`. |
+| CI | GitHub Actions runs plugin package checks, marketplace catalog checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
@@ -105,7 +103,7 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
 - Keep `CHANGELOG.md` and `RELEASE.md` current, then add a release tag only after the release gate in `RELEASE.md` passes.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
-- Keep GitHub Actions green on `main`.
+- Keep GitHub Actions green on Ubuntu and macOS for `main`.
 - Generate fresh dogfood reports:
 
 ```bash

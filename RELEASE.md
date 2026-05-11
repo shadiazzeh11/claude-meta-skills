@@ -2,9 +2,9 @@
 
 This is the reusable release runbook for `claude-meta-skills`.
 
-Latest published release target: **`v0.1.1` technical preview**.
+Latest published release: **`v0.1.1` technical preview**.
 
-Keep future releases in the `0.x` technical-preview line while the project lacks public marketplace listing, multi-OS CI, and production false-positive data. Reserve `v1.0.0` for a stable public support contract.
+Keep future releases in the `0.x` technical-preview line while the project lacks public marketplace listing, Windows CI, and production false-positive data. Reserve `v1.0.0` for a stable public support contract.
 
 ## Release principles
 

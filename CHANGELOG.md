@@ -6,6 +6,10 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+### Changed
+
+- Expanded GitHub Actions validation from Ubuntu-only to an Ubuntu + macOS runner matrix.
+
 ## [0.1.1] - 2026-05-11
 
 ### Added
@@ -108,7 +112,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 - No public marketplace listing yet.
 - Windows native support is untested.
-- CI currently runs on Ubuntu only.
+- At `0.1.0`, CI ran on Ubuntu only.
 - Plugin-path and marketplace-installed smoke evidence do not yet include edit-drift-detector.
 - Dogfood evidence proves lifecycle reachability and controlled behavior, not real-world false-positive rate or production readiness.
 - Command-safety and Bash sandboxing remain explicit non-goals.
