@@ -1,7 +1,7 @@
 {
   "expected_exit_code": 0,
-  "expected_stdout_contains": ["additionalContext", "timed out"],
-  "description": "Long-running test (sleep 5) with COMPLETION_VERIFIER_TIMEOUT_SECS=2 must produce timeout warning, not block",
+  "expected_stdout_contains": ["additionalContext", "timed out", "Partial output before timeout", "started before timeout"],
+  "description": "Long-running test (sleep 5) with COMPLETION_VERIFIER_TIMEOUT_SECS=2 must warn with partial output, not block",
   "category": "should-pass",
   "env": {
     "COMPLETION_VERIFIER_TIMEOUT_SECS": "2"
