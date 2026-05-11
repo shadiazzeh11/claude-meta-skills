@@ -1,0 +1,6 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block", "LOCAL_VENV_PYTEST_FAIL"],
+  "description": "Pytest-configured pyproject with local .venv pytest runner failing; hook should use the local runner and block with pytest output",
+  "category": "should-block"
+}

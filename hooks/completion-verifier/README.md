@@ -45,7 +45,9 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 3. Detects project type via config-file presence, in this priority order:
    - `package.json` → `npm test`
    - `Cargo.toml` → `cargo test`
-   - `pyproject.toml` / `setup.py` → `python3 -m unittest discover -v`
+   - `pyproject.toml` / `setup.py` → Python test command:
+     - pytest-configured projects → local `.venv`/`venv` Python with `-m pytest`, when available
+     - otherwise → `python3 -m unittest discover -v`
    - `go.mod` → `go test ./...`
    - `Makefile` → `make test`
 4. Reads `transcript_path` to check whether any Write or Edit calls happened in the session. If transcript readable AND no writes → exit 0 (exploration session).
@@ -55,7 +57,7 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 
 ## Design decisions
 
-- **Python uses `unittest` discover, not `pytest`.** Reason: stdlib availability across machines. If a project uses pytest, the user can override via Makefile (`test:` target invoking pytest) which the hook will pick up via the Makefile fallback.
+- **Python prefers pytest only when the project declares it and the runner is already installed.** `pyproject.toml` / `setup.py` projects default to `python3 -m unittest discover -v` for stdlib availability. If pytest is declared via `[tool.pytest...]`, `pytest.ini`, or project dependencies, the hook first looks for pytest in a local `.venv` / `venv` Python and runs that interpreter with `-m pytest`. If pytest is declared but unavailable, the hook warns and allows Stop instead of blocking on a system-Python import failure.
 
 - **Transcript-unreadable defaults to running tests.** Per spec: "accept this limitation and document it." False-positive risk acknowledged in Known limitations.
 
@@ -78,7 +80,9 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 
 - **False-positive risk on exploration sessions with unreadable transcript.** If transcript can't be read AND a project has pre-existing test failures unrelated to the current Claude session, this hook will block completion. Mitigation: Claude can note "tests were already failing before this session; see [paths]" in its response, which the hook will allow on next stop attempt (`stop_hook_active` will be true).
 
-- **Project type ambiguity.** A repo with both `package.json` and `pyproject.toml` will use npm only. Workaround: Makefile target `test:` that runs both runners; the Makefile fallback is the lowest priority but always works as user-controlled override.
+- **Project type ambiguity.** A repo with both `package.json` and `pyproject.toml` will use npm only because `package.json` is checked first. A Makefile does not override earlier project-type matches; it is used only when no higher-priority config is present.
+
+- **Makefile is not a Python override when `pyproject.toml` exists.** Project-type detection is first-match by config file. Python projects with a `Makefile` still use the Python command because `pyproject.toml` is checked before `Makefile`. If a project needs a custom command, configure the Python environment so the intended runner is available.
 
 ## Coexistence with other hooks
 
@@ -110,4 +114,4 @@ cd validation
 ./harness.sh completion-verifier
 ```
 
-12 test cases. See `validation/test-cases/completion-verifier/`.
+14 test cases. See `validation/test-cases/completion-verifier/`.
