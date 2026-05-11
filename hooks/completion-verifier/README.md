@@ -103,7 +103,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 ## Performance
 
-- Test command timeout: 30s (configurable via `COMPLETION_VERIFIER_TIMEOUT_SECS` env var).
+- Test command timeout: 30s (configurable via positive integer `COMPLETION_VERIFIER_TIMEOUT_SECS` env var; invalid, zero, and negative values fall back to 30s).
 - Hook overhead (excluding test command): typically <100ms (Python startup + transcript scan).
 - Total wall-clock: dominated by the test suite itself.
 
@@ -114,4 +114,4 @@ cd validation
 ./harness.sh completion-verifier
 ```
 
-15 test cases. See `validation/test-cases/completion-verifier/`.
+18 test cases. See `validation/test-cases/completion-verifier/`.

@@ -6,7 +6,7 @@ Five focused hooks covering edit verification, completion gating, file checks, w
 
 | Hooks | Harness tests | Harness false positives | Harness false negatives | Crosley layers |
 |---|---|---|---|---|
-| 5 | 70 | 0 | 0 | 4/4 |
+| 5 | 84 | 0 | 0 | 4/4 |
 
 ## Fit
 
@@ -50,9 +50,9 @@ Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `
 | Hook | Layer | Event | What it catches | Tests |
 |---|---|---|---|---|
 | [edit-drift-detector](hooks/edit-drift-detector/) | Prevention | `PreToolUse:Edit` | Fuzzy-match correction context for `old_string` drift on non-protected Edits that reach PreToolUse (Claude Code's built-in validation catches complete mismatches first — see hook README) | 14 |
-| [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 21 |
+| [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 32 |
 | [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 10 |
-| [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 15 |
+| [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 18 |
 | [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 10 |
 
 Each hook directory contains its own README with design decisions, known limitations, coexistence notes, and per-hook baseline results.
@@ -77,16 +77,16 @@ Command-safety (`PreToolUse:Bash`) is deliberately not covered. See [Related wor
 
 ## Validation
 
-Every hook ships with its own test suite. The counts below summarize the tracked per-hook baseline snapshots and current validation case inventory. They are **harness-measured** — each test case feeds an input payload directly to the hook's stdin, so the numbers reflect the hook's logic on constructed inputs, not in-session lifecycle reachability for every documented case (see each hook's README for real-session caveats — `edit-drift-detector` in particular notes that Claude Code's built-in Edit validation can intercept some payloads before PreToolUse hooks dispatch).
+Every hook ships with its own test suite. The counts below summarize the tracked per-hook baseline snapshots and current validation case inventory. They are **harness-measured** — each test case feeds an input payload directly to the hook's stdin, so the numbers reflect the hook's logic on constructed inputs, not in-session lifecycle reachability for every documented case (see each hook's README for real-session caveats — `edit-drift-detector` in particular notes that Claude Code's built-in Edit validation can intercept some payloads before PreToolUse hooks dispatch). The false-positive / false-negative columns are harness category counters for allow-vs-block expectations; stdout/stderr, file-content, privacy, and mutation assertions can still fail a case even when a hook's exit code is correct.
 
 | Hook | Synthetic cases | Pass | False positives | False negatives |
 |---|---|---|---|---|
 | edit-drift-detector | 14 | 14 | 0 | 0 |
-| construction-gate | 21 | 21 | 0 | 0 |
+| construction-gate | 32 | 32 | 0 | 0 |
 | silent-file-verifier | 10 | 10 | 0 | 0 |
-| completion-verifier | 15 | 15 | 0 | 0 |
+| completion-verifier | 18 | 18 | 0 | 0 |
 | context-recovery | 10 | 10 | 0 | 0 |
-| **Total** | **70** | **70** | **0** | **0** |
+| **Total** | **84** | **84** | **0** | **0** |
 
 Run the suite yourself:
 
@@ -105,7 +105,7 @@ GitHub Actions runs the plugin package regression, marketplace catalog regressio
 
 ## Self-deployment data
 
-Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 70/70 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
+Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 84/84 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
 
 ```bash
 ./testing/analyze-log.py             # last 7 days summary
@@ -158,7 +158,7 @@ For the current marketplace-readiness status, positioning, pre-publish checklist
 - **Validation harness timing includes ~30-40 ms of Python startup overhead** per measurement. Real hook execution overhead when installed in Claude Code is approximately 30-45 ms lower than reported values.
 - **Subdirectory project detection in `completion-verifier`** only checks the immediate `cwd` for project config files (`package.json`, `Cargo.toml`, etc.) — doesn't walk up parent directories the way `npm` and `cargo` do. Workaround: ensure `cwd` is project root, or define a top-level `Makefile test:` target.
 - **Race condition window in `context-recovery`** when a user edits CLAUDE.md in another editor while the hook fires. Mitigated by atomic write (`tempfile.mkstemp` + `os.replace`); not eliminated.
-- **CI is limited to GitHub Actions validation on Ubuntu and macOS;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, marketplace catalog validation, release metadata regression, validation harness lock regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no Windows runner, and no multi-Python matrix.
+- **CI is limited to GitHub Actions validation on Ubuntu and macOS;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, marketplace catalog validation, release metadata regression, validation harness lock regression, validation harness behavior regression, repository hygiene regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no Windows runner, and no multi-Python matrix.
 - **No public marketplace listing.** Install via `git clone` + `install.sh`. A plugin scaffold, marketplace catalog, isolated marketplace install regression, and marketplace-installed smoke evidence for four hooks exist, but public listing/release packaging is future work.
 
 ## License

@@ -46,9 +46,10 @@ Requires Python 3.7+. Uses stdlib only.
 2. Extracts `tool_input.file_path`. NotebookEdit payloads carry the path as `tool_input.notebook_path` instead — the hook falls back to that field when `file_path` is absent.
 3. Loads protected-path patterns from `rules.json` next to the hook (or built-in defaults if missing).
 4. Compiles each pattern; skips invalid regexes silently rather than crashing.
-5. Searches the file path against each pattern with `re.search` (matches anywhere in path).
-6. First pattern match → exit 2 with constructive stderr feedback.
-7. No match → exit 0 (allow modification).
+5. Builds path variants from the raw tool path plus cwd/project-resolved relative paths.
+6. Searches the variants against each pattern with `re.search`.
+7. First pattern match → exit 2 with constructive stderr feedback.
+8. No match → exit 0 (allow modification).
 
 ## Configuring rules.json
 
@@ -57,9 +58,9 @@ Requires Python 3.7+. Uses stdlib only.
 ```json
 {
   "protected_patterns": [
-    "node_modules/",
-    "\\.git/",
-    "\\.env(?:\\.|$)",
+    "(?:^|/)node_modules/",
+    "(?:^|/)\\.git/",
+    "(?:^|/)\\.env(?:\\.[^/]+)?$",
     "src/generated/"
   ]
 }
@@ -74,8 +75,8 @@ To add a pattern: edit `rules.json`. To temporarily disable one pattern: remove 
 
 ## Design decisions
 
-- **Regex matching, not glob.** More expressive (lookahead, alternation, anchors). For users wanting glob-like simplicity, anchored patterns work: `^node_modules/`, `\\.lock$`.
-- **`re.search` not `re.fullmatch`.** Matches anywhere in path. Pattern `node_modules/` matches paths like `/Users/x/proj/node_modules/foo/index.js` (anywhere) but not `my-node_modules-notes.txt` (no slash separator). Test 06 verifies the boundary case.
+- **Regex matching, not glob.** More expressive (lookahead, alternation, anchors). For users wanting glob-like simplicity, segment-aware patterns work: `(?:^|/)node_modules/`, `(?:^|/)src/generated/`.
+- **`re.search` over path variants, not `re.fullmatch`.** The hook matches raw relative paths and cwd/project-resolved variants. When `CLAUDE_PROJECT_DIR` is present and the target is inside the project, it prefers the project-relative path so parent directories named like `node_modules` or `.env.project` do not false-positive.
 - **Defaults include common cases for Node, Rust, Ruby, Python, Bun.** Project-specific paths should be added by the user.
 - **Constructive feedback default.** Tells Claude what matched and how to override (ask user, modify rules.json). Punitive variant exists for A/B testing.
 - **Exit code 2 + stderr** for blocking (per Claude Code hooks convention). JSON-based blocking via `permissionDecision: deny` is an alternative if exit 2 reliability issues surface (per GitHub issue #13744 — same risk as edit-drift-detector).
@@ -99,7 +100,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 ## Performance
 
-- Tracked harness average: 122ms/case in the current baseline snapshot, including Python startup and harness overhead.
+- Tracked harness average: 111ms/case in the current baseline snapshot, including Python startup and harness overhead.
 - Path matching itself is microseconds for typical pattern lists (10-20 patterns).
 - Pattern matching is O(N × M) where N is path length and M is number of patterns; for typical pattern lists (10-20 patterns) this is microseconds.
 - Tracked timing snapshots live in `hooks/construction-gate/BASELINE-RESULTS.md`; local per-run JSON files in `validation/results/` are gitignored and regenerated.
@@ -111,4 +112,4 @@ cd validation
 ./harness.sh construction-gate
 ```
 
-21 test cases covering should-block (18) and should-pass (3), including one protected-string boundary edge case. Tool coverage spans Write (most cases), Edit (`11-claude-settings`, `20-env-edit-mismatch`, `21-backslash-protected-path`), MultiEdit (`18-claude-settings-local`), and NotebookEdit (`19-claude-hooks-dir`, exercising the `notebook_path` fallback). See `validation/test-cases/construction-gate/`.
+32 test cases covering should-block (23) and should-pass (9), including protected-string boundary cases, cwd-relative protected paths, and false-positive guards for projects whose parent paths contain protected-looking segments. Tool coverage spans Write (most cases), Edit (`11-claude-settings`, `20-env-edit-mismatch`, `21-backslash-protected-path`, `22-relative-claude-settings-cwd`), MultiEdit (`18-claude-settings-local`), and NotebookEdit (`19-claude-hooks-dir`, exercising the `notebook_path` fallback). See `validation/test-cases/construction-gate/`.

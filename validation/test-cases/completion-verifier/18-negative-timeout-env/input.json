@@ -1,0 +1,7 @@
+{
+  "session_id": "test-session",
+  "hook_event_name": "Stop",
+  "stop_hook_active": false,
+  "cwd": "{{PROJECT_PATH}}",
+  "transcript_path": ""
+}

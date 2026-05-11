@@ -1,6 +1,6 @@
 HOOKS := edit-drift-detector construction-gate silent-file-verifier completion-verifier context-recovery
 
-.PHONY: test test-stop-env test-installer test-analyzer test-plugin test-marketplace test-release test-validation-lock report-dogfood test-% clean install uninstall help
+.PHONY: test test-stop-env test-installer test-analyzer test-plugin test-marketplace test-release test-validation-lock test-validation-harness test-repo-hygiene report-dogfood test-% clean install uninstall help
 
 help:
 	@echo "claude-meta-skills make targets:"
@@ -12,6 +12,8 @@ help:
 	@echo "  make test-marketplace - validate marketplace catalog and isolated CLI install path"
 	@echo "  make test-release VERSION=vX.Y.Z - validate release metadata/version alignment"
 	@echo "  make test-validation-lock - verify validation harness lock behavior"
+	@echo "  make test-validation-harness - verify validation harness failure reporting"
+	@echo "  make test-repo-hygiene - verify cleanup targets preserve tracked placeholders"
 	@echo "  make report-dogfood  - write redacted real-dogfood reports to .context/reports/"
 	@echo "  make test-<hook>     - run validation harness for one hook"
 	@echo "                         (e.g., make test-edit-drift-detector)"
@@ -55,6 +57,12 @@ test-release:
 test-validation-lock:
 	@bash testing/test-validation-lock.sh
 
+test-validation-harness:
+	@bash testing/test-validation-harness.sh
+
+test-repo-hygiene:
+	@bash testing/test-repo-hygiene.sh
+
 report-dogfood:
 	@mkdir -p .context/reports
 	@./testing/analyze-log.py --real-only --redact --format markdown --output .context/reports/dogfood-report.md
@@ -66,7 +74,9 @@ test-%:
 	@cd validation && ./harness.sh $*
 
 clean:
-	rm -rf validation/results
+	mkdir -p validation/results
+	find validation/results -type f ! -name '.gitkeep' -delete
+	touch validation/results/.gitkeep
 
 install:
 	@if [ -z "$(TARGET)" ]; then \

@@ -1,0 +1,10 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_empty": true,
+  "expected_stderr_empty": true,
+  "description": "Filename ending with my-package-lock.json is not the protected package-lock.json lockfile",
+  "category": "should-pass",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/Users/test/project"
+  }
+}

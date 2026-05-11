@@ -1,0 +1,11 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "\\.env"],
+  "expected_stderr_not_contains": ["SECRET_TOKEN=value"],
+  "expected_log_not_contains": ["SECRET_TOKEN=value"],
+  "description": "Parent-relative Write resolves against cwd and blocks .env.local without echoing content",
+  "category": "should-block",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/Users/test/project"
+  }
+}

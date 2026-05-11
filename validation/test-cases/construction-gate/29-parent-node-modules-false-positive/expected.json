@@ -1,0 +1,10 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_empty": true,
+  "expected_stderr_empty": true,
+  "description": "Project under parent node_modules directory does not block ordinary project-relative source path",
+  "category": "should-pass",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/tmp/node_modules/project"
+  }
+}

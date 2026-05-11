@@ -60,7 +60,18 @@ def log_fire(hook_name, action, project, detail, session_id):
         pass
 
 
-TIMEOUT_SECS = int(os.environ.get("COMPLETION_VERIFIER_TIMEOUT_SECS", "30"))
+def parse_positive_int(value, default):
+    """Parse a positive integer env setting, falling back on invalid input."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    if parsed <= 0:
+        return default
+    return parsed
+
+
+TIMEOUT_SECS = parse_positive_int(os.environ.get("COMPLETION_VERIFIER_TIMEOUT_SECS", "30"), 30)
 LAST_N_LINES = 50
 
 # Project-type detection: ordered list of (config_file, test_command).

@@ -1,0 +1,10 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_empty": true,
+  "expected_stderr_empty": true,
+  "description": "Relative Write to ordinary source path stays allowed after cwd resolution",
+  "category": "should-pass",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/Users/test/project"
+  }
+}

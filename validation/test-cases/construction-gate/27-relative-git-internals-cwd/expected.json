@@ -1,0 +1,9 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", ".git"],
+  "description": "Relative Write from inside .git internals resolves against cwd and blocks",
+  "category": "should-block",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/Users/test/project"
+  }
+}

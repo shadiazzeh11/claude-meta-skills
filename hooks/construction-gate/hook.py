@@ -53,21 +53,21 @@ def log_fire(hook_name, action, project, detail, session_id):
 
 
 DEFAULT_PATTERNS = [
-    r"node_modules/",
-    r"\.git/",
-    r"\.env(?:\.|$)",
-    r"package-lock\.json$",
-    r"yarn\.lock$",
-    r"bun\.lockb$",
-    r"\.claude/settings\.json$",
-    r"Cargo\.lock$",
-    r"Gemfile\.lock$",
-    r"poetry\.lock$",
-    r"uv\.lock$",
-    r"pnpm-lock\.yaml$",
-    r"Pipfile\.lock$",
-    r"\.claude/settings\.local\.json$",
-    r"\.claude/hooks/",
+    r"(?:^|/)node_modules/",
+    r"(?:^|/)\.git/",
+    r"(?:^|/)\.env(?:\.[^/]+)?$",
+    r"(?:^|/)package-lock\.json$",
+    r"(?:^|/)yarn\.lock$",
+    r"(?:^|/)bun\.lockb$",
+    r"(?:^|/)\.claude/settings\.json$",
+    r"(?:^|/)Cargo\.lock$",
+    r"(?:^|/)Gemfile\.lock$",
+    r"(?:^|/)poetry\.lock$",
+    r"(?:^|/)uv\.lock$",
+    r"(?:^|/)pnpm-lock\.yaml$",
+    r"(?:^|/)Pipfile\.lock$",
+    r"(?:^|/)\.claude/settings\.local\.json$",
+    r"(?:^|/)\.claude/hooks/",
 ]
 
 
@@ -105,24 +105,80 @@ def load_messages():
         return fallback
 
 
-def path_variants(file_path):
-    """Return tool-provided path variants with normalized separators."""
+def _append_unique(items, value):
+    """Append a non-empty string once, preserving order."""
+    if value and value not in items:
+        items.append(value)
+
+
+def _normalize_separators(path):
+    """Normalize path separators for regex matching."""
+    return str(path).replace("\\", "/")
+
+
+def _is_relative_to(path, base):
+    """Return True when path is inside base, using lexical absolute paths."""
+    try:
+        common = os.path.commonpath([path, base])
+    except ValueError:
+        return False
+    return common == base
+
+
+def path_variants(file_path, cwd=None, project_dir=None):
+    """Return tool-provided and cwd/project-resolved path variants.
+
+    Claude Code usually sends absolute file paths, but relative payload paths
+    can occur when a session is working from a subdirectory. Protected-path
+    matching must therefore consider the raw path and the path resolved against
+    the payload cwd / project root without requiring the target to exist.
+    """
     variants = []
     if not file_path:
         return variants
-    variants.append(file_path)
-    normalized = file_path.replace("\\", "/")
-    if normalized != file_path:
-        variants.append(normalized)
+
+    normalized = _normalize_separators(file_path)
+    raw_is_absolute = os.path.isabs(normalized)
+    if not raw_is_absolute:
+        _append_unique(variants, file_path)
+        _append_unique(variants, normalized)
+
+    project_abs = None
+    if project_dir:
+        project_abs = _normalize_separators(os.path.abspath(_normalize_separators(project_dir)))
+
+    if raw_is_absolute:
+        resolved_abs = _normalize_separators(os.path.abspath(normalized))
+    else:
+        base = cwd or project_dir or ""
+        if base:
+            base_normalized = _normalize_separators(base)
+            resolved_abs = _normalize_separators(
+                os.path.abspath(os.path.join(base_normalized, normalized))
+            )
+        else:
+            resolved_abs = _normalize_separators(os.path.abspath(normalized))
+
+    if project_abs and _is_relative_to(resolved_abs, project_abs):
+        rel = os.path.relpath(resolved_abs, project_abs)
+        if rel != ".":
+            _append_unique(variants, _normalize_separators(rel))
+    else:
+        # Without a trusted project root, the cwd-resolved absolute path is the
+        # best available signal. With a project root, only match absolute paths
+        # outside the project to avoid false positives from parent directories
+        # named like protected paths.
+        _append_unique(variants, resolved_abs)
+
     return variants
 
 
-def find_matching_pattern(file_path, patterns):
+def find_matching_pattern(file_path, patterns, cwd=None, project_dir=None):
     """Return the first pattern that matches file_path variants, or None."""
     for pattern in patterns:
         try:
             compiled = re.compile(pattern)
-            if any(compiled.search(path) for path in path_variants(file_path)):
+            if any(compiled.search(path) for path in path_variants(file_path, cwd, project_dir)):
                 return pattern
         except re.error:
             # Invalid regex; skip this pattern silently
@@ -159,7 +215,9 @@ def main():
         # All patterns invalid; can't enforce. Allow write rather than block on hook error.
         return 0
 
-    matched = find_matching_pattern(file_path, valid_patterns)
+    cwd = payload.get("cwd") or ""
+    project_dir = os.environ.get("CLAUDE_PROJECT_DIR") or ""
+    matched = find_matching_pattern(file_path, valid_patterns, cwd=cwd, project_dir=project_dir)
     if matched is None:
         return 0
 

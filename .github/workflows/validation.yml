@@ -65,6 +65,12 @@ jobs:
       - name: Validation harness lock regression
         run: make test-validation-lock
 
+      - name: Validation harness behavior regression
+        run: make test-validation-harness
+
+      - name: Repository hygiene regression
+        run: make test-repo-hygiene
+
       - name: Analyzer regression
         run: make test-analyzer
 

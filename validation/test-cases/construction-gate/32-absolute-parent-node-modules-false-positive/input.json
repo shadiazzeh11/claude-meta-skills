@@ -1,0 +1,10 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Write",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/tmp/node_modules/project",
+  "tool_input": {
+    "file_path": "/tmp/node_modules/project/src/app.py",
+    "content": "def main(): pass"
+  }
+}
