@@ -50,7 +50,7 @@ Test cases run in directory-name sort order, so prefix with `01-`, `02-`, ... if
 | `{{PROJECT_PATH}}` | Absolute path of `project/` directory (if it exists) |
 | `{{HOME}}` | Harness temp home; supported in assertion file paths |
 
-Example (from `test-cases/edit-drift-detector/01-exact-match/input.json`):
+Example (from `test-cases/edit-drift-detector/06-exact-match/input.json`):
 
 ```json
 {
@@ -60,8 +60,8 @@ Example (from `test-cases/edit-drift-detector/01-exact-match/input.json`):
   "cwd": "{{TEST_DIR}}",
   "tool_input": {
     "file_path": "{{FIXTURE_PATH}}",
-    "old_string": "Hello, world!",
-    "new_string": "Hello, Claude!"
+    "old_string": "quick brown fox",
+    "new_string": "slow green turtle"
   }
 }
 ```
@@ -208,8 +208,8 @@ Each invocation writes `validation/results/<hook>-<timestamp>.json` with full st
   },
   "results": [
     {
-      "name": "01-exact-match",
-      "description": "should-pass: old_str matches file exactly",
+      "name": "06-exact-match",
+      "description": "old_string is an exact substring of file content",
       "category": "should-pass",
       "expected_exit": 0,
       "actual_exit": 0,
@@ -223,7 +223,7 @@ Each invocation writes `validation/results/<hook>-<timestamp>.json` with full st
 }
 ```
 
-Useful for piping into your own analysis (regression tracking, per-test-case duration trends, CI dashboards).
+Useful for piping into your own local analysis (regression tracking, per-test-case duration trends, CI dashboards). These files are gitignored and regenerated each run; tracked release baselines live in each hook's `BASELINE-RESULTS.md`.
 
 ## Validating your own hook
 
@@ -231,7 +231,7 @@ To use the harness for a hook outside this repo:
 
 1. Drop your `hook.py` (or other entry point — but `harness.sh` currently invokes `python3 hook.py`) into `hooks/<your-hook>/hook.py` of a clone of this repo, or set up a symlink from `validation/test-cases/<your-hook>/` and a sibling `hooks/<your-hook>/hook.py`.
 2. Create `validation/test-cases/<your-hook>/<NN>-<case-name>/input.json` and `expected.json` for each scenario you want to verify.
-3. Run `./harness.sh <your-hook>`.
+3. Run `./validation/harness.sh <your-hook>` from the repo root.
 
 The harness has no dependencies on the rest of the repo — `validation/harness.sh` is self-contained (requires `bash`, `jq`, `python3`, `grep`).
 

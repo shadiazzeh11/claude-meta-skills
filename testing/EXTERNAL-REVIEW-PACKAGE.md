@@ -1,4 +1,6 @@
-# External Review Package — claude-meta-skills
+# Archived External Review Package — claude-meta-skills
+
+> **Archived/stale package. Do not use this document for current validation status, CI status, marketplace readiness, source code, or release claims.** It is retained only as historical audit input from an earlier private-repo phase.
 
 > **Audit context.** This document is a historical generated package for ChatGPT review from an earlier private-repo phase. It is retained for audit history only; it is not regenerated on every implementation change and is not the current source of truth.
 >
@@ -18,7 +20,7 @@ The architecture covers Blake Crosley's four-layer hook framework: **Prevention*
 
 **Authors:** Shadi AL Azzeh and Caleb Mukasa, joint MIT copyright 2026. Co-authored throughout by Claude Opus 4.7 (1M context). Built across five build phases (foundation, two hook batches, polish, packaging+logging) using a triangle workflow: Caleb (decision authority), CC (executor), chat-Claude (planner with broader research context).
 
-**Validation status as of audit time:** 45/45 tests passing, 0 false positives, 0 false negatives, dogfood install live in the project's own repo, auto-logging operational. HEAD commit at audit: `c06dab1` (`feat: auto-logging + analysis script for self-deployment validation`).
+**Historical validation status in this snapshot:** 45/45 tests passing at commit `c06dab1` (`feat: auto-logging + analysis script for self-deployment validation`). This is not the current project status.
 
 **Pitch:** Claude Code hooks with measured false-positive rates. Five focused hooks covering edit verification, completion gating, file checks, write protection, and post-compaction context recovery. Each ships with a test suite. The validation harness works for any Claude Code hook, not just ours.
 
@@ -1798,7 +1800,7 @@ Each major decision: what was decided, what alternatives existed, why this choic
 
 **Alternative:** Add a TODO regex check (e.g., flag `TODO`, `FIXME`, placeholder strings in newly written content).
 
-**Why this choice:** `danielmiessler/PAI` already does a comprehensive TODO regex check. Building a thinner version would be convergent. Our value-add over PAI is the validation suite (45/45 measured) plus the small-file Python implementation; the patterns themselves are well-trodden ground. The `rules.json` design lets users add their own patterns including TODO ones if they want.
+**Why this choice in the historical snapshot:** `danielmiessler/PAI` already does a comprehensive TODO regex check. Building a thinner version would be convergent. At that time, our value-add over PAI was the validation suite (45/45 measured) plus the small-file Python implementation; the patterns themselves are well-trodden ground. The `rules.json` design lets users add their own patterns including TODO ones if they want.
 
 ### Decision 4 — Inline `log_fire()` duplicated 5x, not a shared library
 
@@ -1881,8 +1883,8 @@ Compiled from per-hook READMEs and the project README.
 - **GitHub issue #38162 (macOS async stdin bug):** `"async": true` causes empty stdin on macOS. All our hooks default to synchronous mode (the correct choice).
 - **Validation harness timing includes ~30–40 ms of Python startup overhead** per measurement. Real hook execution overhead when installed in Claude Code is ~30–45 ms lower than reported values.
 - **`construction-gate` is convergent with ecosystem.** Patterns are well-trodden ground. Our value-add is the validation suite, not novel patterns.
-- **No CI/CD integration.** The validation harness runs locally; `make test` works in any shell. GitHub Actions wiring is a future enhancement.
-- **No marketplace distribution.** Install via `git clone` + `install.sh`. Plugin marketplace listing is a future enhancement.
+- **Historical limitation at snapshot time: no CI/CD integration.** The validation harness ran locally; `make test` worked in any shell. This is stale after the later GitHub Actions workflow.
+- **Historical limitation at snapshot time: no marketplace distribution.** Install was via `git clone` + `install.sh`. This is stale after the later plugin scaffold, local marketplace catalog, and marketplace-installed smoke evidence.
 
 ### `edit-drift-detector`
 
@@ -1891,7 +1893,7 @@ Compiled from per-hook READMEs and the project README.
 - **GitHub issue #11807** — PreToolUse hook success can freeze the VS Code extension (terminal Claude Code unaffected). Test on target environment before relying.
 - **Multi-line `old_string` with internal blank lines** — `difflib`'s similarity may underestimate match quality. The 0.6 threshold is permissive; tune in Phase 2+ if false negatives surface.
 - **Large files (10K+ lines)** — sliding-window comparison is O(file_lines × old_lines × line_chars). For very large files with multi-line `old_string`, latency may exceed the 500 ms target. The 1500-line test (case 10) completes well under target; 10K+ untested.
-- **Relative paths untested.** All test fixtures use absolute paths via `{{FIXTURE_PATH}}` substitution. Real Claude Code sometimes provides relative paths; the hook calls `os.path.exists(file_path)` directly which resolves relative to the hook process's cwd, not necessarily Claude's cwd. Behavior on relative paths is uncertain.
+- **Historical limitation at snapshot time: relative paths untested.** This is stale after the later relative-path resolution fix and regression fixtures.
 - **Line endings (`\r\n` vs `\n`) treated as real content differences.** A file with Windows line endings vs an `old_string` with Unix line endings will not match exactly and will not normalize. Design decision: line endings carry meaning in some codebases.
 - **Binary files: blocks rather than skips.** Test 11 confirms the hook reads binary content (with `errors="replace"`) without crashing, but a text `old_string` won't match binary content and the hook will block with a no-close-match message. Correct behavior, but the message could be improved to suggest "use Write to replace".
 
@@ -1935,7 +1937,7 @@ Compiled from per-hook READMEs and the project README.
 
 ## Section 8: Test case inventory
 
-All 45 test cases. Category convention: `should-block` (hook should exit 2 / emit decision: block); `should-pass` (hook should exit 0 silently); `should-warn` (hook should exit 0 with additionalContext); `should-write` (context-recovery: hook should write to CLAUDE.md); `should-pass-silently` (context-recovery: hook should exit 0 without writing).
+Historical snapshot inventory: 45 test cases. Category convention: `should-block` (hook should exit 2 / emit decision: block); `should-pass` (hook should exit 0 silently); `should-warn` (hook should exit 0 with additionalContext); `should-write` (context-recovery: hook should write to CLAUDE.md); `should-pass-silently` (context-recovery: hook should exit 0 without writing).
 
 | # | Hook | Case name | Category | Description |
 |---|---|---|---|---|

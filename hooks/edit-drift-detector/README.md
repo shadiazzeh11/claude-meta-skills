@@ -84,7 +84,7 @@ Requires Python 3.7+ in PATH. Uses stdlib only — no external dependencies.
 
 - **Multi-line `old_string` with internal blank lines** — `difflib`'s similarity may underestimate match quality. The 0.6 threshold is chosen to be permissive; tune in Phase 2+ if false negatives surface.
 
-- **Large files (10K+ lines)** — sliding-window comparison is O(file_lines × old_lines × line_chars). For very large files with multi-line `old_string`, latency may exceed the 500ms target. Performance test in `validation/test-cases/edit-drift-detector/10-large-file-match/` covers up to 1500 lines.
+- **Large files (10K+ lines)** — sliding-window comparison is O(file_lines × old_lines × line_chars). For very large files with multi-line `old_string`, latency may exceed the 500ms target. Performance test in `validation/test-cases/edit-drift-detector/10-large-file/` covers up to 1500 lines.
 
 ## Coexistence with other hooks
 
@@ -124,7 +124,7 @@ The harness's 14/14 pass rate measures the hook's logic via direct stdin injecti
 ## Performance
 
 - Target: <500ms per invocation on files up to 1500 lines.
-- Measured: see `validation/results/edit-drift-detector-*.json` for current numbers.
+- Tracked timing snapshots live in `hooks/edit-drift-detector/BASELINE-RESULTS.md`; local per-run JSON files in `validation/results/` are gitignored and regenerated.
 
 ## Testing
 

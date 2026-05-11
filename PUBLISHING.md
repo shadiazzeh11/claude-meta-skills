@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **technical preview, local install recommended**. The repo has a tested installer/uninstaller, CI, controlled live-session dogfood evidence for all five hooks, local report export, release checklist, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
+Current status: **v0.1.0 technical preview, local install recommended**. The repo has a tested installer/uninstaller, CI, controlled live-session dogfood evidence for all five hooks, local report export, release checklist, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
 
 ## Current distribution model
 
@@ -50,7 +50,7 @@ As of the first complete dogfood baseline:
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
-| Release docs | `CHANGELOG.md` and `RELEASE.md` define the first technical-preview release scope and tag checklist. |
+| Release docs | `CHANGELOG.md` and `RELEASE.md` define the technical-preview release scope and tag checklist. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
 
 The baseline proves lifecycle reachability and observable behavior under controlled live Claude Code dogfood probes. It does not prove production false-positive rate, exhaustive real-world coverage, or organic frequency of each failure mode.
@@ -92,7 +92,7 @@ Safe claims:
 
 ## Pre-publish checklist
 
-Before presenting this as a public marketplace/plugin-quality artifact:
+Before presenting this as a public marketplace/plugin-quality artifact or tagging another public release:
 
 - Keep the plugin layout (`.claude-plugin/plugin.json`) valid.
 - Bump `.claude-plugin/plugin.json` `version` for every public plugin release.
@@ -103,7 +103,7 @@ Before presenting this as a public marketplace/plugin-quality artifact:
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
 - Decide whether to add a marketplace-installed `edit-drift-detector` proof or keep the current non-marketplace live proof plus harness coverage as the documented caveat.
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
-- Keep `CHANGELOG.md` and `RELEASE.md` current, then add a release tag for the first public release.
+- Keep `CHANGELOG.md` and `RELEASE.md` current, then add a release tag only after the release gate in `RELEASE.md` passes.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
 - Keep GitHub Actions green on `main`.
 - Generate fresh dogfood reports:

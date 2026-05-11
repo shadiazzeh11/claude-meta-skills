@@ -99,9 +99,10 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 
 ## Performance
 
-- Per-fire overhead: ~50-80ms (Python startup + regex compilation + path matching).
+- Tracked harness average: 122ms/case in the current baseline snapshot, including Python startup and harness overhead.
+- Path matching itself is microseconds for typical pattern lists (10-20 patterns).
 - Pattern matching is O(N × M) where N is path length and M is number of patterns; for typical pattern lists (10-20 patterns) this is microseconds.
-- See `validation/results/construction-gate-*.json` for measured durations.
+- Tracked timing snapshots live in `hooks/construction-gate/BASELINE-RESULTS.md`; local per-run JSON files in `validation/results/` are gitignored and regenerated.
 
 ## Testing
 
@@ -110,4 +111,4 @@ cd validation
 ./harness.sh construction-gate
 ```
 
-21 test cases covering should-block (18), should-pass (2), edge cases (1). Tool coverage spans Write (most cases), Edit (`11-claude-settings`, `20-env-edit-mismatch`, `21-backslash-protected-path`), MultiEdit (`18-claude-settings-local`), and NotebookEdit (`19-claude-hooks-dir`, exercising the `notebook_path` fallback). See `validation/test-cases/construction-gate/`.
+21 test cases covering should-block (18) and should-pass (3), including one protected-string boundary edge case. Tool coverage spans Write (most cases), Edit (`11-claude-settings`, `20-env-edit-mismatch`, `21-backslash-protected-path`), MultiEdit (`18-claude-settings-local`), and NotebookEdit (`19-claude-hooks-dir`, exercising the `notebook_path` fallback). See `validation/test-cases/construction-gate/`.

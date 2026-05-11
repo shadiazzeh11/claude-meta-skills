@@ -8,7 +8,7 @@ Re-run via `cd validation && ./harness.sh construction-gate`.
 | Claude Code version | 2.1.138 |
 | Python | 3.14.2 |
 | OS | Darwin 25.3.0 |
-| Test cases | 21 (18 should-block, 2 should-pass, 1 edge case) |
+| Test cases | 21 (18 should-block, 3 should-pass, including one boundary edge case) |
 | Pass rate | 21 / 21 |
 | False positives | 0 |
 | False negatives | 0 |
