@@ -131,10 +131,12 @@ assert_construction_gate_matcher() {
   fi
 }
 
-# Permanent assertion: construction-gate must precede edit-drift-detector for
-# PreToolUse so protected Edit payloads are blocked before any hook can read
-# nearby file content for fuzzy correction feedback.
-assert_pretooluse_privacy_order() {
+# Permanent assertion: generated settings keep construction-gate before
+# edit-drift-detector for stable, readable PreToolUse configuration. Protected
+# path privacy does not rely on this order: edit-drift self-skips protected
+# paths before opening files because Claude Code may execute matching hooks in
+# parallel.
+assert_pretooluse_order() {
   local settings_file="$1"
   local label="$2"
   python3 - "$settings_file" "$label" <<'PY'
@@ -160,7 +162,7 @@ if gate_pos is None or edit_pos is None:
     raise SystemExit(f"FAIL: {label}: missing construction-gate or edit-drift PreToolUse entry")
 if gate_pos >= edit_pos:
     raise SystemExit(
-        f"FAIL: {label}: construction-gate must precede edit-drift-detector "
+        f"FAIL: {label}: construction-gate should be listed before edit-drift-detector "
         f"(gate position {gate_pos}, edit position {edit_pos})"
     )
 PY
@@ -184,7 +186,7 @@ assert_settings_equal "$A_FIRST" "$A_SECOND" "Test A: settings differ between tw
 assert_eq "$(meta_signature_count "$T_A/.claude/settings.json")" "5" "Test A: meta-skills signature count must be 5"
 assert_eq "$(unique_meta_signature_count "$T_A/.claude/settings.json")" "5" "Test A: meta-skills unique signatures must be 5"
 assert_construction_gate_matcher "$T_A/.claude/settings.json" "Test A"
-assert_pretooluse_privacy_order "$T_A/.claude/settings.json" "Test A"
+assert_pretooluse_order "$T_A/.claude/settings.json" "Test A"
 echo "PASS Test A"
 
 # -----------------------------------------------------------------------------
@@ -228,7 +230,7 @@ assert_eq "$(meta_signature_count "$T_B/.claude/settings.json")" "5" "Test B: me
 assert_eq "$(unique_meta_signature_count "$T_B/.claude/settings.json")" "5" "Test B: meta-skills unique signatures must be 5"
 assert_settings_equal "$B_FIRST" "$B_SECOND" "Test B: settings differ between two installs"
 assert_construction_gate_matcher "$T_B/.claude/settings.json" "Test B"
-assert_pretooluse_privacy_order "$T_B/.claude/settings.json" "Test B"
+assert_pretooluse_order "$T_B/.claude/settings.json" "Test B"
 echo "PASS Test B"
 
 # -----------------------------------------------------------------------------
@@ -261,7 +263,7 @@ jq -e . "$T_C/.claude/settings.json" >/dev/null
 assert_eq "$(meta_signature_count "$T_C/.claude/settings.json")" "5" "Test C: post-repair signature count must be 5"
 assert_eq "$(unique_meta_signature_count "$T_C/.claude/settings.json")" "5" "Test C: post-repair unique signatures must be 5"
 assert_construction_gate_matcher "$T_C/.claude/settings.json" "Test C"
-assert_pretooluse_privacy_order "$T_C/.claude/settings.json" "Test C"
+assert_pretooluse_order "$T_C/.claude/settings.json" "Test C"
 echo "PASS Test C"
 
 # -----------------------------------------------------------------------------
@@ -298,7 +300,7 @@ assert_eq "$(command_count "$T_D/.claude/settings.json" "echo keep-me")" "1" "Te
 assert_eq "$(meta_signature_count "$T_D/.claude/settings.json")" "5" "Test D: fresh meta-skills signature count must be 5"
 assert_eq "$(unique_meta_signature_count "$T_D/.claude/settings.json")" "5" "Test D: meta-skills unique signatures must be 5"
 assert_construction_gate_matcher "$T_D/.claude/settings.json" "Test D"
-assert_pretooluse_privacy_order "$T_D/.claude/settings.json" "Test D"
+assert_pretooluse_order "$T_D/.claude/settings.json" "Test D"
 echo "PASS Test D"
 
 # -----------------------------------------------------------------------------

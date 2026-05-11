@@ -47,5 +47,5 @@ Initial validation from Phase 1 build, expanded in Phase 2B (binary-file, relati
 
 - **Test 11 (binary file):** PNG header bytes (51 bytes). Hook reads with `errors="replace"`, no match found, blocks with no_close_match path. Verifies the hook doesn't crash on non-text content.
 - **Test 12 (relative path mismatch):** Relative `tool_input.file_path` resolves against payload `cwd`; hook reads the intended file and blocks on mismatched `old_string`.
-- **Test 13 (protected path privacy):** Relative `.env.local` path resolves against payload `cwd`, matches construction-gate protected patterns, and exits 0 without reading or echoing secret-bearing file content. This is defense in depth for stale/custom hook ordering.
+- **Test 13 (protected path privacy):** Relative `.env.local` path resolves against payload `cwd`, matches construction-gate protected patterns, and exits 0 without reading or echoing secret-bearing file content. This is the primary privacy guard for edit-drift because Claude Code may execute matching hooks in parallel.
 - **Test 14 (cwd false-positive guard):** A normal relative path inside a cwd named `.env.project` still gets drift detection. Protected-path skipping is based on the tool-provided path, not the resolved absolute path.
