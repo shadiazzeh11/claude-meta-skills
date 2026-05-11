@@ -145,9 +145,12 @@ Examples:
 ```bash
 ./testing/analyze-log.py --real-only --redact --format markdown --output dogfood-report.md
 ./testing/analyze-log.py --real-only --redact --format json --output dogfood-report.json
+make report-dogfood
 ```
 
 `--output` writes only the selected report file and does not print the report to stdout. When `--redact` is enabled, emitted path and project fields are redacted in text, markdown, and JSON. The JSON report includes displayed hook totals, the evidence scorecard, deterministic recommendations, all-bucket classification totals, real-session coverage, top files, top projects, parse errors, and timestamp errors.
+
+`make report-dogfood` is the release-review shortcut. It writes redacted real-only Markdown and JSON reports to ignored `.context/reports/dogfood-report.md` and `.context/reports/dogfood-report.json`.
 
 ## What to look for after a week of usage
 

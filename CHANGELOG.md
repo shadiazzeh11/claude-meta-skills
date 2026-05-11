@@ -6,6 +6,10 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+### Added
+
+- Added `make report-dogfood` for generating ignored redacted Markdown and JSON dogfood evidence reports.
+
 ### Changed
 
 - Expanded GitHub Actions validation from Ubuntu-only to an Ubuntu + macOS runner matrix.

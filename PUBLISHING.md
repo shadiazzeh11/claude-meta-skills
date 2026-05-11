@@ -107,8 +107,7 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Generate fresh dogfood reports:
 
 ```bash
-./testing/analyze-log.py --real-only --redact --format markdown --output .context/reports/dogfood-report.md
-./testing/analyze-log.py --real-only --redact --format json --output .context/reports/dogfood-report.json
+make report-dogfood
 ```
 
 - Review the docs and PR with Shadi and Caleb before publishing.
