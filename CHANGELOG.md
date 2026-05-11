@@ -11,11 +11,13 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 - Added `make report-dogfood` for generating ignored redacted Markdown and JSON dogfood evidence reports.
 - Added `TROUBLESHOOTING.md` for pausing, uninstalling, debugging, and reporting hook behavior across local and plugin installs.
 - Added `make test-release VERSION=vX.Y.Z` to validate release metadata and plugin version alignment before tagging.
+- Added validation harness locking plus `make test-validation-lock` to prevent concurrent fixture mutation races.
 
 ### Changed
 
 - Corrected plugin package validation guidance and regression coverage to validate `.claude-plugin/plugin.json` explicitly instead of relying on repo-root validation.
 - Added the release metadata regression to GitHub Actions validation.
+- Added the validation harness lock regression to GitHub Actions validation.
 - Expanded GitHub Actions validation from Ubuntu-only to an Ubuntu + macOS runner matrix.
 
 ## [0.1.1] - 2026-05-11

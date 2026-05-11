@@ -47,6 +47,7 @@ make test-plugin
 make test-marketplace
 VERSION=v0.1.1  # replace with the target release version
 make test-release VERSION="$VERSION"
+make test-validation-lock
 make test-analyzer
 make test-installer
 ```
@@ -72,6 +73,7 @@ Expected:
 - plugin package regression passes
 - marketplace package regression passes
 - release metadata version check passes for the target version
+- validation harness lock regression passes
 - analyzer regression passes
 - installer lifecycle regression passes
 - `make test` passes `67/67`

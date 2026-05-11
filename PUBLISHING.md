@@ -43,7 +43,7 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 |---|---|
 | Synthetic validation | `make test` and `make test-stop-env` pass 67/67. |
 | Installer lifecycle | `make test-installer` passes repeat-install, merge, uninstall, no-op uninstall, and preservation scenarios. |
-| CI | GitHub Actions runs plugin package checks, marketplace catalog checks, release metadata checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
+| CI | GitHub Actions runs plugin package checks, marketplace catalog checks, release metadata checks, validation harness lock checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
 | Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. |
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
