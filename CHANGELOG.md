@@ -6,6 +6,8 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-05-11
+
 ### Added
 
 - Added `make report-dogfood` for generating ignored redacted Markdown and JSON dogfood evidence reports.

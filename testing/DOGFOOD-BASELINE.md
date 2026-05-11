@@ -1,6 +1,6 @@
 # Dogfood baseline - 2026-05-11
 
-This is the complete live-session baseline after Phase 2B hardening, refreshed before the `v0.1.1` technical-preview patch release with plugin-path and marketplace-installed smoke evidence.
+This is the complete live-session baseline after Phase 2B hardening, refreshed before the `v0.1.2` technical-preview patch release with plugin-path and marketplace-installed smoke evidence.
 
 The canonical command is:
 
@@ -80,6 +80,8 @@ Marketplace-installed sessions:
 - `e7ea0f39...`: 3 fires from release isolated marketplace-installed smoke (`construction-gate` 1, `completion-verifier` 1, `context-recovery` 1).
 
 Plugin-path and marketplace-installed evidence do not yet include `edit-drift-detector`. The existing `edit-drift-detector` real-session evidence remains the controlled injected-drift proof described above.
+
+A `v0.1.2` marketplace-installed edit-drift smoke attempt confirmed the same Claude Code lifecycle caveat in the installed-plugin path: after a required `Read`, an `Edit` with a stale `old_string` failed with Claude Code's built-in `String to replace not found in file` error before any PreToolUse hook response or log entry. This did not change the real-only baseline counts, and the release claims intentionally keep the marketplace-installed edit-drift caveat.
 
 ## External comparison
 
