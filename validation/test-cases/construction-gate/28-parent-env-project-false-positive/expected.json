@@ -1,0 +1,10 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_empty": true,
+  "expected_stderr_empty": true,
+  "description": "Project root containing .env.project does not cause normal relative source file to block",
+  "category": "should-pass",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/tmp/.env.project"
+  }
+}

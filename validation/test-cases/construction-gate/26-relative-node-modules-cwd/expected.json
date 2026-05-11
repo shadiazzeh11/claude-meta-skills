@@ -1,0 +1,9 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", "node_modules"],
+  "description": "Relative Write from inside node_modules resolves against cwd and blocks package file",
+  "category": "should-block",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/Users/test/project"
+  }
+}

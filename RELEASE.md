@@ -49,6 +49,8 @@ make test-marketplace
 VERSION=v0.1.2  # replace with the target release version
 make test-release VERSION="$VERSION"
 make test-validation-lock
+make test-validation-harness
+make test-repo-hygiene
 make test-analyzer
 make test-installer
 ```
@@ -77,8 +79,8 @@ Expected:
 - validation harness lock regression passes
 - analyzer regression passes
 - installer lifecycle regression passes
-- `make test` passes `70/70`
-- `make test-stop-env` passes `70/70`
+- `make test` passes `84/84`
+- `make test-stop-env` passes `84/84`
 - real dogfood log line count does not change during validation
 
 ## Dogfood evidence refresh
@@ -181,7 +183,7 @@ Technical preview of claude-meta-skills: a local Claude Code reliability hook su
 ## Highlights
 
 - 5 hooks covering edit verification, protected paths, ghost writes, completion tests, and pre-compaction recovery.
-- 70/70 synthetic harness validation tests.
+- 84/84 synthetic harness validation tests.
 - Controlled live Claude Code session evidence for all five hooks.
 - Local installer/uninstaller with lifecycle tests.
 - GitHub Actions validation on PRs and main.

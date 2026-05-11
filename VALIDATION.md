@@ -82,7 +82,7 @@ Every test case must have an `expected_exit_code`. The other fields are optional
 }
 ```
 
-`description` and `category` are for human-readable output and aren't asserted, but `category` distinguishes false-positive (`should-pass` got blocked) from false-negative (`should-block` got allowed).
+`description` and `category` are for human-readable output. `category` powers the harness's false-positive / false-negative counters for allow-vs-block exit-code expectations (`should-pass` got exit 2, or `should-block` got exit 0). Other assertion failures — missing stdout/stderr text, leaked secrets, missing file mutations, setup failures — still fail the case, but they are not necessarily counted as false positives or false negatives.
 
 ### Stderr / stdout pattern matching
 
@@ -188,7 +188,7 @@ EOF
 
 `cleanup.sh` is symmetric — runs after the hook completes. Useful for restoring permissions on read-only fixtures or removing test-generated state that would interfere with the next run.
 
-The harness silences both scripts and tolerates non-zero exits from them (so a missing `cleanup.sh` for a one-shot test isn't a hard error).
+The harness captures `setup.sh` output and marks the case failed when setup exits non-zero, because a broken fixture can otherwise produce misleading hook results. `cleanup.sh` remains best-effort and non-fatal so partially prepared fixtures can still be tidied without masking the primary case result.
 
 ## Per-run JSON output
 

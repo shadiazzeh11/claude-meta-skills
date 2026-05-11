@@ -9,6 +9,16 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 ### Added
 
 - Documented the clean post-`v0.1.2` dogfood window: 6 real fires across all five hooks in one disposable Claude Code session with `non_real_ratio=0.0%`.
+- Added construction-gate validation cases for cwd-relative protected paths and false-positive guards around protected-looking parent directories.
+- Added completion-verifier validation cases for invalid, zero, and negative timeout environment values.
+- Added validation harness behavior and repository hygiene regression targets.
+
+### Fixed
+
+- Resolved cwd-relative protected-path matching in construction-gate while avoiding false positives from project parent paths named like protected directories.
+- Hardened `COMPLETION_VERIFIER_TIMEOUT_SECS` parsing so malformed or non-positive values fall back to the default timeout.
+- Made validation harness setup failures fail the owning case instead of being silently swallowed.
+- Changed `make clean` to preserve the tracked `validation/results/.gitkeep` placeholder.
 
 ## [0.1.2] - 2026-05-11
 

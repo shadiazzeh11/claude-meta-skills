@@ -1,0 +1,10 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Write",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/Users/test/project/node_modules/pkg",
+  "tool_input": {
+    "file_path": "index.js",
+    "content": "module.exports = {}"
+  }
+}

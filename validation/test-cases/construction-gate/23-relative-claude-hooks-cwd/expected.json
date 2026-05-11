@@ -1,0 +1,9 @@
+{
+  "expected_exit_code": 2,
+  "expected_stderr_contains": ["protected pattern", ".claude/hooks"],
+  "description": "Relative Write from inside .claude resolves against cwd and blocks hooks/ path",
+  "category": "should-block",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/Users/test/project"
+  }
+}

@@ -6,6 +6,7 @@
 #
 # For each test case under test-cases/<hook-name>/:
 #   - Optionally runs setup.sh (with TEST_DIR env var set to case directory)
+#     and fails the case if setup exits non-zero
 #   - Substitutes placeholders in input.json:
 #       {{FIXTURE_PATH}} → absolute path of fixture.txt (if present)
 #       {{PROJECT_PATH}} → absolute path of project/ directory (if present)
@@ -159,9 +160,27 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
     continue
   fi
 
-  # Optional setup script: runs before the hook with TEST_DIR exported
+  # Optional setup script: runs before the hook with TEST_DIR exported.
+  # A failing setup means the fixture is invalid, so mark the case failed
+  # explicitly instead of letting a missing fixture produce misleading hook
+  # results.
+  setup_failed=false
+  setup_exit=0
+  setup_stdout=""
+  setup_stderr=""
   if [ -x "$case_dir/setup.sh" ]; then
-    TEST_DIR="$case_dir" bash "$case_dir/setup.sh" >/dev/null 2>&1 || true
+    setup_stdout_tmp="$(mktemp)"
+    setup_stderr_tmp="$(mktemp)"
+    set +e
+    TEST_DIR="$case_dir" bash "$case_dir/setup.sh" >"$setup_stdout_tmp" 2>"$setup_stderr_tmp"
+    setup_exit=$?
+    set -e
+    setup_stdout="$(cat "$setup_stdout_tmp")"
+    setup_stderr="$(cat "$setup_stderr_tmp")"
+    rm -f "$setup_stdout_tmp" "$setup_stderr_tmp"
+    if [ "$setup_exit" -ne 0 ]; then
+      setup_failed=true
+    fi
   fi
 
   # Build input by substituting placeholders
@@ -195,30 +214,36 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
     env_args+=("$kv")
   done < <(jq -r '.env // {} | to_entries[]? | "\(.key)=\(.value)"' "$expected" 2>/dev/null)
 
-  # Run hook, capture stdout + stderr separately, with duration
-  stdout_tmp="$(mktemp)"
-  stderr_tmp="$(mktemp)"
+  # Run hook, capture stdout + stderr separately, with duration. If setup
+  # failed, skip hook execution and report the setup output as the case output.
   start_ms=$(python3 -c "import time; print(int(time.time()*1000))")
-  set +e
-  # Isolate tests from Claude Code's parent CLAUDE_PROJECT_DIR so cwd-based
-  # fixture tests don't leak to the outer repo. Also isolate HOME so hook
-  # auto-logs write to this run's temp directory instead of the active dogfood
-  # log at ~/.claude/meta-skills-log.jsonl. Test-case .env assignments still
-  # override via env_args (env -u VAR VAR=val keeps the explicit value).
-  if [ ${#env_args[@]} -gt 0 ]; then
-    echo "$input_json" | env -u CLAUDE_PROJECT_DIR HOME="$HARNESS_HOME" "${env_args[@]}" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
+  if [ "$setup_failed" = "true" ]; then
+    actual_exit=125
+    actual_stdout="$setup_stdout"
+    actual_stderr="$setup_stderr"
   else
-    echo "$input_json" | env -u CLAUDE_PROJECT_DIR HOME="$HARNESS_HOME" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
+    stdout_tmp="$(mktemp)"
+    stderr_tmp="$(mktemp)"
+    set +e
+    # Isolate tests from Claude Code's parent CLAUDE_PROJECT_DIR so cwd-based
+    # fixture tests don't leak to the outer repo. Also isolate HOME so hook
+    # auto-logs write to this run's temp directory instead of the active dogfood
+    # log at ~/.claude/meta-skills-log.jsonl. Test-case .env assignments still
+    # override via env_args (env -u VAR VAR=val keeps the explicit value).
+    if [ ${#env_args[@]} -gt 0 ]; then
+      echo "$input_json" | env -u CLAUDE_PROJECT_DIR HOME="$HARNESS_HOME" "${env_args[@]}" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
+    else
+      echo "$input_json" | env -u CLAUDE_PROJECT_DIR HOME="$HARNESS_HOME" python3 "$HOOK_PATH" >"$stdout_tmp" 2>"$stderr_tmp"
+    fi
+    actual_exit=$?
+    set -e
+    actual_stdout="$(cat "$stdout_tmp")"
+    actual_stderr="$(cat "$stderr_tmp")"
+    rm -f "$stdout_tmp" "$stderr_tmp"
   fi
-  actual_exit=$?
-  set -e
   end_ms=$(python3 -c "import time; print(int(time.time()*1000))")
   duration=$((end_ms - start_ms))
   TOTAL_DURATION_MS=$((TOTAL_DURATION_MS + duration))
-
-  actual_stdout="$(cat "$stdout_tmp")"
-  actual_stderr="$(cat "$stderr_tmp")"
-  rm -f "$stdout_tmp" "$stderr_tmp"
 
   # Optional cleanup script
   if [ -x "$case_dir/cleanup.sh" ]; then
@@ -228,6 +253,11 @@ for case_dir in "$TEST_DIR_BASE"/*/; do
   # Determine pass/fail
   passed=true
   failure_reasons=()
+
+  if [ "$setup_failed" = "true" ]; then
+    passed=false
+    failure_reasons+=("setup.sh failed with exit $setup_exit")
+  fi
 
   if [ "$actual_exit" != "$expected_exit" ]; then
     passed=false

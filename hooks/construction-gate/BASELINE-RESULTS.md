@@ -4,18 +4,18 @@ Re-run via `cd validation && ./harness.sh construction-gate`.
 
 | Metric | Value |
 |---|---|
-| Test date | 2026-05-10 (privacy hardening update) |
+| Test date | 2026-05-11 (relative path hardening update) |
 | Claude Code version | 2.1.138 |
 | Python | 3.14.2 |
 | OS | Darwin 25.3.0 |
-| Test cases | 21 (18 should-block, 3 should-pass, including one boundary edge case) |
-| Pass rate | 21 / 21 |
+| Test cases | 32 (23 should-block, 9 should-pass, including boundary and relative-path edge cases) |
+| Pass rate | 32 / 32 |
 | False positives | 0 |
 | False negatives | 0 |
-| Avg duration / case | 122 ms |
-| Min duration / case | 77 ms |
-| Max duration / case | 415 ms |
-| Total duration | 2578 ms |
+| Avg duration / case | 111 ms |
+| Min duration / case | 87 ms |
+| Max duration / case | 273 ms |
+| Total duration | 3560 ms |
 
 ## Per-case results
 
@@ -42,6 +42,17 @@ Re-run via `cd validation && ./harness.sh construction-gate`.
 | 19 | claude-hooks-dir | should-block | NotebookEdit | 2 | 86 | NotebookEdit payload uses `notebook_path` fallback (no `file_path` provided); matches `\.claude/hooks/` pattern (Phase 2B.3) |
 | 20 | env-edit-mismatch | should-block | Edit | 2 | 84 | Edit payload against `.env.local` is blocked without echoing secret-bearing `old_string` / `new_string` values |
 | 21 | backslash-protected-path | should-block | Edit | 2 | 83 | Windows-style backslash path normalizes before protected-pattern matching; blocks without echoing secret-bearing strings |
+| 22 | relative-claude-settings-cwd | should-block | Edit | 2 | 88 | Relative Edit from inside `.claude/` resolves against cwd/project root and blocks `settings.json` |
+| 23 | relative-claude-hooks-cwd | should-block | Write | 2 | 89 | Relative Write from inside `.claude/` resolves against cwd/project root and blocks `hooks/...` |
+| 24 | parent-relative-env-file | should-block | Write | 2 | 88 | Parent-relative path from `src/` resolves to `.env.local` and blocks without echoing content |
+| 25 | relative-normal-path | should-pass | Write | 0 | 89 | Relative Write to ordinary source file remains allowed after cwd/project resolution |
+| 26 | relative-node-modules-cwd | should-block | Write | 2 | 99 | Relative Write from inside `node_modules/` resolves against cwd/project root and blocks |
+| 27 | relative-git-internals-cwd | should-block | Write | 2 | 88 | Relative Write from inside `.git/objects` resolves against cwd/project root and blocks |
+| 28 | parent-env-project-false-positive | should-pass | Write | 0 | 179 | Project root named `.env.project` does not cause ordinary source path to block |
+| 29 | parent-node-modules-false-positive | should-pass | Write | 0 | 90 | Project under parent `node_modules/` does not cause ordinary project-relative path to block |
+| 30 | raw-env-project-dir-false-positive | should-pass | Write | 0 | 88 | `.env.project/` directory name does not match protected `.env` file pattern |
+| 31 | raw-lock-suffix-false-positive | should-pass | Write | 0 | 92 | `my-package-lock.json` does not match protected `package-lock.json` lockfile |
+| 32 | absolute-parent-node-modules-false-positive | should-pass | Write | 0 | 88 | Absolute path inside project under parent `node_modules/` is matched project-relatively and stays allowed |
 
 ## Notes on performance
 
@@ -53,8 +64,14 @@ Re-run via `cd validation && ./harness.sh construction-gate`.
 - Constructive stderr message verified on all should-block cases: contains the matched pattern and explanation.
 - Boundary test (case 06) confirms `re.search` against `node_modules/` correctly distinguishes path boundary from filename substring.
 - Invalid-regex handling (case 07) confirms hook skips bad patterns rather than crashing — important for users adding custom patterns who might typo a regex.
-- Tool coverage: cases 01–10/12–17 use `Write`, cases 11/20/21 use `Edit`, case 18 uses `MultiEdit`, case 19 uses `NotebookEdit` (exercising the `tool_input.notebook_path` fallback when `file_path` is absent).
-- Default patterns include: `node_modules/`, `\.git/`, `\.env(?:\.|$)`, lock files (npm/yarn/bun/pnpm/pip/Pipfile/poetry/cargo/uv/ruby), `.claude/settings.json`, `.claude/settings.local.json`, `.claude/hooks/`. Per Phase 3 design, no TODO/placeholder check (delegated to ecosystem tools like danielmiessler/PAI).
+- Tool coverage: cases 01–10/12–17/23–32 use `Write`, cases 11/20/21/22 use `Edit`, case 18 uses `MultiEdit`, case 19 uses `NotebookEdit` (exercising the `tool_input.notebook_path` fallback when `file_path` is absent).
+- Default patterns include segment-aware rules for `node_modules/`, `\.git/`, `.env` files, lock files (npm/yarn/bun/pnpm/pip/Pipfile/poetry/cargo/uv/ruby), `.claude/settings.json`, `.claude/settings.local.json`, and `.claude/hooks/`. Per Phase 3 design, no TODO/placeholder check (delegated to ecosystem tools like danielmiessler/PAI).
+
+## Phase 4 reliability hardening
+
+- **Relative path resolution added.** The hook now resolves relative tool paths against payload `cwd` and, when available, matches project-relative paths using `CLAUDE_PROJECT_DIR`. This blocks protected relative writes from inside `.claude/`, `.git/`, `node_modules/`, and parent-relative `.env` targets.
+- **Segment-aware default patterns added.** Protected patterns now use path-segment boundaries so ordinary paths like `.env.project/src/app.py`, `docs/my-package-lock.json`, or projects whose parent directory is named `node_modules` do not false-positive.
+- **Fixture setup failure surfaced.** Case 07's invalid-regex setup path is now validated by the harness instead of being silently ignored.
 
 ## Phase 2B.3 changes
 

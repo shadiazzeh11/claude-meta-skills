@@ -1,0 +1,11 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": ["decision", "block", "Tests are failing"],
+  "expected_stdout_not_contains": ["additionalContext", "timed out"],
+  "expected_stderr_empty": true,
+  "description": "Zero COMPLETION_VERIFIER_TIMEOUT_SECS falls back to default instead of causing immediate timeout",
+  "category": "should-block",
+  "env": {
+    "COMPLETION_VERIFIER_TIMEOUT_SECS": "0"
+  }
+}

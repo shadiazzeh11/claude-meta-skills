@@ -1,0 +1,10 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_empty": true,
+  "expected_stderr_empty": true,
+  "description": "Absolute path inside project under parent node_modules is matched project-relatively and stays allowed",
+  "category": "should-pass",
+  "env": {
+    "CLAUDE_PROJECT_DIR": "/tmp/node_modules/project"
+  }
+}

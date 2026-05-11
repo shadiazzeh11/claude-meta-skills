@@ -1,20 +1,20 @@
 {
   "_description": "Patterns matched against the full file path (regex syntax). Add project-specific patterns as needed. Examples: 'src/generated/' to protect generated code, 'config/secrets/' for sensitive config.",
   "protected_patterns": [
-    "node_modules/",
-    "\\.git/",
-    "\\.env(?:\\.|$)",
-    "package-lock\\.json$",
-    "yarn\\.lock$",
-    "bun\\.lockb$",
-    "\\.claude/settings\\.json$",
-    "Cargo\\.lock$",
-    "Gemfile\\.lock$",
-    "poetry\\.lock$",
-    "uv\\.lock$",
-    "pnpm-lock\\.yaml$",
-    "Pipfile\\.lock$",
-    "\\.claude/settings\\.local\\.json$",
-    "\\.claude/hooks/"
+    "(?:^|/)node_modules/",
+    "(?:^|/)\\.git/",
+    "(?:^|/)\\.env(?:\\.[^/]+)?$",
+    "(?:^|/)package-lock\\.json$",
+    "(?:^|/)yarn\\.lock$",
+    "(?:^|/)bun\\.lockb$",
+    "(?:^|/)\\.claude/settings\\.json$",
+    "(?:^|/)Cargo\\.lock$",
+    "(?:^|/)Gemfile\\.lock$",
+    "(?:^|/)poetry\\.lock$",
+    "(?:^|/)uv\\.lock$",
+    "(?:^|/)pnpm-lock\\.yaml$",
+    "(?:^|/)Pipfile\\.lock$",
+    "(?:^|/)\\.claude/settings\\.local\\.json$",
+    "(?:^|/)\\.claude/hooks/"
   ]
 }

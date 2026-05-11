@@ -1,0 +1,11 @@
+{
+  "session_id": "test-session",
+  "tool_name": "Edit",
+  "hook_event_name": "PreToolUse",
+  "cwd": "/Users/test/project/.claude",
+  "tool_input": {
+    "file_path": "settings.json",
+    "old_string": "{}",
+    "new_string": "{\"hooks\": {}}"
+  }
+}
