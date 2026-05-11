@@ -6,6 +6,8 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-11
+
 ### Added
 
 - Added an analyzer evidence scorecard and deterministic recommendations so dogfood reports show real hook coverage, real session/project counts, non-real ratio, and next actions.

@@ -1,6 +1,6 @@
 # Dogfood baseline - 2026-05-11
 
-This is the first complete live-session baseline after Phase 2B hardening, refreshed before the `v0.1.0` technical-preview release with plugin-path and marketplace-installed smoke evidence.
+This is the complete live-session baseline after Phase 2B hardening, refreshed before the `v0.1.1` technical-preview patch release with plugin-path and marketplace-installed smoke evidence.
 
 The canonical command is:
 
