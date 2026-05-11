@@ -51,6 +51,7 @@ make test-release VERSION="$VERSION"
 make test-validation-lock
 make test-validation-harness
 make test-repo-hygiene
+make test-doctor
 make test-analyzer
 make test-installer
 ```
@@ -178,7 +179,7 @@ Use this structure:
 ```markdown
 ## Summary
 
-Technical preview of claude-meta-skills: a local Claude Code reliability hook suite with synthetic harness validation, CI, controlled dogfood evidence, installer lifecycle tests, and plugin scaffold.
+Technical preview of claude-meta-skills: a local Claude Code reliability hook suite with synthetic harness validation, CI, controlled dogfood evidence, installer lifecycle tests, read-only doctor diagnostics, and plugin scaffold.
 
 ## Highlights
 
