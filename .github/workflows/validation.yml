@@ -62,6 +62,9 @@ jobs:
       - name: Release metadata regression
         run: make test-release
 
+      - name: Validation harness lock regression
+        run: make test-validation-lock
+
       - name: Analyzer regression
         run: make test-analyzer
 

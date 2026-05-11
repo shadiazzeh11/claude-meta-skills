@@ -6,6 +6,7 @@ node_modules/
 # Validation output (regenerated per run)
 validation/results/*.json
 !validation/results/.gitkeep
+validation/.harness.lock
 
 # Python bytecode
 __pycache__/

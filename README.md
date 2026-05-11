@@ -99,7 +99,7 @@ make test
 
 Per-hook baseline results, including timing snapshots, live in each hook directory's `BASELINE-RESULTS.md`. Per-run JSON output goes to `validation/results/` (gitignored, regenerated each run, not part of the release artifact).
 
-GitHub Actions runs the plugin package regression, marketplace catalog regression, release metadata regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` across Ubuntu and macOS runners (see `.github/workflows/validation.yml`).
+GitHub Actions runs the plugin package regression, marketplace catalog regression, release metadata regression, validation harness lock regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every pull request and on every push to `main` across Ubuntu and macOS runners (see `.github/workflows/validation.yml`).
 
 **The harness is generic.** It tests against assertions on exit code, stdout patterns, stderr patterns, file content, and file pattern counts — applicable to any Claude Code hook, not just ours. See [VALIDATION.md](VALIDATION.md) for how to validate your own hooks against the harness.
 
@@ -158,7 +158,7 @@ For the current marketplace-readiness status, positioning, pre-publish checklist
 - **Validation harness timing includes ~30-40 ms of Python startup overhead** per measurement. Real hook execution overhead when installed in Claude Code is approximately 30-45 ms lower than reported values.
 - **Subdirectory project detection in `completion-verifier`** only checks the immediate `cwd` for project config files (`package.json`, `Cargo.toml`, etc.) — doesn't walk up parent directories the way `npm` and `cargo` do. Workaround: ensure `cwd` is project root, or define a top-level `Makefile test:` target.
 - **Race condition window in `context-recovery`** when a user edits CLAUDE.md in another editor while the hook fires. Mitigated by atomic write (`tempfile.mkstemp` + `os.replace`); not eliminated.
-- **CI is limited to GitHub Actions validation on Ubuntu and macOS;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, marketplace catalog validation, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no Windows runner, and no multi-Python matrix.
+- **CI is limited to GitHub Actions validation on Ubuntu and macOS;** there is no release/deploy pipeline yet. The workflow at `.github/workflows/validation.yml` runs plugin package validation, marketplace catalog validation, release metadata regression, validation harness lock regression, analyzer regression, installer lifecycle regression, `make test`, and `make test-stop-env` on every PR and every push to `main`. No release publication, no marketplace upload, no Windows runner, and no multi-Python matrix.
 - **No public marketplace listing.** Install via `git clone` + `install.sh`. A plugin scaffold, marketplace catalog, isolated marketplace install regression, and marketplace-installed smoke evidence for four hooks exist, but public listing/release packaging is future work.
 
 ## License

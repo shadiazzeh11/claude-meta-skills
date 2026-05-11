@@ -34,6 +34,9 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 HOOK_PATH="$REPO_DIR/hooks/$HOOK_NAME/hook.py"
 TEST_DIR_BASE="$SCRIPT_DIR/test-cases/$HOOK_NAME"
 RESULTS_DIR="$SCRIPT_DIR/results"
+LOCK_FILE="${VALIDATION_HARNESS_LOCK_FILE:-$SCRIPT_DIR/.harness.lock}"
+LOCK_TIMEOUT_SECS="${VALIDATION_HARNESS_LOCK_TIMEOUT_SECS:-60}"
+LOCK_ACQUIRED=false
 
 if [ ! -f "$HOOK_PATH" ]; then
   echo "Hook not found: $HOOK_PATH" >&2
@@ -48,9 +51,42 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
+acquire_lock() {
+  touch "$LOCK_FILE"
+  exec 9<>"$LOCK_FILE"
+  if ! python3 - "$LOCK_TIMEOUT_SECS" "$LOCK_FILE" 9 <<'PY'
+import fcntl
+import os
+import sys
+import time
+
+timeout = float(sys.argv[1])
+lock_file = sys.argv[2]
+fd = int(sys.argv[3])
+start = time.monotonic()
+
+while True:
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        os.ftruncate(fd, 0)
+        os.write(fd, f"{os.getppid()}\n".encode("utf-8"))
+        sys.exit(0)
+    except BlockingIOError:
+        elapsed = time.monotonic() - start
+        if timeout <= 0 or elapsed >= timeout:
+            print(f"Validation harness is already running; lock held at {lock_file}", file=sys.stderr)
+            print("Set VALIDATION_HARNESS_LOCK_TIMEOUT_SECS to wait longer.", file=sys.stderr)
+            sys.exit(1)
+        time.sleep(0.2)
+PY
+  then
+    exit 1
+  fi
+
+  LOCK_ACQUIRED=true
+}
+
 mkdir -p "$RESULTS_DIR"
-TIMESTAMP="$(date +%Y%m%dT%H%M%S)"
-RESULTS_FILE="$RESULTS_DIR/$HOOK_NAME-$TIMESTAMP.json"
 
 PASS=0
 FAIL=0
@@ -65,8 +101,16 @@ HARNESS_HOME="$(mktemp -d /tmp/claude-meta-harness-home.XXXXXX)"
 cleanup() {
   rm -f "$RESULTS_TMP" "${RESULTS_TMP}.new"
   rm -rf "$HARNESS_HOME"
+  if [ "$LOCK_ACQUIRED" = "true" ]; then
+    : > "$LOCK_FILE"
+    exec 9>&-
+  fi
 }
 trap cleanup EXIT
+
+acquire_lock
+TIMESTAMP="$(date +%Y%m%dT%H%M%S)"
+RESULTS_FILE="$RESULTS_DIR/$HOOK_NAME-$TIMESTAMP.json"
 
 expand_expected_path() {
   local path="$1"
