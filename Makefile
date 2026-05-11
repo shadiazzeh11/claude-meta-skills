@@ -1,6 +1,6 @@
 HOOKS := edit-drift-detector construction-gate silent-file-verifier completion-verifier context-recovery
 
-.PHONY: test test-stop-env test-installer test-analyzer test-plugin test-marketplace report-dogfood test-% clean install uninstall help
+.PHONY: test test-stop-env test-installer test-analyzer test-plugin test-marketplace test-release report-dogfood test-% clean install uninstall help
 
 help:
 	@echo "claude-meta-skills make targets:"
@@ -10,6 +10,7 @@ help:
 	@echo "  make test-analyzer   - run analyzer regression test (uses temp JSONL log; does not touch ~/.claude)"
 	@echo "  make test-plugin     - validate plugin manifest/hooks scaffold"
 	@echo "  make test-marketplace - validate marketplace catalog and isolated CLI install path"
+	@echo "  make test-release VERSION=vX.Y.Z - validate release metadata/version alignment"
 	@echo "  make report-dogfood  - write redacted real-dogfood reports to .context/reports/"
 	@echo "  make test-<hook>     - run validation harness for one hook"
 	@echo "                         (e.g., make test-edit-drift-detector)"
@@ -46,6 +47,9 @@ test-plugin:
 
 test-marketplace:
 	@bash testing/test-marketplace-package.sh
+
+test-release:
+	@bash testing/test-release-metadata.sh "$(VERSION)"
 
 report-dogfood:
 	@mkdir -p .context/reports

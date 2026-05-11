@@ -45,6 +45,8 @@ bash -n testing/test-installer-idempotency.sh
 make help
 make test-plugin
 make test-marketplace
+VERSION=v0.1.1  # replace with the target release version
+make test-release VERSION="$VERSION"
 make test-analyzer
 make test-installer
 ```
@@ -69,6 +71,7 @@ Expected:
 
 - plugin package regression passes
 - marketplace package regression passes
+- release metadata version check passes for the target version
 - analyzer regression passes
 - installer lifecycle regression passes
 - `make test` passes `67/67`
@@ -123,12 +126,14 @@ Before tagging a public technical preview, run at least these disposable smoke t
 
 Before tagging the target release:
 
-1. Confirm `.claude-plugin/plugin.json` version is the intended release version.
-2. Confirm `.claude-plugin/marketplace.json` still points at the intended plugin metadata.
+1. Set `VERSION` to the target tag.
+2. Update `.claude-plugin/plugin.json` to the intended release version.
 3. Move the target release notes from `CHANGELOG.md` `Unreleased` into a dated release section.
-4. Confirm `PUBLISHING.md` safe claims still match evidence.
-5. Confirm `README.md` install, validation, dogfood, and limitations sections still match the current repo.
-6. Commit the dated changelog/release-doc changes before tagging:
+4. Run `make test-release VERSION="$VERSION"`.
+5. Confirm `.claude-plugin/marketplace.json` still points at the intended plugin metadata and does not duplicate the plugin version.
+6. Confirm `PUBLISHING.md` safe claims still match evidence.
+7. Confirm `README.md` install, validation, dogfood, and limitations sections still match the current repo.
+8. Commit the dated changelog/release-doc changes before tagging:
 
 ```bash
 VERSION=v0.1.1
