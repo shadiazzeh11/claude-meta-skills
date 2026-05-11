@@ -9,6 +9,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 ### Added
 
 - Added `make report-dogfood` for generating ignored redacted Markdown and JSON dogfood evidence reports.
+- Added `TROUBLESHOOTING.md` for pausing, uninstalling, debugging, and reporting hook behavior across local and plugin installs.
 
 ### Changed
 

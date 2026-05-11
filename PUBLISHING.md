@@ -101,6 +101,7 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
 - Decide whether to add a marketplace-installed `edit-drift-detector` proof or keep the current non-marketplace live proof plus harness coverage as the documented caveat.
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
+- Keep [TROUBLESHOOTING.md](TROUBLESHOOTING.md) current with Claude Code hook, settings, and plugin command changes before publishing.
 - Keep `CHANGELOG.md` and `RELEASE.md` current, then add a release tag only after the release gate in `RELEASE.md` passes.
 - Confirm the license, copyright owners, and co-author attribution remain correct.
 - Keep GitHub Actions green on Ubuntu and macOS for `main`.
