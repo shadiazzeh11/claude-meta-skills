@@ -2,9 +2,9 @@
 
 All notable changes to `claude-meta-skills` are documented here.
 
-This project uses a Keep a Changelog-style structure and version numbers intended to follow Semantic Versioning once public release guarantees are established. Until a release is tagged, `0.1.0` remains unreleased technical-preview work.
+This project uses a Keep a Changelog-style structure and version numbers intended to follow Semantic Versioning once public release guarantees are established.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-05-11
 
 ### Added
 

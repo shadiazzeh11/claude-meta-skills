@@ -1,6 +1,6 @@
-# Dogfood baseline - 2026-05-09
+# Dogfood baseline - 2026-05-11
 
-This is the first complete live-session baseline after Phase 2B hardening, extended with plugin-path and marketplace-installed smoke evidence after the Claude Code plugin scaffold and local marketplace catalog landed.
+This is the first complete live-session baseline after Phase 2B hardening, refreshed before the `v0.1.0` technical-preview release with plugin-path and marketplace-installed smoke evidence.
 
 The canonical command is:
 
@@ -10,21 +10,21 @@ The canonical command is:
 
 ## Summary
 
-As of the baseline snapshot:
+As of the release baseline snapshot:
 
 | Hook | Real fires | Actions observed | Evidence shape |
 |---|---:|---|---|
 | `edit-drift-detector` | 1 | `block-fuzzy` | Controlled injected-drift `Edit` probe in a disposable project |
-| `construction-gate` | 10 | `block` | Protected-path blocks across live Write/Edit/NotebookEdit smoke projects, including marketplace-installed proof; synthetic validation covers MultiEdit |
+| `construction-gate` | 12 | `block` | Protected-path blocks across live Write/Edit/NotebookEdit smoke projects, including fresh plugin-path and marketplace-installed release smoke; synthetic validation covers MultiEdit |
 | `silent-file-verifier` | 6 | `warn-missing`, `warn-empty` | Fault-watcher induced missing-file and 0-byte Write anomalies, including plugin-path and marketplace-installed proof |
-| `completion-verifier` | 4 | `block` | Stop hook blocked completion after tests failed, including plugin-path and marketplace-installed proof |
-| `context-recovery` | 3 | `modify` | PreCompact hook wrote a Session Recovery block to CLAUDE.md, including plugin-path and marketplace-installed `/compact` proof |
+| `completion-verifier` | 7 | `block` | Stop hook blocked completion after tests failed, including fresh plugin-path and marketplace-installed release smoke |
+| `context-recovery` | 5 | `modify` | PreCompact hook wrote a Session Recovery block to CLAUDE.md, including fresh plugin-path and marketplace-installed `/compact` proof |
 
 Analyzer summary:
 
 ```text
-Total: 24 fires across 5 hooks
-Real Claude Code sessions: 9
+Total: 31 fires across 5 hooks
+Real Claude Code sessions: 11
 Missing real-session evidence: (none)
 ```
 
@@ -38,6 +38,7 @@ The plugin-path extension proves the scaffold can load hooks through `claude --p
 - `silent-file-verifier`: `warn-missing` and `warn-empty`.
 - `completion-verifier`: failing-test `Stop` block. The plugin smoke recorded two Stop blocks because the project stayed intentionally broken for a follow-up watcher-stop turn.
 - `context-recovery`: manual `/compact` produced a Session Recovery block via `PreCompact`.
+- Release refresh session `b9338ede...`: plugin-path smoke proved `construction-gate`, `completion-verifier`, and `context-recovery` from `claude --plugin-dir /Users/shadi/conductor/repos/claude-meta-skills`; `silent-file-verifier` was exercised on the valid non-empty Write path and correctly stayed silent.
 
 The marketplace-installed extension proves the local marketplace catalog can install the plugin into a disposable project and produce real hook interventions from the installed plugin path for:
 
@@ -45,6 +46,7 @@ The marketplace-installed extension proves the local marketplace catalog can ins
 - `silent-file-verifier`: `warn-missing` and `warn-empty` after a fault watcher removed/truncated Write targets.
 - `completion-verifier`: failing-test `Stop` block after an intentional `src/app.py` regression.
 - `context-recovery`: manual `/compact` produced a Session Recovery block via `PreCompact`, preserving `DOGFOOD_MARKETPLACE_INSTALL_SENTINEL=marketplace-install-001`.
+- Release refresh session `e7ea0f39...`: isolated marketplace-installed smoke proved `construction-gate`, `completion-verifier`, and `context-recovery` from the installed plugin path; `silent-file-verifier` was exercised on the valid non-empty Write path and correctly stayed silent.
 
 It does not prove:
 
@@ -70,10 +72,12 @@ Plugin-path sessions:
 
 - `83c42ff4...`: 7 fires from `claude --plugin-dir .` smoke (`construction-gate` 3, `silent-file-verifier` 2, `completion-verifier` 2).
 - `68ef1eab...`: 1 fire from `claude --plugin-dir .` manual `/compact` smoke (`context-recovery` 1).
+- `b9338ede...`: 4 fires from release `claude --plugin-dir /Users/shadi/conductor/repos/claude-meta-skills` smoke (`construction-gate` 1, `completion-verifier` 2, `context-recovery` 1).
 
-Marketplace-installed session:
+Marketplace-installed sessions:
 
 - `66c19904...`: 5 fires from local marketplace install smoke (`construction-gate` 1, `silent-file-verifier` 2, `completion-verifier` 1, `context-recovery` 1).
+- `e7ea0f39...`: 3 fires from release isolated marketplace-installed smoke (`construction-gate` 1, `completion-verifier` 1, `context-recovery` 1).
 
 Plugin-path and marketplace-installed evidence do not yet include `edit-drift-detector`. The existing `edit-drift-detector` real-session evidence remains the controlled injected-drift proof described above.
 
