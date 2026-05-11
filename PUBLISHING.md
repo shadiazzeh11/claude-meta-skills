@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **v0.1.1 technical preview, local install recommended**. The repo has a tested installer/uninstaller, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
+Current status: **v0.1.2 technical preview, local install recommended**. The repo has a tested installer/uninstaller, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
 
 ## Current distribution model
 
@@ -100,7 +100,7 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Keep explicit plugin versioning honest with `VERSION=vX.Y.Z make test-release`; Claude Code uses `plugin.json` `version` before marketplace entry versions or source commits.
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
-- Decide whether to add a marketplace-installed `edit-drift-detector` proof or keep the current non-marketplace live proof plus harness coverage as the documented caveat.
+- Keep the marketplace-installed `edit-drift-detector` caveat unless a future Claude Code lifecycle exposes stale Edit payloads to PreToolUse before built-in `old_string` validation. The current evidence remains non-marketplace controlled live proof plus harness coverage.
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
 - Keep [TROUBLESHOOTING.md](TROUBLESHOOTING.md) current with Claude Code hook, settings, and plugin command changes before publishing.
 - Keep `CHANGELOG.md` and `RELEASE.md` current, then add a release tag only after the release gate in `RELEASE.md` passes.

@@ -2,7 +2,8 @@
 
 This is the reusable release runbook for `claude-meta-skills`.
 
-Latest published release: **`v0.1.1` technical preview**.
+Release target: **`v0.1.2` technical preview**.
+Previous published release: **`v0.1.1` technical preview**.
 
 Keep future releases in the `0.x` technical-preview line while the project lacks public marketplace listing, Windows CI, and production false-positive data. Reserve `v1.0.0` for a stable public support contract.
 
@@ -45,7 +46,7 @@ bash -n testing/test-installer-idempotency.sh
 make help
 make test-plugin
 make test-marketplace
-VERSION=v0.1.1  # replace with the target release version
+VERSION=v0.1.2  # replace with the target release version
 make test-release VERSION="$VERSION"
 make test-validation-lock
 make test-analyzer
@@ -121,8 +122,8 @@ Before tagging a public technical preview, run at least these disposable smoke t
    - prove construction-gate, silent-file-verifier, completion-verifier, and context-recovery still fire from installed plugin paths
 
 4. Edit-drift proof decision:
-   - either add a marketplace-installed edit-drift proof
-   - or keep the documented caveat that edit-drift has non-marketplace controlled live evidence plus synthetic validation
+   - keep the documented caveat that edit-drift has non-marketplace controlled live evidence plus synthetic validation
+   - do not claim marketplace-installed edit-drift block proof unless a future Claude Code lifecycle exposes the Edit payload to PreToolUse before built-in `old_string` validation
 
 ## Version and changelog
 
@@ -138,7 +139,7 @@ Before tagging the target release:
 8. Commit the dated changelog/release-doc changes before tagging:
 
 ```bash
-VERSION=v0.1.1
+VERSION=v0.1.2
 git diff --check
 git status --short
 git add CHANGELOG.md RELEASE.md PUBLISHING.md README.md testing/DOGFOOD-BASELINE.md .gitignore .claude-plugin/plugin.json .claude-plugin/marketplace.json
@@ -158,7 +159,7 @@ Expected:
 Only after the gates above pass and the dated changelog commit is `HEAD`, publish `main` first and verify the remote tip before creating the tag:
 
 ```bash
-VERSION=v0.1.1
+VERSION=v0.1.2
 git push origin main
 git fetch origin --prune
 test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
