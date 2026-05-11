@@ -104,6 +104,22 @@ check_json_file() {
   fi
 }
 
+check_installed_copy_current() {
+  local source_file="$1"
+  local target_file="$2"
+  local label="$3"
+
+  if [ ! -f "$source_file" ] || [ ! -f "$target_file" ]; then
+    return
+  fi
+
+  if cmp -s "$source_file" "$target_file"; then
+    ok "$label matches this checkout"
+  else
+    warn "$label differs from this checkout; reinstall local hooks to update copied files"
+  fi
+}
+
 command_version() {
   local command_name="$1"
   "$command_name" --version 2>/dev/null | head -1
@@ -296,11 +312,23 @@ PY
       else
         fail "target $hook hook.py exists but is not executable"
       fi
+      check_installed_copy_current "$ROOT/hooks/$hook/hook.py" "$hook_root/$hook/hook.py" "target $hook hook.py"
     elif [ -d "$hook_root" ]; then
       fail "target $hook hook.py missing"
     else
       warn "target $hook hook.py missing"
     fi
+
+    for metadata_file in messages.json rules.json; do
+      if [ -f "$ROOT/hooks/$hook/$metadata_file" ] && [ -f "$hook_root/$hook/$metadata_file" ]; then
+        check_installed_copy_current \
+          "$ROOT/hooks/$hook/$metadata_file" \
+          "$hook_root/$hook/$metadata_file" \
+          "target $hook $metadata_file"
+      elif [ -f "$ROOT/hooks/$hook/$metadata_file" ] && [ -d "$hook_root" ]; then
+        fail "target $hook $metadata_file missing"
+      fi
+    done
   done
 
   if [ -f "$settings" ] && json_valid "$settings" >/dev/null; then

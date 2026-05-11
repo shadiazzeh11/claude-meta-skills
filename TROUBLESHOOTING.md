@@ -28,9 +28,9 @@ make doctor TARGET=/path/to/project
 ```
 
 The doctor checks source files, expected local install wiring, copied hook
-files, `disableAllHooks`, optional tool availability, and the metadata log
-location. It does not install, uninstall, invoke hooks, or print raw log
-contents.
+files, copied-file drift from the current checkout, `disableAllHooks`, optional
+tool availability, and the metadata log location. It does not install,
+uninstall, invoke hooks, or print raw log contents.
 
 Then open Claude Code's `/hooks` menu. The menu is read-only, but it shows
 which hook event, matcher, handler, command, and source file are active. Sources
