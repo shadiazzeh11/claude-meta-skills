@@ -1,6 +1,6 @@
 # Dogfood baseline - 2026-05-11
 
-This is the complete live-session baseline after Phase 2B hardening, refreshed before the `v0.1.2` technical-preview patch release with plugin-path and marketplace-installed smoke evidence.
+This is the complete live-session baseline after Phase 2B hardening and the clean post-`v0.1.2` dogfood window.
 
 The canonical command is:
 
@@ -8,9 +8,33 @@ The canonical command is:
 ./testing/analyze-log.py --real-only --redact
 ```
 
-## Summary
+## Latest clean window after v0.1.2
 
-As of the release baseline snapshot:
+After tagging `v0.1.2`, the active hook log was archived and reset before a fresh disposable Claude Code dogfood pass. That clean window produced:
+
+```text
+Total: 6 fires across 5 hooks
+Evidence scorecard: status=complete; hooks=5/5 real; real_fires=6; real_sessions=1; real_projects=1; non_real_ratio=0.0%
+Missing real-session evidence: (none)
+```
+
+| Hook | Real fires | Actions observed | Evidence shape |
+|---|---:|---|---|
+| `edit-drift-detector` | 1 | `block-fuzzy` | Controlled induced-drift `Edit` probe using the disposable project's local `install.sh` hook copy, restored afterward |
+| `construction-gate` | 1 | `block` | Protected `package-lock.json` Write blocked in the disposable project |
+| `silent-file-verifier` | 2 | `warn-missing`, `warn-empty` | Fault-watcher induced missing-file and 0-byte Write anomalies |
+| `completion-verifier` | 1 | `block` | Stop hook blocked completion after an intentional failing test |
+| `context-recovery` | 1 | `modify` | Manual `/compact` wrote a Session Recovery block to `CLAUDE.md` |
+
+The clean-window project was `/tmp/claude-meta-v012-dogfood-1.X6bEWJ`, session `577ea11f...`, spanning `2026-05-11T05:38:38Z..2026-05-11T06:00:40Z`. Redacted Markdown and JSON reports were generated under `.context/reports/` and are intentionally ignored local evidence artifacts.
+
+The `edit-drift-detector` entry is a controlled lifecycle proof, not an organic stale-Edit proof, plugin-path proof, or marketplace-installed proof. Claude Code's built-in Edit validation still catches common stale `old_string` failures before this hook can respond. The controlled wrapper mutated the disposable probe file after Claude Code accepted a valid Edit payload and before invoking the preserved original local project hook copy, causing the real hook to emit its `block-fuzzy` feedback and log entry.
+
+## Historical release snapshot before v0.1.2
+
+The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 6-fire clean window above unless the archived release log is restored.
+
+As of that release baseline snapshot:
 
 | Hook | Real fires | Actions observed | Evidence shape |
 |---|---:|---|---|

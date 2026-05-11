@@ -6,6 +6,10 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+### Added
+
+- Documented the clean post-`v0.1.2` dogfood window: 6 real fires across all five hooks in one disposable Claude Code session with `non_real_ratio=0.0%`.
+
 ## [0.1.2] - 2026-05-11
 
 ### Added
