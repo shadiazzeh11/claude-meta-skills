@@ -124,7 +124,18 @@ assert_contains "$DISABLED_OUT" "disableAllHooks=true"
 assert_contains "$DISABLED_OUT" "0 FAIL"
 echo "PASS Test G"
 
-echo "Test H — missing copied hook file fails"
+echo "Test H — installed copy drift warns without failing"
+DRIFT="$TMP_ROOT/drift"
+mkdir -p "$DRIFT"
+"$INSTALL" "$DRIFT" >/dev/null
+printf '\n# local drift probe\n' >> "$DRIFT/.claude/hooks/meta-skills/completion-verifier/hook.py"
+DRIFT_OUT="$TMP_ROOT/drift.out"
+"$DOCTOR" "$DRIFT" > "$DRIFT_OUT"
+assert_contains "$DRIFT_OUT" "target completion-verifier hook.py differs from this checkout"
+assert_contains "$DRIFT_OUT" "0 FAIL"
+echo "PASS Test H"
+
+echo "Test I — missing copied hook file fails"
 MISSING_HOOK="$TMP_ROOT/missing-hook"
 mkdir -p "$MISSING_HOOK"
 "$INSTALL" "$MISSING_HOOK" >/dev/null
@@ -137,9 +148,9 @@ if "$DOCTOR" "$MISSING_HOOK" > "$MISSING_HOOK_OUT" 2>&1; then
 fi
 assert_contains "$MISSING_HOOK_OUT" "target construction-gate hook.py missing"
 assert_contains "$MISSING_HOOK_OUT" "FAIL"
-echo "PASS Test H"
+echo "PASS Test I"
 
-echo "Test I — missing target fails"
+echo "Test J — missing target fails"
 MISSING_OUT="$TMP_ROOT/missing.out"
 if "$DOCTOR" "$TMP_ROOT/does-not-exist" > "$MISSING_OUT" 2>&1; then
   echo "FAIL: doctor should fail on missing target directory" >&2
@@ -148,6 +159,6 @@ if "$DOCTOR" "$TMP_ROOT/does-not-exist" > "$MISSING_OUT" 2>&1; then
 fi
 assert_contains "$MISSING_OUT" "target directory does not exist"
 assert_contains "$MISSING_OUT" "FAIL"
-echo "PASS Test I"
+echo "PASS Test J"
 
 echo "All doctor tests passed."
