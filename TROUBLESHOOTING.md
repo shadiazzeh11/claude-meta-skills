@@ -90,7 +90,9 @@ files.
 For plugin or marketplace installs, do not use `install.sh`. Use Claude Code's
 plugin tooling:
 
-```bash
+Type these inside Claude Code:
+
+```text
 /plugin
 /plugin disable claude-meta-skills@<marketplace-name>
 /plugin uninstall claude-meta-skills@<marketplace-name>
@@ -219,7 +221,8 @@ Share redacted metadata, not private project content:
   make report-dogfood
   ```
 
-- Relevant hook message shown to Claude Code.
+- Relevant hook message shown to Claude Code, with any file-content snippets,
+  test output, prompts, or proprietary paths redacted before sharing.
 - Redacted settings snippet showing the hook command and matcher.
 - Whether `disableAllHooks` is set in user, project, or local settings.
 
@@ -237,8 +240,8 @@ reviewed it locally.
   machine; prefer `.claude/settings.local.json` or plugin local scope.
 - Do not use `install.sh --uninstall` for plugin installs.
 - Do not delete Claude Code plugin cache directories as the first response to a
-  plugin problem. Try `/plugin`, `claude plugin update`, `claude plugin
-  uninstall`, and `/reload-plugins` first.
+  plugin problem. Try `/plugin`, `claude plugin update <plugin>`,
+  `claude plugin uninstall <plugin>`, and `/reload-plugins` first.
 - Do not claim real false-positive rates from synthetic harness tests. Use live
   dogfood reports for lifecycle evidence and treat production rate claims as
   future work.
