@@ -163,10 +163,10 @@ def is_protected_path(file_path):
     """True when construction-gate should own feedback for this path.
 
     edit-drift-detector may include nearby file content in its correction
-    message. For protected paths, avoid reading the file at all; allow the
-    earlier construction-gate hook to block with metadata-only feedback. Match
-    only the tool-provided path, not the cwd-resolved filesystem path, so a
-    normal relative edit inside a directory named ".env.project" is not skipped.
+    message. For protected paths, avoid reading the file at all; construction-gate
+    owns metadata-only blocking for that surface. Match only the tool-provided
+    path, not the cwd-resolved filesystem path, so a normal relative edit inside
+    a directory named ".env.project" is not skipped.
     """
     for pattern in load_protected_patterns():
         try:

@@ -63,7 +63,7 @@ Re-run via `cd validation && ./harness.sh construction-gate`.
 - **Four new protected patterns added:** `pnpm-lock\.yaml$`, `Pipfile\.lock$`, `\.claude/settings\.local\.json$`, `\.claude/hooks/`.
 - **`DEFAULT_PATTERNS` resynced with `rules.json`** so hook fallback (when `rules.json` is missing) protects the same surface as the configured rules.
 - **Permanent installer-idempotency assertion** that the installed construction-gate hook entry uses matcher `Write|Edit|MultiEdit|NotebookEdit`.
-- **Privacy ordering assertion** added to installer/plugin regressions so construction-gate precedes edit-drift-detector in PreToolUse. Protected Edit payloads block before any fuzzy content feedback hook can inspect the file.
+- **Stable PreToolUse ordering assertion** added to installer/plugin regressions so generated settings list construction-gate before edit-drift-detector. Protected-path privacy relies on edit-drift self-skipping protected paths before opening files, because Claude Code may execute matching hooks in parallel.
 
 ## Phase 3 design choices (still in effect)
 
@@ -76,7 +76,7 @@ Re-run via `cd validation && ./harness.sh construction-gate`.
 
 When this hook coexists with the rest of the meta-skills suite:
 - This hook fires PreToolUse on `Write|Edit|MultiEdit|NotebookEdit`. If it blocks (exit 2), `silent-file-verifier`'s PostToolUse does NOT fire (correct — there's no modification to verify when prevented).
-- Both `construction-gate` and `edit-drift-detector` fire on `Edit`. In the shipped configuration, construction-gate runs first; protected paths block with metadata-only feedback before edit-drift can inspect file content. edit-drift also self-skips protected paths as defense in depth.
+- Both `construction-gate` and `edit-drift-detector` match `Edit`. Claude Code may execute matching hooks in parallel, so protected-path privacy does not rely on hook order: construction-gate blocks with metadata-only feedback, and edit-drift self-skips protected paths before opening files.
 
 Per Claude Code lifecycle docs; not validated by harness (which tests hooks individually).
 

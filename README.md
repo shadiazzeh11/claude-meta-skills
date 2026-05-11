@@ -59,7 +59,7 @@ Each hook directory contains its own README with design decisions, known limitat
 
 ## How they work together
 
-The five hooks cover Blake Crosley's four-layer hook framework (Prevention, Validation, Quality Gating, Context Injection) across five Claude Code lifecycle events. They fire in lifecycle order: `PreCompact` runs when context fills (recovering session state to CLAUDE.md), `PreToolUse` blocks bad Edits or Writes before they execute, `PostToolUse` warns on ghost files after Write/Edit/MultiEdit/NotebookEdit completes, and `Stop` blocks completion when tests are failing. Each hook fails open and can be installed independently. When installed as a suite, `construction-gate` intentionally runs before `edit-drift-detector` so protected paths get metadata-only blocking before any fuzzy file-content feedback can run.
+The five hooks cover Blake Crosley's four-layer hook framework (Prevention, Validation, Quality Gating, Context Injection) across five Claude Code lifecycle events. They fire in lifecycle order: `PreCompact` runs when context fills (recovering session state to CLAUDE.md), `PreToolUse` blocks bad Edits or Writes before they execute, `PostToolUse` warns on ghost files after Write/Edit/MultiEdit/NotebookEdit completes, and `Stop` blocks completion when tests are failing. Each hook fails open and can be installed independently. When installed as a suite, `construction-gate` is listed before `edit-drift-detector` for readability and stable generated settings, but protected-path privacy relies on `edit-drift-detector` self-skipping protected paths before it opens files because Claude Code may execute matching hooks in parallel.
 
 ```
 Layer                Event                Hook

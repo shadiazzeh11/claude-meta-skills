@@ -75,7 +75,7 @@ edit_pos = next((i for i, command in enumerate(ordered_commands)
 if gate_pos is None or edit_pos is None:
     raise SystemExit("plugin PreToolUse entries must include construction-gate and edit-drift-detector")
 if gate_pos >= edit_pos:
-    raise SystemExit("construction-gate must precede edit-drift-detector in plugin hooks")
+    raise SystemExit("construction-gate should be listed before edit-drift-detector in plugin hooks")
 
 commands = []
 

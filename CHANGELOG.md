@@ -19,6 +19,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 - Added the release metadata regression to GitHub Actions validation.
 - Added the validation harness lock regression to GitHub Actions validation.
 - Expanded GitHub Actions validation from Ubuntu-only to an Ubuntu + macOS runner matrix.
+- Clarified that protected-path privacy relies on edit-drift self-skipping protected paths, not on hook execution order.
 
 ## [0.1.1] - 2026-05-11
 
@@ -83,14 +84,14 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 - Plugin-path smoke evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery.
 - Marketplace-installed smoke evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery.
 - Publishing readiness guide with positioning, safe claims, non-goals, and pre-publish checklist.
-- Privacy hardening for protected paths, including metadata-only construction-gate blocking before edit-drift content inspection.
+- Privacy hardening for protected paths, including metadata-only construction-gate blocking and edit-drift self-skipping before file-content inspection.
 - Documentation for known Claude Code lifecycle caveats and relevant upstream issues.
 
 ### Changed
 
 - Expanded construction-gate from `Write` coverage to `Write|Edit|MultiEdit|NotebookEdit`.
 - Expanded construction-gate protected patterns to include more lock files and `.claude/` settings/hooks paths.
-- Ordered construction-gate before edit-drift-detector in installed `PreToolUse` configuration.
+- Ordered construction-gate before edit-drift-detector in installed `PreToolUse` configuration for stable generated settings.
 - Updated installer and CI language from narrow idempotency wording to installer lifecycle coverage.
 - Updated README validation counts to `67/67`.
 - Reworked dogfood reporting guidance around `./testing/analyze-log.py --real-only`.
@@ -116,7 +117,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 - Hook logs store metadata only: paths, pattern names, line ranges, exit codes, similarity ratios, and actions.
 - Hook logs avoid file content, diff snippets, prompts, assistant responses, and test output.
 - Hook log directory/file permissions are hardened on POSIX systems.
-- Protected-path edit attempts are blocked by construction-gate with metadata-only feedback before edit-drift can inspect nearby file content.
+- Protected-path edit attempts are blocked by construction-gate with metadata-only feedback, and edit-drift self-skips protected paths before opening files.
 
 ### Known Limitations
 

@@ -91,7 +91,7 @@ Requires Python 3.7+ in PATH. Uses stdlib only — no external dependencies.
 When this hook is installed alongside `silent-file-verifier` and `completion-verifier`:
 
 - This hook fires PreToolUse on Edit. If it blocks (exit 2), the Edit is cancelled and silent-file-verifier's PostToolUse does NOT fire (correct: there's nothing to verify when the Edit was prevented).
-- In the full meta-skills configuration, `construction-gate` is ordered before this hook for `Edit` so protected paths block before edit-drift can inspect file content. This hook also self-skips protected paths as defense in depth for stale/custom settings.
+- In the full meta-skills configuration, `construction-gate` is listed before this hook for stable generated settings. Claude Code may execute matching hooks in parallel, so protected-path privacy does not rely on ordering: this hook self-skips protected paths before opening files.
 - Stop hook (completion-verifier) is independent and fires after Claude finishes responding, regardless of any Edit blocks during the response.
 
 Behavior documented per Claude Code lifecycle docs; not validated by the harness (which tests each hook in isolation). Real-world coexistence worth a spot-check when all three hooks are installed in an actual Claude Code session.

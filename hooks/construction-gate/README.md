@@ -84,7 +84,7 @@ To add a pattern: edit `rules.json`. To temporarily disable one pattern: remove 
 ## Coexistence with other hooks
 
 - This hook fires PreToolUse on `Write|Edit|MultiEdit|NotebookEdit`. If it blocks (exit 2), `silent-file-verifier`'s PostToolUse does NOT fire (correct — there's no modification to verify when it was prevented).
-- Both `construction-gate` and `edit-drift-detector` fire on Edit. In the full meta-skills configuration, construction-gate runs first so protected paths block with metadata-only feedback before edit-drift can inspect file content. edit-drift also self-skips protected paths as defense in depth for stale/custom settings.
+- Both `construction-gate` and `edit-drift-detector` match Edit. Claude Code may execute matching hooks in parallel, so protected-path privacy does not rely on hook order: construction-gate blocks with metadata-only feedback, and edit-drift self-skips protected paths before opening files.
 - Independent of `completion-verifier` and `context-recovery` (different events).
 
 Behavior documented per Claude Code lifecycle docs; not validated by the harness (which tests each hook in isolation).
