@@ -43,7 +43,7 @@ To remove the local install, run `./install.sh /path/to/your/project --uninstall
 
 Manual alternative: copy `hooks/` into your project, then merge `templates/settings.json` into `.claude/settings.json`.
 
-Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and the standard `hooks/hooks.json` plugin hook file for Claude Code plugin validation and local marketplace installation tests. Marketplace-installed smoke evidence now covers construction-gate, silent-file-verifier, completion-verifier, and context-recovery. The local `install.sh` path above remains the recommended install path until public release docs and marketplace packaging are complete.
+Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and the standard `hooks/hooks.json` plugin hook file for Claude Code plugin validation and local marketplace installation tests. Marketplace-installed smoke evidence now covers construction-gate, silent-file-verifier, completion-verifier, and context-recovery. The local `install.sh` path above remains the recommended install path until public marketplace packaging is complete.
 
 ## Hooks
 
@@ -145,7 +145,7 @@ We focus on metacognitive verification — catching Claude's own mistakes during
 
 **Explicit non-goals:** command safety, agent workflow methodology, persistent cross-session memory, observability dashboards, and public marketplace publication. We focus on a small, validated, locally-installable hook suite.
 
-For the current marketplace-readiness status, positioning, and pre-publish checklist, see [PUBLISHING.md](PUBLISHING.md).
+For the current marketplace-readiness status, positioning, pre-publish checklist, changelog, and release runbook, see [PUBLISHING.md](PUBLISHING.md), [CHANGELOG.md](CHANGELOG.md), and [RELEASE.md](RELEASE.md).
 
 ## Known limitations
 
