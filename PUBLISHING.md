@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **v0.1.2 technical preview, local install recommended**. The repo has a tested installer/uninstaller, read-only doctor diagnostics, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
+Current status: **v0.1.3 technical preview, local install recommended**. The repo has a tested installer/uninstaller, read-only doctor diagnostics, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
 
 ## Current distribution model
 
@@ -45,7 +45,7 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 | Installer lifecycle | `make test-installer` passes repeat-install, merge, uninstall, no-op uninstall, and preservation scenarios. |
 | Doctor diagnostics | `make doctor TARGET=/path/to/project` performs read-only source/install diagnostics; `make test-doctor` covers source-only, no-`jq`, clean-target, installed, broken, duplicate, disabled, drifted-copy, missing-hook, and missing-target states. |
 | CI | GitHub Actions runs plugin package checks, marketplace catalog checks, release metadata checks, validation harness lock checks, validation harness behavior checks, repository hygiene checks, doctor diagnostic checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
-| Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. The latest clean post-`v0.1.2` window produced 6 real fires across all five hooks in one disposable Claude Code session with `non_real_ratio=0.0%`. |
+| Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. The active post-`v0.1.2` window shows 12 real fires across 5 hooks and 3 sessions, including the 6-fire clean disposable pass, four stale-installed-hook `completion-verifier` false positives before doctor/reinstall, one post-reinstall LOGOS broken-state catch, and one LOGOS `context-recovery` proof. |
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
