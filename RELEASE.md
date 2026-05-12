@@ -106,6 +106,8 @@ Current baseline evidence is summarized in `testing/DOGFOOD-BASELINE.md`.
 
 Before tagging a public technical preview, run at least these disposable smoke tests:
 
+For an external tester or first-time reviewer protocol, use [testing/NEW-USER-SMOKE.md](testing/NEW-USER-SMOKE.md). It is intentionally separate from the maintainer release gate below.
+
 1. Local install/uninstall smoke:
    - install into a temp project
    - include an existing unrelated hook
