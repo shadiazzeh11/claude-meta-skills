@@ -6,6 +6,10 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.4] - 2026-05-12
+
 ### Fixed
 
 - Hardened `context-recovery` project-root discovery when `$CLAUDE_PROJECT_DIR` is absent: subdirectory compactions now write to the nearest parent `CLAUDE.md` or git root instead of creating recovery blocks in the nested cwd.
