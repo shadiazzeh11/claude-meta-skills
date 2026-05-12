@@ -44,6 +44,8 @@ cd claude-meta-skills
 
 To remove the local install, run `./install.sh /path/to/your/project --uninstall` or `make uninstall TARGET=/path/to/your/project`. This removes only hook commands whose path contains `.claude/hooks/meta-skills/` and deletes `.claude/hooks/meta-skills/`; it preserves unrelated hooks, unrelated settings, and `CLAUDE.md`. If `.claude/settings.json` exists and cannot be parsed safely, uninstall stops before deleting hook files. For temporary broad disablement, set Claude Code's `disableAllHooks` setting in a local or project settings file. For plugin installs, use Claude Code's plugin marketplace tooling instead of `install.sh`. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for pause, uninstall, plugin, and evidence-collection guidance.
 
+For a disposable first-run protocol suitable for friends, reviewers, and external testers, see [testing/NEW-USER-SMOKE.md](testing/NEW-USER-SMOKE.md).
+
 Manual alternative: copy `hooks/` into your project, then merge `templates/settings.json` into `.claude/settings.json`.
 
 Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and the standard `hooks/hooks.json` plugin hook file for Claude Code plugin validation and local marketplace installation tests. Marketplace-installed smoke evidence now covers construction-gate, silent-file-verifier, completion-verifier, and context-recovery. The local `install.sh` path above remains the recommended install path until public marketplace packaging is complete.
