@@ -119,7 +119,7 @@ make report-dogfood
 
 ## Sources checked
 
-Sources checked on 2026-05-09 and refreshed through 2026-05-11:
+Sources checked on 2026-05-09 and refreshed through 2026-05-12:
 
 - Claude Code hooks reference: https://code.claude.com/docs/en/hooks
 - Claude Code hooks guide: https://code.claude.com/docs/en/hooks-guide
