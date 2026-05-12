@@ -1,6 +1,6 @@
-# Dogfood baseline - 2026-05-11
+# Dogfood baseline - 2026-05-12
 
-This is the complete live-session baseline after Phase 2B hardening, the clean post-`v0.1.2` dogfood window, and the follow-up LOGOS real-project dogfood pass.
+This is the complete live-session baseline after Phase 2B hardening, the clean post-`v0.1.2` dogfood window, the follow-up LOGOS real-project dogfood pass, and the PR #47 live transcript-shape smoke.
 
 The canonical command is:
 
@@ -10,11 +10,11 @@ The canonical command is:
 
 ## Latest active window after v0.1.2
 
-After the clean disposable-project pass, LOGOS dogfood extended the same active measurement window to:
+After the clean disposable-project pass, LOGOS dogfood and a later transcript-shape smoke extended the same active measurement window to:
 
 ```text
-Total: 12 fires across 5 hooks
-Evidence scorecard: status=complete; hooks=5/5 real; real_fires=12; real_sessions=3; real_projects=2; non_real_ratio=70.0%
+Total: 13 fires across 5 hooks
+Evidence scorecard: status=complete; hooks=5/5 real; real_fires=13; real_sessions=4; real_projects=3; non_real_ratio=68.3%
 Missing real-session evidence: (none)
 ```
 
@@ -23,7 +23,7 @@ Missing real-session evidence: (none)
 | `edit-drift-detector` | 1 | `block-fuzzy` | Controlled induced-drift proof from the disposable post-`v0.1.2` project |
 | `construction-gate` | 1 | `block` | Protected `package-lock.json` Write blocked in the disposable post-`v0.1.2` project |
 | `silent-file-verifier` | 2 | `warn-missing`, `warn-empty` | Fault-watcher induced missing-file and 0-byte Write anomalies in the disposable post-`v0.1.2` project |
-| `completion-verifier` | 6 | `block` | One disposable failing-test Stop block, four LOGOS stale-install runner false positives before doctor/reinstall, and one LOGOS intentional F7 broken-state catch after reinstall |
+| `completion-verifier` | 7 | `block` | One disposable failing-test Stop block, four LOGOS stale-install runner false positives before doctor/reinstall, one LOGOS intentional F7 broken-state catch after reinstall, and one live transcript-shape proof after PR #47 |
 | `context-recovery` | 2 | `modify` | One disposable `/compact` recovery block plus one LOGOS `/compact` recovery block |
 
 The active-window projects are:
@@ -31,8 +31,9 @@ The active-window projects are:
 - `/tmp/claude-meta-v012-dogfood-1.X6bEWJ`, session `577ea11f...`, `6` fires across all five hooks, spanning `2026-05-11T05:38:38Z..2026-05-11T06:00:40Z`.
 - `~/conductor/workspaces/logos/dallas`, session `111b5e9b...`, `4` `completion-verifier` fires from the stale installed-hook false-positive window, spanning `2026-05-11T06:57:50Z..2026-05-11T07:12:46Z`.
 - `~/conductor/workspaces/logos/dallas`, session `e3c481b8...`, `2` fires (`completion-verifier`, `context-recovery`), spanning `2026-05-11T11:39:55Z..2026-05-11T11:42:37Z`.
+- `/tmp/claude-meta-transcript-live-smoke.zdPYoW`, session `4272d40a...`, `1` `completion-verifier` fire from the live transcript-shape proof, at `2026-05-12T18:39:32Z`.
 
-The `non_real_ratio=70.0%` comes from 28 historical harness/validation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
+The `non_real_ratio=68.3%` comes from 28 historical harness/validation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
 
 ## Clean disposable window after v0.1.2
 
@@ -58,7 +59,7 @@ The `edit-drift-detector` entry is a controlled lifecycle proof, not an organic 
 
 ## Historical release snapshot before v0.1.2
 
-The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 12-fire active window above unless the archived release log is restored.
+The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 13-fire active window above unless the archived release log is restored.
 
 As of that release baseline snapshot:
 
