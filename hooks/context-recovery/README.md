@@ -10,13 +10,13 @@ PreCompact hook that preserves session context through compaction. Captures git 
 - Configurable static reminders from `rules.json`
 - A sanitized, bounded excerpt of custom instructions from manual `/compact` invocations
 
-## Architectural choice — why CLAUDE.md modification, not SessionStart:compact
+## Architectural choice — why CLAUDE.md modification, not SessionStart/PostCompact injection
 
-The official docs example for post-compaction context recovery uses a `SessionStart` hook with `"matcher": "compact"` and writes the recovery message to stdout. **This pattern is broken** per Claude Code GitHub issue #15174 — the hook fires but its stdout is NOT injected into Claude's context after compaction. Multiple ecosystem implementations (e.g., `Dicklesworthstone/post_compact_reminder`) use this pattern and ship a hook that fires but does nothing.
+Earlier Claude Code guidance and ecosystem examples for post-compaction context recovery used a `SessionStart` hook with `"matcher": "compact"` and wrote the recovery message to stdout. That pathway has had documented failures: Claude Code GitHub issue #15174 reports that the hook fires but stdout is not injected into Claude's context after compaction.
 
-The verified working path is CLAUDE.md modification: PreCompact hook writes a recovery section to CLAUDE.md, which auto-reloads after compaction. This is the workaround documented on issue #15174 itself.
+The verified working path in this repo is CLAUDE.md modification: a PreCompact hook writes a recovery section to CLAUDE.md, which auto-reloads after compaction. This is the workaround documented on issue #15174 itself and the path covered by live dogfood.
 
-Current Claude Code docs list a `PostCompact` event, but this hook intentionally remains `PreCompact`: it writes recovery state before compaction finishes, and this exact path has live-session dogfood evidence. Any redesign around `PostCompact` should first prove the desired post-compaction context-injection behavior in a live Claude Code session.
+Current Claude Code docs list both `PreCompact` and `PostCompact`. This hook intentionally remains `PreCompact`: it writes recovery state before compaction finishes, and this exact path has live-session dogfood evidence. Any redesign around `PostCompact` or `SessionStart` context injection should first prove the desired post-compaction context-delivery behavior in a live Claude Code session.
 
 ## Installation
 

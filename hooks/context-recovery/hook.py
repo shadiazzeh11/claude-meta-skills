@@ -6,12 +6,12 @@ PreCompact hook. Captures session context (git state + static reminders)
 and writes a recovery section to CLAUDE.md before compaction. After
 compaction, CLAUDE.md auto-reloads with the recovery context preserved.
 
-Architecture: PreCompact + CLAUDE.md modification. Chosen because the
-SessionStart:compact stdout-injection pathway is broken (issue #15174);
-CLAUDE.md modification is the verified working path for post-compaction
-context preservation. Current Claude Code docs list PostCompact, but this
-hook intentionally writes before compaction via the dogfooded PreCompact
-path.
+Architecture: PreCompact + CLAUDE.md modification. Chosen because
+SessionStart:compact stdout context injection has had documented failures
+(issue #15174), while CLAUDE.md modification is the verified working path
+for post-compaction context preservation in this repo. Current Claude Code
+docs list PostCompact, but this hook intentionally writes before compaction
+via the dogfooded PreCompact path.
 
 Exit 0 always. Claude Code supports PreCompact decision control, but this
 hook does not try to block compaction; it fails open.

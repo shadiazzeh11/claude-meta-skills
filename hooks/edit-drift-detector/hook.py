@@ -113,21 +113,21 @@ def resolve_file_path(file_path, payload):
 
 
 DEFAULT_PROTECTED_PATTERNS = [
-    r"node_modules/",
-    r"\.git/",
-    r"\.env(?:\.|$)",
-    r"package-lock\.json$",
-    r"yarn\.lock$",
-    r"bun\.lockb$",
-    r"\.claude/settings\.json$",
-    r"Cargo\.lock$",
-    r"Gemfile\.lock$",
-    r"poetry\.lock$",
-    r"uv\.lock$",
-    r"pnpm-lock\.yaml$",
-    r"Pipfile\.lock$",
-    r"\.claude/settings\.local\.json$",
-    r"\.claude/hooks/",
+    r"(?:^|/)node_modules/",
+    r"(?:^|/)\.git/",
+    r"(?:^|/)\.env(?:\.[^/]+)?$",
+    r"(?:^|/)package-lock\.json$",
+    r"(?:^|/)yarn\.lock$",
+    r"(?:^|/)bun\.lockb$",
+    r"(?:^|/)\.claude/settings\.json$",
+    r"(?:^|/)Cargo\.lock$",
+    r"(?:^|/)Gemfile\.lock$",
+    r"(?:^|/)poetry\.lock$",
+    r"(?:^|/)uv\.lock$",
+    r"(?:^|/)pnpm-lock\.yaml$",
+    r"(?:^|/)Pipfile\.lock$",
+    r"(?:^|/)\.claude/settings\.local\.json$",
+    r"(?:^|/)\.claude/hooks/",
 ]
 
 

@@ -22,7 +22,7 @@ Re-run via `cd validation && ./harness.sh construction-gate`.
 | # | Case | Category | Tool | Exit | ms | Notes |
 |---|---|---|---|---|---|---|
 | 01 | node-modules | should-block | Write | 2 | 99 | Write deep into node_modules path; matches `node_modules/` pattern |
-| 02 | env-file | should-block | Write | 2 | 83 | Write to .env.production; matches `\.env(?:\.\|$)` pattern |
+| 02 | env-file | should-block | Write | 2 | 83 | Write to .env.production; matches `(?:^|/)\.env(?:\.[^/]+)?$` pattern |
 | 03 | git-internals | should-block | Write | 2 | 78 | Write deep into .git/objects/pack/; matches `\.git/` pattern; confirms regex matches anywhere in path |
 | 04 | normal-path | should-pass | Write | 0 | 84 | Write to src/app.py; no protected pattern matches |
 | 05 | tmp-scratch | should-pass | Write | 0 | 162 | Write to /tmp/scratch.txt; no protected pattern matches |
