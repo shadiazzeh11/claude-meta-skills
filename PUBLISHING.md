@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **v0.1.4 technical preview, local install recommended**. The repo has a tested installer/uninstaller, read-only doctor diagnostics, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, tracked new-user smoke protocol, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
+Current status: **v0.1.5 technical preview, local install recommended**. The repo has a tested installer/uninstaller, read-only doctor diagnostics, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, tracked new-user smoke protocol, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
 
 ## Current distribution model
 
@@ -25,6 +25,14 @@ To remove a local install, users run:
 The uninstaller removes only hook commands whose path contains `.claude/hooks/meta-skills/`, deletes `.claude/hooks/meta-skills/`, and preserves unrelated hooks, unrelated settings, and `CLAUDE.md`. If `.claude/settings.json` exists and cannot be parsed safely, uninstall stops before deleting copied hook files. Plugin installs remain separate from this local installer path; Claude Code marketplace removal/uninstall is handled by Claude Code's plugin tooling.
 
 This is a valid local distribution path for early users. It is not the same as marketplace distribution. Claude Code plugin docs distinguish standalone `.claude/` configuration from plugin packages; plugins add a `.claude-plugin/plugin.json` manifest and are the path for versioned team/community distribution and marketplace installation.
+
+Security and side-effect posture:
+
+- Claude Code command hooks run as local commands with the privileges of the user's OS account. Users must review the source before installing.
+- `completion-verifier` can run the target project's test command on `Stop`; test side effects belong to that project.
+- `context-recovery` can modify project-root `CLAUDE.md` during compaction by design.
+- Hook logs stay local at `~/.claude/meta-skills-log.jsonl` and store metadata such as hook name, action, project path, detail, and session id. They do not store prompts, assistant responses, diffs, file contents, or test output.
+- Local uninstall removes copied hook files and settings entries but does not delete the local metadata log.
 
 The repository now also includes an experimental plugin scaffold and local marketplace catalog:
 
@@ -52,6 +60,7 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 | Release docs | `CHANGELOG.md` and `RELEASE.md` define the technical-preview release scope and tag checklist. |
 | New-user smoke | `testing/NEW-USER-SMOKE.md` defines a tag-pinned external tester protocol for local install, one controlled `completion-verifier` proof, recovery, uninstall, privacy expectations, and feedback collection. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
+| Stop warning semantics | `completion-verifier` failing-test results block with `decision: "block"` and `reason`; inconclusive timeout / missing-command checks fail open with top-level `systemMessage` warnings because Stop hooks do not support `additionalContext` delivery. |
 
 The baseline proves lifecycle reachability and observable behavior under controlled live Claude Code dogfood probes. It does not prove production false-positive rate, exhaustive real-world coverage, or organic frequency of each failure mode.
 
@@ -103,6 +112,7 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
 - Keep `testing/NEW-USER-SMOKE.md` current and run it with at least one external tester before public marketplace submission, or explicitly record environment blockers.
+- Keep user-facing copy clear that hooks run local commands with OS-user privileges and that `completion-verifier` runs project tests.
 - Keep the marketplace-installed `edit-drift-detector` caveat unless a future Claude Code lifecycle exposes stale Edit payloads to PreToolUse before built-in `old_string` validation. The current evidence remains non-marketplace controlled live proof plus harness coverage.
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
 - Keep [TROUBLESHOOTING.md](TROUBLESHOOTING.md) current with Claude Code hook, settings, and plugin command changes before publishing.
@@ -121,7 +131,7 @@ make report-dogfood
 
 ## Sources checked
 
-Sources checked on 2026-05-09 and refreshed through 2026-05-12:
+Sources checked on 2026-05-09 and refreshed through 2026-05-13:
 
 - Claude Code hooks reference: https://code.claude.com/docs/en/hooks
 - Claude Code hooks guide: https://code.claude.com/docs/en/hooks-guide

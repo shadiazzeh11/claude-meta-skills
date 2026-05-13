@@ -42,6 +42,8 @@ cd claude-meta-skills
 
 `doctor.sh` is read-only. It checks this source checkout, optional local install wiring under `.claude/`, copied-file drift from the current checkout, required tools, hook files, plugin manifests, and the local metadata log location without installing, uninstalling, invoking hooks, or printing raw log contents. You can also run `make doctor TARGET=/path/to/your/project`.
 
+Security note: Claude Code command hooks run as local commands with your OS-user privileges. Review the source before installing. `completion-verifier` may run the target project's test command, `context-recovery` may modify project `CLAUDE.md` during compaction, and local metadata logs remain at `~/.claude/meta-skills-log.jsonl` until you delete them.
+
 To remove the local install, run `./install.sh /path/to/your/project --uninstall` or `make uninstall TARGET=/path/to/your/project`. This removes only hook commands whose path contains `.claude/hooks/meta-skills/` and deletes `.claude/hooks/meta-skills/`; it preserves unrelated hooks, unrelated settings, and `CLAUDE.md`. If `.claude/settings.json` exists and cannot be parsed safely, uninstall stops before deleting hook files. For temporary broad disablement, set Claude Code's `disableAllHooks` setting in a local or project settings file. For plugin installs, use Claude Code's plugin marketplace tooling instead of `install.sh`. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for pause, uninstall, plugin, and evidence-collection guidance.
 
 For a disposable first-run protocol suitable for friends, reviewers, and external testers, see [testing/NEW-USER-SMOKE.md](testing/NEW-USER-SMOKE.md).
