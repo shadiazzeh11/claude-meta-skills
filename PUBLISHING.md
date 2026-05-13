@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **v0.1.4 technical preview, local install recommended**. The repo has a tested installer/uninstaller, read-only doctor diagnostics, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
+Current status: **v0.1.4 technical preview, local install recommended**. The repo has a tested installer/uninstaller, read-only doctor diagnostics, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, tracked new-user smoke protocol, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
 
 ## Current distribution model
 
@@ -50,6 +50,7 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
 | Release docs | `CHANGELOG.md` and `RELEASE.md` define the technical-preview release scope and tag checklist. |
+| New-user smoke | `testing/NEW-USER-SMOKE.md` defines a tag-pinned external tester protocol for local install, one controlled `completion-verifier` proof, recovery, uninstall, privacy expectations, and feedback collection. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
 
 The baseline proves lifecycle reachability and observable behavior under controlled live Claude Code dogfood probes. It does not prove production false-positive rate, exhaustive real-world coverage, or organic frequency of each failure mode.
@@ -101,6 +102,7 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Keep explicit plugin versioning honest with `VERSION=vX.Y.Z make test-release`; Claude Code uses `plugin.json` `version` before marketplace entry versions or source commits.
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
+- Keep `testing/NEW-USER-SMOKE.md` current and run it with at least one external tester before public marketplace submission, or explicitly record environment blockers.
 - Keep the marketplace-installed `edit-drift-detector` caveat unless a future Claude Code lifecycle exposes stale Edit payloads to PreToolUse before built-in `old_string` validation. The current evidence remains non-marketplace controlled live proof plus harness coverage.
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
 - Keep [TROUBLESHOOTING.md](TROUBLESHOOTING.md) current with Claude Code hook, settings, and plugin command changes before publishing.
