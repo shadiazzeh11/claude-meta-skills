@@ -6,7 +6,9 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Added a tracked new-user smoke protocol for friends, reviewers, and external testers covering tag-pinned local install, one controlled `completion-verifier` proof, recovery, uninstall, privacy expectations, and feedback collection.
 
 ## [0.1.4] - 2026-05-12
 
