@@ -39,6 +39,8 @@ validation/
 
 Test cases run in directory-name sort order, so prefix with `01-`, `02-`, ... if you want a stable ordering in console output.
 
+Advanced harness behavior tests can set `VALIDATION_TEST_DIR_BASE=/path/to/test-cases/<hook-name>` to run a temporary case tree without mutating the shared `validation/test-cases/` fixtures. Use this for regression probes that intentionally create invalid or failing cases.
+
 ## input.json — what gets sent to the hook
 
 `input.json` is a literal JSON document piped to the hook's stdin. The harness substitutes these placeholders at runtime:

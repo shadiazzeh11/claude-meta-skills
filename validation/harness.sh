@@ -4,7 +4,8 @@
 # Usage: ./harness.sh <hook-name>
 # Example: ./harness.sh edit-drift-detector
 #
-# For each test case under test-cases/<hook-name>/:
+# For each test case under test-cases/<hook-name>/, or under
+# VALIDATION_TEST_DIR_BASE when set:
 #   - Optionally runs setup.sh (with TEST_DIR env var set to case directory)
 #     and fails the case if setup exits non-zero
 #   - Substitutes placeholders in input.json:
@@ -33,7 +34,7 @@ HOOK_NAME="${1:-edit-drift-detector}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 HOOK_PATH="$REPO_DIR/hooks/$HOOK_NAME/hook.py"
-TEST_DIR_BASE="$SCRIPT_DIR/test-cases/$HOOK_NAME"
+TEST_DIR_BASE="${VALIDATION_TEST_DIR_BASE:-$SCRIPT_DIR/test-cases/$HOOK_NAME}"
 RESULTS_DIR="$SCRIPT_DIR/results"
 LOCK_FILE="${VALIDATION_HARNESS_LOCK_FILE:-$SCRIPT_DIR/.harness.lock}"
 LOCK_TIMEOUT_SECS="${VALIDATION_HARNESS_LOCK_TIMEOUT_SECS:-60}"
