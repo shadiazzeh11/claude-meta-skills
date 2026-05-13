@@ -6,9 +6,21 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-05-13
+
 ### Added
 
 - Added a tracked new-user smoke protocol for friends, reviewers, and external testers covering tag-pinned local install, one controlled `completion-verifier` proof, recovery, uninstall, privacy expectations, and feedback collection.
+
+### Changed
+
+- Updated the new-user smoke protocol to require `make --version` in the precheck so external testers fail early on machines without the required build tool.
+- Prepared marketplace-preview metadata for plugin version `0.1.5`.
+
+### Fixed
+
+- Isolated the validation harness behavior probe under a temporary test-case tree so local parallel validation runs cannot observe the intentional `99-setup-failure-probe` fixture.
+- Changed `completion-verifier` inconclusive Stop-hook warnings from unsupported `additionalContext` output to top-level `systemMessage` output while preserving fail-open behavior for missing test commands and timeouts.
 
 ## [0.1.4] - 2026-05-12
 

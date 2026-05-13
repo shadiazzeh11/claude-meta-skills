@@ -4,7 +4,7 @@ This runbook is for a friend, reviewer, or first-time external tester who wants
 to evaluate `claude-meta-skills` in a disposable project.
 
 The goal is to answer a narrow question: can a new tester install the local
-`v0.1.4` release, inspect what was installed, see one useful hook fire, recover
+`v0.1.5` release, inspect what was installed, see one useful hook fire, recover
 the project, uninstall cleanly, and report confusing moments?
 
 This is not a production trial, a marketplace install proof, or a false-positive
@@ -83,7 +83,7 @@ report and stop.
 Use the release tag, not floating `main`:
 
 ```bash
-VERSION="v0.1.4"
+VERSION="v0.1.5"
 SMOKE_ROOT="$(mktemp -d /tmp/claude-meta-user-smoke.XXXXXX)"
 export VERSION SMOKE_ROOT
 
