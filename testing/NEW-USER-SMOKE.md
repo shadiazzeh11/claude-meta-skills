@@ -205,7 +205,9 @@ Expected:
 - The `completion-verifier` Stop hook blocks completion and asks the agent to
   address the failing tests or explain why they are unrelated.
 - The hook message should not print prompts, source-file contents, diffs, or
-  full test output. A short failing-test summary is expected.
+  unbounded test output. A bounded relevant failure snippet is expected; in
+  this tiny one-test project, that snippet may look like the whole unittest
+  failure.
 
 If no block appears, ask Claude to run `/hooks` and `make test`, then stop and
 report the output. Do not keep trying random fixes.
@@ -371,6 +373,6 @@ This smoke fails if:
 - Installation scope was unclear.
 - The tester could not tell what code was running.
 - The test touched a real repo or private data.
-- Logs included source contents, prompts, diffs, secrets, or full test output.
+- Logs included source contents, prompts, diffs, secrets, or test output.
 - Uninstall or disable behavior was unclear.
 - Hook messages made the tester mistrust the tool.

@@ -44,6 +44,8 @@ By design, the `detail` field carries **metadata only**:
 
 - File paths and pattern names (path is identifying but not secret)
 - Line ranges, similarity ratios, exit codes, byte counts, project type names
+- Fixed test-runner command names for command-missing warnings, such as
+  `cargo test` or `python3 -m pytest`
 - Tool names (Write, Edit, MultiEdit, etc.)
 
 The `detail` field never contains:
@@ -51,7 +53,7 @@ The `detail` field never contains:
 - File content, even snippets
 - Diff fragments or `old_string`/`new_string` values
 - Test output (stdout/stderr from the test command)
-- Environment variable values, command arguments beyond the runner name
+- Environment variable values or user-provided shell command arguments
 - User prompts or assistant responses
 
 This is enforced by inspection and regression tests — each hook builds its own `detail` from a limited template, and the validation harness asserts sensitive strings stay out of stderr/log output for protected-path cases. If you ever want to share a log excerpt for a bug report or chat, the detail strings are safe in shape but paths still identify your projects. Use `--redact` (below) to swap your home prefix for `~`.
