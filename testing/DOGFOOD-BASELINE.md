@@ -1,6 +1,6 @@
-# Dogfood baseline - 2026-05-12
+# Dogfood baseline - 2026-05-13
 
-This is the complete live-session baseline after Phase 2B hardening, the clean post-`v0.1.2` dogfood window, the follow-up LOGOS real-project dogfood pass, and the PR #47 live transcript-shape smoke.
+This is the complete live-session baseline after Phase 2B hardening, the clean post-`v0.1.2` dogfood window, the follow-up LOGOS real-project dogfood pass, the PR #47 live transcript-shape smoke, the `v0.1.5` self/marketplace smoke passes, and the Step 4 long-session stress run.
 
 The canonical command is:
 
@@ -8,32 +8,36 @@ The canonical command is:
 ./testing/analyze-log.py --real-only --redact
 ```
 
-## Latest active window after v0.1.2
+## Latest active window
 
-After the clean disposable-project pass, LOGOS dogfood and a later transcript-shape smoke extended the same active measurement window to:
+After the clean disposable-project pass, LOGOS dogfood, transcript-shape smoke, `v0.1.5` self/marketplace smoke, and a long-session stress run extended the same active measurement window to:
 
 ```text
-Total: 13 fires across 5 hooks
-Evidence scorecard: status=complete; hooks=5/5 real; real_fires=13; real_sessions=4; real_projects=3; non_real_ratio=68.3%
+Total: 22 fires across 5 hooks
+Evidence scorecard: status=complete; hooks=5/5 real; real_fires=22; real_sessions=8; real_projects=7; non_real_ratio=56.0%
 Missing real-session evidence: (none)
 ```
 
 | Hook | Real fires | Actions observed | Evidence shape |
 |---|---:|---|---|
 | `edit-drift-detector` | 1 | `block-fuzzy` | Controlled induced-drift proof from the disposable post-`v0.1.2` project |
-| `construction-gate` | 1 | `block` | Protected `package-lock.json` Write blocked in the disposable post-`v0.1.2` project |
-| `silent-file-verifier` | 2 | `warn-missing`, `warn-empty` | Fault-watcher induced missing-file and 0-byte Write anomalies in the disposable post-`v0.1.2` project |
-| `completion-verifier` | 7 | `block` | One disposable failing-test Stop block, four LOGOS stale-install runner false positives before doctor/reinstall, one LOGOS intentional F7 broken-state catch after reinstall, and one live transcript-shape proof after PR #47 |
-| `context-recovery` | 2 | `modify` | One disposable `/compact` recovery block plus one LOGOS `/compact` recovery block |
+| `construction-gate` | 3 | `block` | Protected `package-lock.json` Writes in disposable and marketplace-installed projects plus a protected `.env.example` Write in the Step 4 stress run |
+| `silent-file-verifier` | 4 | `warn-missing`, `warn-empty` | Fault-watcher induced missing-file and 0-byte Write anomalies in the disposable post-`v0.1.2` project and Step 4 stress run |
+| `completion-verifier` | 11 | `block` | Disposable failing-test Stop blocks, four LOGOS stale-install runner false positives before doctor/reinstall, post-reinstall intentional broken-state catches, transcript-shape smoke, `v0.1.5` smoke, and Step 4 stress-run failure proof |
+| `context-recovery` | 3 | `modify` | Disposable, LOGOS, and Step 4 manual `/compact` recovery blocks |
 
 The active-window projects are:
 
 - `/tmp/claude-meta-v012-dogfood-1.X6bEWJ`, session `577ea11f...`, `6` fires across all five hooks, spanning `2026-05-11T05:38:38Z..2026-05-11T06:00:40Z`.
+- `/tmp/claude-meta-step4-stress.HUaFUP/project`, session `c9a90911...`, `5` fires (`construction-gate`, `silent-file-verifier`, `completion-verifier`, `context-recovery`) from a realistic ledger-feature stress run, spanning `2026-05-13T16:31:52Z..2026-05-13T16:38:40Z`.
 - `~/conductor/workspaces/logos/dallas`, session `111b5e9b...`, `4` `completion-verifier` fires from the stale installed-hook false-positive window, spanning `2026-05-11T06:57:50Z..2026-05-11T07:12:46Z`.
 - `~/conductor/workspaces/logos/dallas`, session `e3c481b8...`, `2` fires (`completion-verifier`, `context-recovery`), spanning `2026-05-11T11:39:55Z..2026-05-11T11:42:37Z`.
+- `/tmp/claude-meta-v015-marketplace-smoke.EotpT1/project`, session `8c80b084...`, `2` fires (`completion-verifier`, `construction-gate`) from an isolated marketplace-installed smoke, spanning `2026-05-13T16:04:03Z..2026-05-13T16:04:42Z`.
 - `/tmp/claude-meta-transcript-live-smoke.zdPYoW`, session `4272d40a...`, `1` `completion-verifier` fire from the live transcript-shape proof, at `2026-05-12T18:39:32Z`.
+- `/tmp/claude-meta-user-project.Ld4kuW`, session `a460a705...`, `1` `completion-verifier` fire from a disposable user-project smoke, at `2026-05-12T21:06:18Z`.
+- `/tmp/claude-meta-v015-self-smoke.yLKQAJ/project`, session `8f56d934...`, `1` `completion-verifier` fire from a tag-pinned `v0.1.5` self-smoke, at `2026-05-13T15:56:30Z`.
 
-The `non_real_ratio=68.3%` comes from 28 historical harness/validation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
+The `non_real_ratio=56.0%` comes from 28 historical harness/validation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
 
 ## Clean disposable window after v0.1.2
 
@@ -59,7 +63,7 @@ The `edit-drift-detector` entry is a controlled lifecycle proof, not an organic 
 
 ## Historical release snapshot before v0.1.2
 
-The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 13-fire active window above unless the archived release log is restored.
+The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 22-fire active window above unless the archived release log is restored.
 
 As of that release baseline snapshot:
 
@@ -105,6 +109,15 @@ The marketplace-installed extension proves the local marketplace catalog can ins
 - `completion-verifier`: failing-test `Stop` block after an intentional `src/app.py` regression.
 - `context-recovery`: manual `/compact` produced a Session Recovery block via `PreCompact`, preserving `DOGFOOD_MARKETPLACE_INSTALL_SENTINEL=marketplace-install-001`.
 - Release refresh session `e7ea0f39...`: isolated marketplace-installed smoke proved `construction-gate`, `completion-verifier`, and `context-recovery` from the installed plugin path; `silent-file-verifier` was exercised on the valid non-empty Write path and correctly stayed silent.
+- `v0.1.5` refresh session `8c80b084...`: isolated marketplace-installed smoke proved `construction-gate` and `completion-verifier` from the installed plugin path without a project-local `.claude` directory.
+
+The Step 4 long-session stress run adds realistic multi-step project evidence on top of single-hook proofs:
+
+- Normal ledger feature edits across source, tests, and README stayed quiet while `make test` advanced from the initial baseline to 11 passing tests.
+- `construction-gate` blocked a protected `.env.example` Write. This is useful safety evidence and also a friction note: `.env.example` may be a future allowlist candidate if external users find sample-env files too noisy.
+- `completion-verifier` blocked completion while an intentionally incorrect negative-money test failed, then stayed quiet after the test was corrected.
+- `silent-file-verifier` caught both fault-watcher branches (`warn-missing`, `warn-empty`) after the watcher deleted one Write target and truncated another.
+- `context-recovery` wrote a bounded Session Recovery block on manual `/compact`, preserving the branch, modified tracked files, recent commit, and `DOGFOOD_STEP4_CONTEXT_SENTINEL=step4-context-001`. The transient block was restored during cleanup.
 
 It does not prove:
 
