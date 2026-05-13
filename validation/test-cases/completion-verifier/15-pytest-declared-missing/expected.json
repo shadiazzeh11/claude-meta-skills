@@ -1,6 +1,7 @@
 {
   "expected_exit_code": 0,
-  "expected_stdout_contains": ["additionalContext", "pytest", "not found"],
+  "expected_stdout_contains": ["systemMessage", "pytest", "not found"],
+  "expected_stdout_not_contains": ["additionalContext"],
   "env": {
     "PATH": "/usr/bin:/bin"
   },

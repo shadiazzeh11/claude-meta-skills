@@ -56,7 +56,7 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 5. Reads `transcript_path` to check whether any `Write`, `Edit`, `MultiEdit`, or `NotebookEdit` calls happened in the session. The scanner accepts current `tool_use` blocks plus common `tool_call` wrapper shapes. If transcript readable AND no writes → exit 0 (exploration session).
 6. Runs the test command with a 30s timeout from the resolved project root.
 7. Allow on success (exit 0). Block on failure with JSON `{"decision": "block", "reason": ...}` containing the last 50 lines of test output.
-8. Timeout or command-not-found → exit 0 with `additionalContext` warning (don't block when can't verify).
+8. Timeout or command-not-found → exit 0 with a top-level `systemMessage` warning (don't block when can't verify).
 
 ## Design decisions
 
@@ -64,11 +64,11 @@ Stop hooks don't take a matcher (they fire on the Stop event itself).
 
 - **Transcript-unreadable defaults to running tests.** Per spec: "accept this limitation and document it." False-positive risk acknowledged in Known limitations.
 
-- **30-second timeout.** Long suites get a warning, not a block. When the process emits output before timing out, the warning includes the last output lines so Claude has useful context. Test suites exceeding this should run separately (e.g., CI), not on every Claude stop.
+- **30-second timeout.** Long suites get a warning, not a block. When the process emits output before timing out, the warning includes the last output lines so the user can see why verification was inconclusive. Test suites exceeding this should run separately (e.g., CI), not on every Claude stop.
 
 - **Last 50 lines of output.** Per HumanLayer's lesson: full test output (often thousands of lines) floods Claude's context and makes the failure harder to read, not easier.
 
-- **Test output is context, not telemetry.** Failing-test and timeout snippets are sent to Claude Code as hook feedback so the agent can fix the problem. They are not written to `~/.claude/meta-skills-log.jsonl`, which records metadata only.
+- **Test output is feedback, not telemetry.** Failing-test snippets are sent to Claude Code as Stop-block reasons so the agent can fix the problem. Timeout and missing-command snippets are emitted as top-level `systemMessage` warnings because Stop hooks do not support `additionalContext` delivery. None of those snippets are written to `~/.claude/meta-skills-log.jsonl`, which records metadata only.
 
 - **JSON `decision: block` over exit 2.** Stop hooks have well-documented JSON-decision blocking; exit 2 also works but JSON is more explicit and permits the `reason` field.
 
