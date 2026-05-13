@@ -2,8 +2,8 @@
 
 This is the reusable release runbook for `claude-meta-skills`.
 
-Release target: **`v0.1.5` technical preview**.
-Previous published release: **`v0.1.4` technical preview**.
+Current published release: **`v0.1.5` technical preview**.
+Next release target: set `VERSION` explicitly before running this checklist.
 
 Keep future releases in the `0.x` technical-preview line while the project lacks public marketplace listing, Windows CI, and production false-positive data. Reserve `v1.0.0` for a stable public support contract.
 
@@ -46,7 +46,7 @@ bash -n testing/test-installer-idempotency.sh
 make help
 make test-plugin
 make test-marketplace
-VERSION=v0.1.5  # replace with the target release version
+VERSION=v0.1.6  # example next target; replace with the intended release version
 make test-release VERSION="$VERSION"
 make test-validation-lock
 make test-validation-harness
@@ -144,7 +144,7 @@ Before tagging the target release:
 8. Commit the dated changelog/release-doc changes before tagging:
 
 ```bash
-VERSION=v0.1.5
+VERSION=v0.1.6  # example next target; replace with the intended release version
 git diff --check
 git status --short
 git add CHANGELOG.md RELEASE.md PUBLISHING.md README.md testing/DOGFOOD-BASELINE.md testing/NEW-USER-SMOKE.md .gitignore .claude-plugin/plugin.json .claude-plugin/marketplace.json
@@ -164,7 +164,7 @@ Expected:
 Only after the gates above pass and the dated changelog commit is `HEAD`, publish `main` first and verify the remote tip before creating the tag:
 
 ```bash
-VERSION=v0.1.5
+VERSION=v0.1.6  # example next target; replace with the intended release version
 git push origin main
 git fetch origin --prune
 test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
