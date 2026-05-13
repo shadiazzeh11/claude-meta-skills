@@ -10,14 +10,15 @@ Exit semantics:
   - Anti-loop: if stop_hook_active is true, exit 0 immediately (mandatory).
   - No project type: exit 0 (allow stop).
   - Transcript shows no file-modifying tool usage: exit 0 (exploration session).
-  - Test command not installed: exit 0 with additionalContext warning.
-  - Test command times out: exit 0 with additionalContext warning.
+  - Test command not installed: exit 0 with systemMessage warning.
+  - Test command times out: exit 0 with systemMessage warning.
   - Tests pass: exit 0 (allow stop).
   - Tests fail: exit 0 with JSON {"decision": "block", "reason": ...}
     (Stop hook blocking is via JSON, not exit 2.)
 
 Output format: when blocking, emits JSON on stdout with decision and reason.
-When warning, emits JSON with hookSpecificOutput.additionalContext.
+When warning, emits JSON with top-level systemMessage because Stop hooks do
+not receive additionalContext delivery.
 """
 import json
 import sys
@@ -357,12 +358,9 @@ def load_messages():
 
 
 def emit_warning(message):
-    """Emit a non-blocking PostToolUse-style additionalContext warning."""
+    """Emit a non-blocking Stop warning visible to the user."""
     output = {
-        "hookSpecificOutput": {
-            "hookEventName": "Stop",
-            "additionalContext": message,
-        }
+        "systemMessage": message,
     }
     print(json.dumps(output))
 
