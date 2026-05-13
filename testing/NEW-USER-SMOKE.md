@@ -55,12 +55,13 @@ uname -a
 git --version
 python3 --version
 jq --version
+make --version
 claude --version
 ```
 
 Expected:
 
-- `git`, `python3`, `jq`, and `claude` all print versions.
+- `git`, `python3`, `jq`, `make`, and `claude` all print versions.
 - The tester knows this is a disposable smoke and can delete the temp
   directories afterward.
 
@@ -71,6 +72,8 @@ Stop conditions:
 - If `git` or `python3` is missing, stop. The local checkout and hooks need them.
 - If `jq` is missing, stop. This smoke includes uninstall, and uninstall needs
   `jq` to remove hook entries from `.claude/settings.json` safely.
+- If `make` is missing, stop. The release checks and disposable project test
+  command use `make`.
 
 Do not treat base-machine setup problems as plugin failures. Record them in the
 report and stop.
@@ -329,6 +332,7 @@ Prereq checks:
 - git --version:
 - python3 --version:
 - jq --version:
+- make --version:
 
 Install result:
 - install.sh completed? yes/no
