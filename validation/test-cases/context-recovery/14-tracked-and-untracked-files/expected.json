@@ -5,16 +5,17 @@
     "path": "{{TEST_DIR}}/project/CLAUDE.md",
     "patterns": [
       "Session Recovery",
-      "In-progress files (2):",
+      "In-progress files (3):",
       "- tracked.txt",
+      "- .claude/settings.json",
       "- notes/draft.md",
       "DOGFOOD_CONTEXT_UNTRACKED_SENTINEL=tracked-untracked"
     ]
   },
   "expected_file_not_contains": {
     "path": "{{TEST_DIR}}/project/CLAUDE.md",
-    "patterns": ["local.ignored"]
+    "patterns": ["local.ignored", ".claude/hooks/meta-skills"]
   },
-  "description": "Recovery block includes tracked changes and untracked non-ignored files while excluding ignored files",
+  "description": "Recovery block includes tracked changes and untracked non-ignored files while excluding ignored files and copied meta-skills hook files",
   "category": "should-write"
 }

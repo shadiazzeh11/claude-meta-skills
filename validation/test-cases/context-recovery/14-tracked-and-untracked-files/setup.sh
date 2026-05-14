@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Git repo with one tracked modification, one untracked file, and one ignored file.
+# Git repo with tracked/untracked work plus untracked local install noise.
 PROJ="$TEST_DIR/project"
 mkdir -p "$PROJ"
 cd "$PROJ" || exit 1
-rm -rf .git CLAUDE.md notes *.txt *.ignored .gitignore 2>/dev/null
+rm -rf .git .claude CLAUDE.md notes *.txt *.ignored .gitignore 2>/dev/null
 git init -q
 git config user.email "test@example.com"
 git config user.name "Test"
@@ -17,3 +17,8 @@ echo "v2 modified" > tracked.txt
 mkdir -p notes
 echo "draft plan" > notes/draft.md
 echo "ignored local output" > local.ignored
+mkdir -p .claude/hooks/meta-skills/context-recovery
+mkdir -p .claude/hooks/meta-skills/completion-verifier
+echo "copied context hook" > .claude/hooks/meta-skills/context-recovery/hook.py
+echo "copied stop hook" > .claude/hooks/meta-skills/completion-verifier/hook.py
+echo '{"hooks":{}}' > .claude/settings.json

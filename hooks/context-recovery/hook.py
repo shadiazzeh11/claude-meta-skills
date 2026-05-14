@@ -78,6 +78,7 @@ GIT_TIMEOUT_SECS = 5
 # the 5000-token total budget.
 RECOVERY_SECTION_MAX_CHARS = env_int("CONTEXT_RECOVERY_SECTION_MAX_CHARS", 2000)
 CUSTOM_INSTRUCTIONS_MAX_CHARS = env_int("CONTEXT_RECOVERY_CUSTOM_MAX_CHARS", 300)
+IN_PROGRESS_EXCLUDED_PREFIXES = (".claude/hooks/meta-skills/",)
 
 CUSTOM_INSTRUCTION_REDACTIONS = [
     re.compile(
@@ -165,10 +166,18 @@ def combine_file_lists(*outputs):
             continue
         for line in output.splitlines():
             path = line.strip()
-            if path and path not in seen:
+            if path and include_in_progress_path(path) and path not in seen:
                 seen.add(path)
                 files.append(path)
     return "\n".join(files) if files else None
+
+
+def include_in_progress_path(path):
+    """True when a git path should appear in the recovery file list."""
+    normalized = path.replace("\\", "/")
+    return not any(
+        normalized.startswith(prefix) for prefix in IN_PROGRESS_EXCLUDED_PREFIXES
+    )
 
 
 def is_git_root(path):

@@ -107,6 +107,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 - **Race condition window with concurrent CLAUDE.md edits.** If a user edits CLAUDE.md in another editor while the hook fires, atomic-write overwrites their unsaved changes. The window is narrow (hook fires on PreCompact only) but real. Mitigation: don't edit CLAUDE.md during long sessions where compaction is likely.
 - **PreCompact dependency.** Current Claude Code docs list `PostCompact`, but this hook relies on the dogfooded `PreCompact` + CLAUDE.md reload path. If Claude Code changes the post-compaction reload behavior, this hook would silently stop providing context recovery.
 - **Ignored files excluded.** The in-progress file list includes tracked changes and untracked files that Git does not ignore. Ignored files stay out via `git ls-files --others --exclude-standard`, which avoids dumping build outputs, caches, or ignored local secret files into `CLAUDE.md`.
+- **Copied hook files excluded.** Local `install.sh` copies this suite into `.claude/hooks/meta-skills/`. If those files are untracked, they are installation noise, not task context, so the recovery list excludes that directory to keep real in-progress work visible under the token budget.
 - **Empty git environment.** Outside a git repo, the hook still writes a recovery section with just static reminders + timestamp. No crash.
 
 ## Performance
