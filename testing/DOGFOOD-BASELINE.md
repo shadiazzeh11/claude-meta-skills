@@ -1,6 +1,6 @@
 # Dogfood baseline - 2026-05-14
 
-This is the complete live-session baseline after Phase 2B hardening, the clean post-`v0.1.2` dogfood window, the follow-up LOGOS real-project dogfood pass, the PR #47 live transcript-shape smoke, the `v0.1.5` self/marketplace smoke passes, the Step 4 long-session stress run, and the LOGOS Phase C/Gamma-audit stress pass.
+This is the complete live-session baseline after Phase 2B hardening, the clean post-`v0.1.2` dogfood window, the follow-up LOGOS real-project dogfood pass, the PR #47 live transcript-shape smoke, the `v0.1.5` self/marketplace smoke passes, the Step 4 long-session stress run, the LOGOS Phase C/Gamma-audit stress pass, and the untracked-file smoke pass.
 
 The canonical command is:
 
@@ -10,11 +10,11 @@ The canonical command is:
 
 ## Latest active window
 
-After the clean disposable-project pass, LOGOS dogfood, transcript-shape smoke, `v0.1.5` self/marketplace smoke, a long-session stress run, and the LOGOS Phase C/Gamma-audit stress pass extended the same active measurement window to:
+After the clean disposable-project pass, LOGOS dogfood, transcript-shape smoke, `v0.1.5` self/marketplace smoke, a long-session stress run, LOGOS Phase C/Gamma-audit, and untracked-file smoke passes extended the same active measurement window to:
 
 ```text
-Total: 25 fires across 5 hooks
-Evidence scorecard: status=complete; hooks=5/5 real; real_fires=25; real_sessions=9; real_projects=7; non_real_ratio=52.8%
+Total: 26 fires across 5 hooks
+Evidence scorecard: status=complete; hooks=5/5 real; real_fires=26; real_sessions=10; real_projects=8; non_real_ratio=51.9%
 Missing real-session evidence: (none)
 ```
 
@@ -24,7 +24,7 @@ Missing real-session evidence: (none)
 | `construction-gate` | 3 | `block` | Protected `package-lock.json` Writes in disposable and marketplace-installed projects plus a protected `.env.example` Write in the Step 4 stress run |
 | `silent-file-verifier` | 4 | `warn-missing`, `warn-empty` | Fault-watcher induced missing-file and 0-byte Write anomalies in the disposable post-`v0.1.2` project and Step 4 stress run |
 | `completion-verifier` | 12 | `block` | Disposable failing-test Stop blocks, four LOGOS stale-install runner false positives before doctor/reinstall, post-reinstall intentional broken-state catches, transcript-shape smoke, `v0.1.5` smoke, Step 4 stress-run failure proof, and LOGOS Gamma-audit failing-test checkpoint |
-| `context-recovery` | 5 | `modify` | Disposable, LOGOS F7, LOGOS Phase C/Gamma-audit, and Step 4 manual `/compact` recovery blocks |
+| `context-recovery` | 6 | `modify` | Disposable, LOGOS F7, LOGOS Phase C/Gamma-audit, Step 4, and untracked-file smoke manual `/compact` recovery blocks |
 
 The active-window projects are:
 
@@ -35,10 +35,11 @@ The active-window projects are:
 - `~/conductor/workspaces/logos/dallas`, session `e3c481b8...`, `2` fires (`completion-verifier`, `context-recovery`), spanning `2026-05-11T11:39:55Z..2026-05-11T11:42:37Z`.
 - `/tmp/claude-meta-v015-marketplace-smoke.EotpT1/project`, session `8c80b084...`, `2` fires (`completion-verifier`, `construction-gate`) from an isolated marketplace-installed smoke, spanning `2026-05-13T16:04:03Z..2026-05-13T16:04:42Z`.
 - `/tmp/claude-meta-transcript-live-smoke.zdPYoW`, session `4272d40a...`, `1` `completion-verifier` fire from the live transcript-shape proof, at `2026-05-12T18:39:32Z`.
+- `/tmp/claude-meta-untracked-smoke.qH3eZZ/project`, session `e962e57b...`, `1` `context-recovery` fire from the untracked-file smoke, at `2026-05-14T23:13:03Z`.
 - `/tmp/claude-meta-user-project.Ld4kuW`, session `a460a705...`, `1` `completion-verifier` fire from a disposable user-project smoke, at `2026-05-12T21:06:18Z`.
 - `/tmp/claude-meta-v015-self-smoke.yLKQAJ/project`, session `8f56d934...`, `1` `completion-verifier` fire from a tag-pinned `v0.1.5` self-smoke, at `2026-05-13T15:56:30Z`.
 
-The `non_real_ratio=52.8%` comes from 28 historical harness/validation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
+The `non_real_ratio=51.9%` comes from 28 historical harness/validation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
 
 ## Clean disposable window after v0.1.2
 
@@ -64,7 +65,7 @@ The `edit-drift-detector` entry is a controlled lifecycle proof, not an organic 
 
 ## Historical release snapshot before v0.1.2
 
-The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 25-fire active window above unless the archived release log is restored.
+The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 26-fire active window above unless the archived release log is restored.
 
 As of that release baseline snapshot:
 
@@ -123,7 +124,9 @@ The Step 4 long-session stress run adds realistic multi-step project evidence on
 The LOGOS Phase C/Gamma-audit stress pass adds two useful signals:
 
 - `completion-verifier` blocked Stop during the Gamma provenance audit while the intentionally stubbed helper had 10 failing tests, then stayed quiet after the implementation made the focused and full suites pass.
-- `context-recovery` wrote recovery blocks during LOGOS `/compact` checkpoints. One checkpoint exposed a product gap: the old recovery block captured branch, recent commits, and sentinel text, but not untracked new files. The `context-recovery` implementation now has synthetic coverage for tracked changes plus untracked non-ignored files.
+- `context-recovery` wrote recovery blocks during LOGOS `/compact` checkpoints. One checkpoint exposed a product gap: the old recovery block captured branch, recent commits, and sentinel text, but not untracked new files. A follow-up live smoke showed local `.claude/hooks/meta-skills/` install files could also swamp the recovery list. The `context-recovery` implementation now has synthetic coverage for tracked changes plus untracked non-ignored files while excluding copied hook-install artifacts.
+
+The untracked-file smoke adds focused lifecycle evidence for this recovery path: a disposable project with a tracked edit, an untracked note, an ignored file, and local install artifacts produced a real `context-recovery` fire. It proved the old implementation preserved the sentinel and ignored-file exclusion, while copied hook files pushed the real untracked note into the truncated tail.
 
 It does not prove:
 

@@ -9,11 +9,11 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 ### Changed
 
 - Aligned hook and testing documentation with current Claude Code API behavior, including Stop-hook warning output and `PostCompact` documentation caveats.
-- Refreshed dogfood evidence documentation after the Step 4 long-session and LOGOS Gamma-audit stress runs: the active window now records 25 real fires across all five hooks, 9 sessions, and 7 projects.
+- Refreshed dogfood evidence documentation after the Step 4 long-session, LOGOS Gamma-audit, and untracked-file smoke runs: the active window now records 26 real fires across all five hooks, 10 sessions, and 8 projects.
 
 ### Fixed
 
-- Extended `context-recovery` so its compaction recovery block includes untracked non-ignored files as well as tracked changes.
+- Extended `context-recovery` so its compaction recovery block includes untracked non-ignored files as well as tracked changes, while excluding copied `.claude/hooks/meta-skills/` install artifacts from the file list.
 
 ## [0.1.5] - 2026-05-13
 
