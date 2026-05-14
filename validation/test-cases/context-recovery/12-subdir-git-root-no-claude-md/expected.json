@@ -3,7 +3,7 @@
   "expected_stdout_contains": [],
   "expected_file_contains": {
     "path": "{{TEST_DIR}}/project/CLAUDE.md",
-    "patterns": ["Session Recovery", "Branch:", "Recent commits:", "Modified files", "post-compact-recovery-start"]
+    "patterns": ["Session Recovery", "Branch:", "Recent commits:", "In-progress files", "post-compact-recovery-start"]
   },
   "expected_file_not_contains": {
     "path": "{{TEST_DIR}}/project/src/nested/CLAUDE.md",

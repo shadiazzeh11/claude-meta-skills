@@ -156,6 +156,21 @@ def run_git_command(args, cwd):
     return result.stdout.strip()
 
 
+def combine_file_lists(*outputs):
+    """Merge newline-delimited git path lists, preserving first-seen order."""
+    seen = set()
+    files = []
+    for output in outputs:
+        if not output:
+            continue
+        for line in output.splitlines():
+            path = line.strip()
+            if path and path not in seen:
+                seen.add(path)
+                files.append(path)
+    return "\n".join(files) if files else None
+
+
 def is_git_root(path):
     """True if path contains a .git directory or file (worktree)."""
     if not path:
@@ -165,7 +180,11 @@ def is_git_root(path):
 
 def gather_git_context(project_root):
     """
-    Return dict with branch, commits, modified_files (each may be None).
+    Return dict with branch, commits, and in-progress file paths.
+
+    The internal ``modified_files`` key is kept for compatibility with the
+    renderer, but its value includes tracked changes and untracked non-ignored
+    files.
 
     Only collects git context if the resolved project root contains a
     .git directly. Root discovery already chooses either $CLAUDE_PROJECT_DIR,
@@ -184,10 +203,16 @@ def gather_git_context(project_root):
     if git_cwd is None:
         return {"branch": None, "commits": None, "modified_files": None}
 
+    tracked_files = run_git_command(["diff", "--name-only", "HEAD"], git_cwd)
+    untracked_files = run_git_command(
+        ["ls-files", "--others", "--exclude-standard"],
+        git_cwd,
+    )
+
     return {
         "branch": run_git_command(["branch", "--show-current"], git_cwd),
         "commits": run_git_command(["log", "--oneline", "-5"], git_cwd),
-        "modified_files": run_git_command(["diff", "--name-only", "HEAD"], git_cwd),
+        "modified_files": combine_file_lists(tracked_files, untracked_files),
     }
 
 
@@ -243,7 +268,7 @@ def render_section(git_context, reminders, custom_instructions, timestamp,
                    modified_files_limit=None):
     """
     Build the recovery section. If modified_files_limit is set, truncate
-    the modified-files list to that many entries with a [truncated] marker.
+    the in-progress file list to that many entries with a [truncated] marker.
     """
     lines = [
         DELIMITER_START,
@@ -266,7 +291,7 @@ def render_section(git_context, reminders, custom_instructions, timestamp,
     if modified_files:
         files = [f for f in modified_files.split("\n") if f.strip()]
         lines.append("")
-        lines.append(f"**Modified files ({len(files)}):**")
+        lines.append(f"**In-progress files ({len(files)}):**")
         if modified_files_limit is not None and len(files) > modified_files_limit:
             for f in files[:modified_files_limit]:
                 lines.append(f"- {f}")
@@ -293,16 +318,16 @@ def render_section(git_context, reminders, custom_instructions, timestamp,
 
 
 def build_recovery_section(git_context, reminders, custom_instructions):
-    """Build recovery section, truncating modified-files list if over budget."""
+    """Build recovery section, truncating in-progress files if over budget."""
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     full = render_section(git_context, reminders, custom_instructions, timestamp)
     if len(full) <= RECOVERY_SECTION_MAX_CHARS:
         return full
 
-    # Over budget. Reduce modified-files list progressively.
+    # Over budget. Reduce in-progress file list progressively.
     modified_files = git_context.get("modified_files")
     if not modified_files:
-        # No modified-files list to truncate; enforce the hard section budget.
+        # No in-progress file list to truncate; enforce the hard section budget.
         return enforce_recovery_section_budget(full)
 
     file_count = len([f for f in modified_files.split("\n") if f.strip()])
@@ -415,7 +440,7 @@ def main():
     branch = git_context.get("branch") or "no-git"
     modified = git_context.get("modified_files") or ""
     modified_count = len([f for f in modified.split("\n") if f.strip()]) if modified else 0
-    detail_base = f"branch={branch} modified_files={modified_count}"
+    detail_base = f"branch={branch} in_progress_files={modified_count}"
 
     # Read existing CLAUDE.md if present
     pre_existing = claude_md_path.exists()

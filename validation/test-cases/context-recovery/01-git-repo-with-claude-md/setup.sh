@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Set up a git repo with a commit, modified files, and CLAUDE.md.
+# Set up a git repo with a commit, in-progress files, and CLAUDE.md.
 PROJ="$TEST_DIR/project"
 mkdir -p "$PROJ"
 cd "$PROJ" || exit 1

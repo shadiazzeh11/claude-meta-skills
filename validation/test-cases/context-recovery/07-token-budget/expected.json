@@ -3,8 +3,8 @@
   "expected_stdout_contains": [],
   "expected_file_contains": {
     "path": "{{TEST_DIR}}/project/CLAUDE.md",
-    "patterns": ["Session Recovery", "Modified files", "truncated"]
+    "patterns": ["Session Recovery", "In-progress files", "truncated"]
   },
-  "description": "200 modified files exceeds token budget; recovery section truncates modified-files list with [truncated] marker",
+  "description": "200 in-progress files exceeds token budget; recovery section truncates in-progress file list with [truncated] marker",
   "category": "should-write"
 }

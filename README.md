@@ -6,7 +6,7 @@ Five focused hooks covering edit verification, completion gating, file checks, w
 
 | Hooks | Harness tests | Harness false positives | Harness false negatives | Crosley layers |
 |---|---|---|---|---|
-| 5 | 93 | 0 | 0 | 4/4 |
+| 5 | 94 | 0 | 0 | 4/4 |
 
 ## Fit
 
@@ -60,7 +60,7 @@ Experimental plugin path: the repo root includes `.claude-plugin/plugin.json`, `
 | [construction-gate](hooks/construction-gate/) | Prevention | `PreToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | File modifications to protected paths (`node_modules/`, `.git/`, `.env*`, lock files, `.claude/` config and hooks) | 32 |
 | [silent-file-verifier](hooks/silent-file-verifier/) | Validation | `PostToolUse:Write\|Edit\|MultiEdit\|NotebookEdit` | Ghost files (write reported success, file missing or 0 bytes) | 10 |
 | [completion-verifier](hooks/completion-verifier/) | Quality Gating | `Stop` | Tests failing when Claude attempts to finish responding | 24 |
-| [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 13 |
+| [context-recovery](hooks/context-recovery/) | Context Injection | `PreCompact` | Session context lost during context-window compaction | 14 |
 
 Each hook directory contains its own README with design decisions, known limitations, coexistence notes, and per-hook baseline results.
 
@@ -92,8 +92,8 @@ Every hook ships with its own test suite. The counts below summarize the tracked
 | construction-gate | 32 | 32 | 0 | 0 |
 | silent-file-verifier | 10 | 10 | 0 | 0 |
 | completion-verifier | 24 | 24 | 0 | 0 |
-| context-recovery | 13 | 13 | 0 | 0 |
-| **Total** | **93** | **93** | **0** | **0** |
+| context-recovery | 14 | 14 | 0 | 0 |
+| **Total** | **94** | **94** | **0** | **0** |
 
 Run the suite yourself:
 
@@ -112,7 +112,7 @@ GitHub Actions runs the plugin package regression, marketplace catalog regressio
 
 ## Self-deployment data
 
-Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 93/93 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
+Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON line per block/warn/modify/skip event). Synthetic 94/94 constructed hook inputs pass in the harness; the auto-log is what tells you whether they're catching real issues during normal use.
 
 ```bash
 ./testing/analyze-log.py             # last 7 days summary
@@ -123,7 +123,7 @@ Each hook auto-logs its fires to `~/.claude/meta-skills-log.jsonl` (one JSON lin
 make report-dogfood                  # write ignored redacted Markdown/JSON reports under .context/reports/
 ```
 
-Current dogfood evidence should be read from `./testing/analyze-log.py --real-only`, because the raw log can also contain manual proof and historical harness/validation entries. The analyzer includes an evidence scorecard and deterministic recommendations for missing live evidence, high-fire paths, context-recovery skip actions, non-real ratio, and log-integrity issues. The current dogfood baseline has real-session log evidence for all five hooks: `edit-drift-detector`, `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery`. After `v0.1.2`, a clean reset window produced 6 real fires across all five hooks in one disposable Claude Code session with `non_real_ratio=0.0%`; follow-up LOGOS real-project, transcript-shape, `v0.1.5`, marketplace-installed, and long-session stress passes extended the active window to 22 real fires across 8 sessions and 7 projects. That window includes four stale-installed-hook `completion-verifier` false positives before `doctor.sh`/reinstall, post-reinstall intentional broken-state catches, `/compact` recovery proofs, a live transcript-shape proof after PR #47, `v0.1.5` self and marketplace smoke, and a realistic ledger-feature stress session that exercised `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery` in one project. Treat this as lifecycle evidence that each hook has fired in live Claude Code sessions, not as proof of production false-positive rate or exhaustive real-world coverage. See [testing/DOGFOOD-BASELINE.md](testing/DOGFOOD-BASELINE.md) and each hook README for caveats.
+Current dogfood evidence should be read from `./testing/analyze-log.py --real-only`, because the raw log can also contain manual proof and historical harness/validation entries. The analyzer includes an evidence scorecard and deterministic recommendations for missing live evidence, high-fire paths, context-recovery skip actions, non-real ratio, and log-integrity issues. The current dogfood baseline has real-session log evidence for all five hooks: `edit-drift-detector`, `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery`. After `v0.1.2`, a clean reset window produced 6 real fires across all five hooks in one disposable Claude Code session with `non_real_ratio=0.0%`; follow-up LOGOS real-project, transcript-shape, `v0.1.5`, marketplace-installed, long-session stress, and LOGOS Phase C/Gamma-audit passes extended the active window to 25 real fires across 9 sessions and 7 projects. That window includes four stale-installed-hook `completion-verifier` false positives before `doctor.sh`/reinstall, post-reinstall intentional broken-state catches, `/compact` recovery proofs, a live transcript-shape proof after PR #47, `v0.1.5` self and marketplace smoke, a realistic ledger-feature stress session that exercised `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery` in one project, and the LOGOS Gamma-audit failing-test checkpoint that exposed the untracked-file recovery gap fixed here. Treat this as lifecycle evidence that each hook has fired in live Claude Code sessions, not as proof of production false-positive rate or exhaustive real-world coverage. See [testing/DOGFOOD-BASELINE.md](testing/DOGFOOD-BASELINE.md) and each hook README for caveats.
 
 The plugin scaffold also has controlled local `claude --plugin-dir .` smoke evidence for `construction-gate`, `silent-file-verifier`, `completion-verifier`, and `context-recovery`. Marketplace-installed smoke evidence covers the same four hooks from an installed local marketplace plugin. `edit-drift-detector` still has non-plugin controlled live evidence plus synthetic validation, but not a separate plugin-path or marketplace-installed proof.
 

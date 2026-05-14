@@ -6,7 +6,7 @@ PreCompact hook that preserves session context through compaction. Captures git 
 
 - Current git branch
 - Last 5 git commits
-- Modified files (since `HEAD`)
+- In-progress files: tracked changes plus untracked non-ignored files
 - Configurable static reminders from `rules.json`
 - A sanitized, bounded excerpt of custom instructions from manual `/compact` invocations
 
@@ -50,11 +50,11 @@ Requires Python 3.7+, git, and a writable CLAUDE.md (or a writable project direc
 1. Reads JSON from stdin (PreCompact event payload).
 2. Resolves project root: `$CLAUDE_PROJECT_DIR` if set, otherwise walks upward from `cwd` to the nearest existing `CLAUDE.md` or `.git`, falling back to `cwd` for plain scratch directories.
 3. Writes recovery state to `CLAUDE.md` at that resolved root.
-4. Runs git commands from the resolved root when it directly contains `.git` (with 5-second timeout each, error-tolerant): `branch --show-current`, `log --oneline -5`, `diff --name-only HEAD`.
+4. Runs git commands from the resolved root when it directly contains `.git` (with 5-second timeout each, error-tolerant): `branch --show-current`, `log --oneline -5`, `diff --name-only HEAD`, and `ls-files --others --exclude-standard`.
 5. Loads static reminders from `rules.json` next to the hook script.
 6. Sanitizes custom instructions: collapses whitespace, redacts common secret/token/password assignments, and truncates to a bounded excerpt.
 7. Builds recovery section between `<!-- post-compact-recovery-start -->` and `<!-- post-compact-recovery-end -->` delimiters.
-8. Token budget: caps recovery section at ~2000 characters (~500 tokens). Modified-files list is truncated first if over budget; if reminders/custom instructions still exceed the budget, the final section is hard-capped while preserving the recovery-block delimiters needed for later idempotent replacement.
+8. Token budget: caps recovery section at ~2000 characters (~500 tokens). The in-progress file list is truncated first if over budget; if reminders/custom instructions still exceed the budget, the final section is hard-capped while preserving the recovery-block delimiters needed for later idempotent replacement.
 9. Reads existing CLAUDE.md. If it has a recovery block, replaces it (idempotent). Otherwise, appends.
 10. Atomic write: writes to temp file, then `os.replace()`. If the original is locked, read-only, or any step fails, the original is left untouched.
 
@@ -64,7 +64,7 @@ Requires Python 3.7+, git, and a writable CLAUDE.md (or a writable project direc
 - **Atomic write.** Uses `tempfile.mkstemp` + `os.replace` (atomic on POSIX). Prevents corruption if the hook crashes mid-write.
 - **Nearest project marker discovery.** `$CLAUDE_PROJECT_DIR` stays authoritative. Without it, the hook walks upward from `cwd` and selects the nearest existing `CLAUDE.md` or `.git` marker. This handles subdirectory Claude Code sessions while avoiding a blind `git rev-parse` walk that can surface unrelated parent-repo context.
 - **Idempotent.** Repeated PreCompact events replace the previous recovery section, not append. CLAUDE.md doesn't grow indefinitely.
-- **Token budget enforcement.** ~500 tokens max (per Boris Cherny CLAUDE.md guidance: stay well under 5000 total). Modified-files list is the variable-size component; it's truncated first, then the final recovery section is hard-capped if any other content still exceeds the budget. If an impossible tiny cap is configured, delimiter preservation wins so future compactions can still replace the block cleanly.
+- **Token budget enforcement.** ~500 tokens max (per Boris Cherny CLAUDE.md guidance: stay well under 5000 total). The in-progress file list is the variable-size component; it's truncated first, then the final recovery section is hard-capped if any other content still exceeds the budget. If an impossible tiny cap is configured, delimiter preservation wins so future compactions can still replace the block cleanly.
 - **Custom instruction privacy.** Manual `/compact` text can contain sensitive operational notes. The hook preserves only a sanitized excerpt, redacts common secret-like assignments, and truncates long text before writing to CLAUDE.md.
 - **No CLAUDE.md → create one.** If CLAUDE.md doesn't exist at the resolved path, hook creates a minimal one with just the recovery section. Avoids requiring users to pre-create CLAUDE.md before installing the hook.
 - **Read-only file → exit silently.** PermissionError on read or write returns exit 0 without crashing. Better than blowing up before compaction.
@@ -72,7 +72,7 @@ Requires Python 3.7+, git, and a writable CLAUDE.md (or a writable project direc
 
 ## Real-session coverage
 
-A controlled local `claude --plugin-dir .` smoke session proved this hook fires from plugin configuration during manual `/compact`: it wrote a Session Recovery block to `CLAUDE.md` containing branch, recent commit, modified files, and the manual compaction sentinel. Treat this as plugin-path lifecycle evidence, not as proof that every future compaction mode or project layout is covered.
+A controlled local `claude --plugin-dir .` smoke session proved this hook fires from plugin configuration during manual `/compact`: it wrote a Session Recovery block to `CLAUDE.md` containing branch, recent commit, in-progress files, and the manual compaction sentinel. Treat this as plugin-path lifecycle evidence, not as proof that every future compaction mode or project layout is covered.
 
 ## Configuring rules.json
 
@@ -106,6 +106,7 @@ Behavior documented per Claude Code lifecycle docs; not validated by the harness
 - **HTML comment delimiter behavior in Claude's context window is unverified.** The hook works correctly at the file level (reads/writes raw text). Whether Claude sees the markers in rendered context is unknown but harmless either way.
 - **Race condition window with concurrent CLAUDE.md edits.** If a user edits CLAUDE.md in another editor while the hook fires, atomic-write overwrites their unsaved changes. The window is narrow (hook fires on PreCompact only) but real. Mitigation: don't edit CLAUDE.md during long sessions where compaction is likely.
 - **PreCompact dependency.** Current Claude Code docs list `PostCompact`, but this hook relies on the dogfooded `PreCompact` + CLAUDE.md reload path. If Claude Code changes the post-compaction reload behavior, this hook would silently stop providing context recovery.
+- **Ignored files excluded.** The in-progress file list includes tracked changes and untracked files that Git does not ignore. Ignored files stay out via `git ls-files --others --exclude-standard`, which avoids dumping build outputs, caches, or ignored local secret files into `CLAUDE.md`.
 - **Empty git environment.** Outside a git repo, the hook still writes a recovery section with just static reminders + timestamp. No crash.
 
 ## Performance
@@ -121,4 +122,4 @@ cd validation
 ./harness.sh context-recovery
 ```
 
-13 test cases covering should-write, idempotency, privacy redaction, hard-cap behavior, subdirectory root discovery, and edge cases. See `validation/test-cases/context-recovery/`.
+14 test cases covering should-write, idempotency, privacy redaction, hard-cap behavior, subdirectory root discovery, tracked + untracked file recovery, and edge cases. See `validation/test-cases/context-recovery/`.
