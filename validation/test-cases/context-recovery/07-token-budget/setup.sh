@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Git repo with 200 modified files. Recovery section should truncate
-# the modified-files list to stay under ~2000 chars.
+# Git repo with 200 in-progress files. Recovery section should truncate
+# the in-progress file list to stay under ~2000 chars.
 PROJ="$TEST_DIR/project"
 mkdir -p "$PROJ"
 cd "$PROJ" || exit 1

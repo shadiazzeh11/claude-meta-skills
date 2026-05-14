@@ -1,0 +1,20 @@
+{
+  "expected_exit_code": 0,
+  "expected_stdout_contains": [],
+  "expected_file_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": [
+      "Session Recovery",
+      "In-progress files (2):",
+      "- tracked.txt",
+      "- notes/draft.md",
+      "DOGFOOD_CONTEXT_UNTRACKED_SENTINEL=tracked-untracked"
+    ]
+  },
+  "expected_file_not_contains": {
+    "path": "{{TEST_DIR}}/project/CLAUDE.md",
+    "patterns": ["local.ignored"]
+  },
+  "description": "Recovery block includes tracked changes and untracked non-ignored files while excluding ignored files",
+  "category": "should-write"
+}

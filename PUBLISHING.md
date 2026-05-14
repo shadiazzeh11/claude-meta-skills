@@ -49,11 +49,11 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 
 | Area | Evidence |
 |---|---|
-| Synthetic validation | `make test` and `make test-stop-env` pass 93/93. |
+| Synthetic validation | `make test` and `make test-stop-env` pass 94/94. |
 | Installer lifecycle | `make test-installer` passes repeat-install, merge, uninstall, no-op uninstall, and preservation scenarios. |
 | Doctor diagnostics | `make doctor TARGET=/path/to/project` performs read-only source/install diagnostics; `make test-doctor` covers source-only, no-`jq`, clean-target, installed, broken, duplicate, disabled, drifted-copy, missing-hook, and missing-target states. |
 | CI | GitHub Actions runs plugin package checks, marketplace catalog checks, release metadata checks, validation harness lock checks, validation harness behavior checks, repository hygiene checks, doctor diagnostic checks, analyzer tests, installer tests, `make test`, and `make test-stop-env` on Ubuntu and macOS for PRs and pushes to `main`. |
-| Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. The active post-`v0.1.2` window shows 22 real fires across 5 hooks, 8 sessions, and 7 projects, including the 6-fire clean disposable pass, four stale-installed-hook `completion-verifier` false positives before doctor/reinstall, post-reinstall LOGOS broken-state and `context-recovery` proofs, one live transcript-shape `completion-verifier` proof after PR #47, `v0.1.5` self and marketplace smoke, and a long-session ledger stress run with 5 fires across 4 hooks. |
+| Live dogfood coverage | `./testing/analyze-log.py --real-only` shows controlled live-session evidence for all five hooks. The active post-`v0.1.2` window shows 25 real fires across 5 hooks, 9 sessions, and 7 projects, including the 6-fire clean disposable pass, four stale-installed-hook `completion-verifier` false positives before doctor/reinstall, post-reinstall LOGOS broken-state and `context-recovery` proofs, one live transcript-shape `completion-verifier` proof after PR #47, `v0.1.5` self and marketplace smoke, a long-session ledger stress run with 5 fires across 4 hooks, and the LOGOS Phase C/Gamma-audit stress pass that exposed the untracked-file recovery gap fixed here. |
 | Plugin-path smoke | `claude --plugin-dir .` has controlled live-session evidence for construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
@@ -90,7 +90,7 @@ Do not claim:
 
 Safe claims:
 
-- "93/93 synthetic validation tests pass."
+- "94/94 synthetic validation tests pass."
 - "All five hooks have controlled live Claude Code session evidence."
 - "The plugin scaffold has local `--plugin-dir` smoke evidence for four of five hooks; `edit-drift-detector` remains covered by non-plugin controlled dogfood and harness validation."
 - "The marketplace catalog has isolated local CLI add/install/uninstall validation when Claude Code is available."

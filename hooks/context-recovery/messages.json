@@ -1,7 +1,7 @@
 {
   "_purpose": "context-recovery is a PreCompact hook. Unlike PreToolUse/PostToolUse hooks, it does not send feedback to Claude via stderr or additionalContext — its 'output' IS the modified CLAUDE.md, which auto-reloads after compaction. messages.json is included for consistency with other hooks in this repo and to document the hook's purpose.",
 
-  "description": "PreCompact hook that captures session context (git branch, recent commits, modified files, configurable static reminders) and writes a recovery section to CLAUDE.md before compaction. After compaction completes, CLAUDE.md auto-reloads with the recovery context preserved, so Claude regains awareness of pre-compaction session state.",
+  "description": "PreCompact hook that captures session context (git branch, recent commits, in-progress files, configurable static reminders) and writes a recovery section to CLAUDE.md before compaction. After compaction completes, CLAUDE.md auto-reloads with the recovery context preserved, so Claude regains awareness of pre-compaction session state.",
 
   "delimiter_choice": "HTML comments (<!-- post-compact-recovery-start --> ... <!-- post-compact-recovery-end -->). Standard markdown convention for invisible markers. The hook reads/writes raw file content; delimiter visibility in rendered context is irrelevant for the hook's mechanics."
 }
