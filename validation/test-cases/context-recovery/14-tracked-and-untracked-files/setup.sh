@@ -22,3 +22,5 @@ mkdir -p .claude/hooks/meta-skills/completion-verifier
 echo "copied context hook" > .claude/hooks/meta-skills/context-recovery/hook.py
 echo "copied stop hook" > .claude/hooks/meta-skills/completion-verifier/hook.py
 echo '{"hooks":{}}' > .claude/settings.json
+echo '{"old_hooks":{}}' > .claude/settings.json.backup-1234567890
+echo '{"older_hooks":{}}' > .claude/settings.json.backup-1234567890-1

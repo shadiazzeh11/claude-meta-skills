@@ -34,7 +34,7 @@ Initial validation from Phase 3 build, expanded with privacy redaction, hard-cap
 | 11 | subdir-existing-claude-md | should-write | 0 | 134 | no env var; nested cwd updates nearest parent CLAUDE.md instead of nested cwd |
 | 12 | subdir-git-root-no-claude-md | should-write | 0 | 133 | no env var; nested cwd creates CLAUDE.md at nearest parent git root |
 | 13 | env-var-wins-over-parent-discovery | should-write | 0 | 72 | CLAUDE_PROJECT_DIR remains authoritative over parent marker discovery |
-| 14 | tracked-and-untracked-files | should-write | 0 | 129 | tracked modification and untracked non-ignored file included; ignored file and copied hook files excluded |
+| 14 | tracked-and-untracked-files | should-write | 0 | 129 | tracked modification and untracked non-ignored file included; ignored file and copied install artifacts excluded |
 
 ## Notes on performance
 
@@ -50,7 +50,7 @@ Initial validation from Phase 3 build, expanded with privacy redaction, hard-cap
 - `$CLAUDE_PROJECT_DIR` priority over cwd and parent discovery verified (tests 08, 13). Real-world relevance: when Claude Code sets `$CLAUDE_PROJECT_DIR` to project root, the hook writes there regardless of cwd.
 - Subdirectory root discovery verified (tests 11, 12): without `$CLAUDE_PROJECT_DIR`, the hook walks upward from cwd to the nearest existing `CLAUDE.md` or `.git` marker and writes recovery state there.
 - Custom compact instructions are sanitized before being written into CLAUDE.md: common secret-like assignments are redacted, long custom text is truncated, and the final section cap is enforced (tests 09, 10).
-- In-progress file recovery verified (test 14): the recovery block includes tracked modifications and untracked non-ignored files while excluding ignored local files and copied `.claude/hooks/meta-skills/` install artifacts.
+- In-progress file recovery verified (test 14): the recovery block includes tracked modifications and untracked non-ignored files while excluding ignored local files, copied `.claude/hooks/meta-skills/` files, and `.claude/settings.json.backup-*` install artifacts.
 - Git context is gathered only from the resolved project root when that root directly contains `.git`. This keeps git commands scoped to the chosen root instead of blindly using `git rev-parse` from arbitrary cwd.
 
 ## Phase 3 design choices

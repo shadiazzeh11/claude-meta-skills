@@ -14,8 +14,12 @@
   },
   "expected_file_not_contains": {
     "path": "{{TEST_DIR}}/project/CLAUDE.md",
-    "patterns": ["local.ignored", ".claude/hooks/meta-skills"]
+    "patterns": [
+      "local.ignored",
+      ".claude/hooks/meta-skills",
+      ".claude/settings.json.backup-"
+    ]
   },
-  "description": "Recovery block includes tracked changes and untracked non-ignored files while excluding ignored files and copied meta-skills hook files",
+  "description": "Recovery block includes tracked changes and untracked non-ignored files while excluding ignored files and copied install artifacts",
   "category": "should-write"
 }
