@@ -13,7 +13,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ### Fixed
 
-- Extended `context-recovery` so its compaction recovery block includes untracked non-ignored files as well as tracked changes, while excluding copied `.claude/hooks/meta-skills/` install artifacts from the file list.
+- Extended `context-recovery` so its compaction recovery block includes untracked non-ignored files as well as tracked changes, while excluding copied `.claude/hooks/meta-skills/` and `.claude/settings.json.backup-*` install artifacts from the file list.
 
 ## [0.1.5] - 2026-05-13
 

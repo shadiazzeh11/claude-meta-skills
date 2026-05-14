@@ -79,6 +79,9 @@ GIT_TIMEOUT_SECS = 5
 RECOVERY_SECTION_MAX_CHARS = env_int("CONTEXT_RECOVERY_SECTION_MAX_CHARS", 2000)
 CUSTOM_INSTRUCTIONS_MAX_CHARS = env_int("CONTEXT_RECOVERY_CUSTOM_MAX_CHARS", 300)
 IN_PROGRESS_EXCLUDED_PREFIXES = (".claude/hooks/meta-skills/",)
+IN_PROGRESS_EXCLUDED_PATTERNS = (
+    re.compile(r"^\.claude/settings\.json\.backup-\d+(?:-\d+)?$"),
+)
 
 CUSTOM_INSTRUCTION_REDACTIONS = [
     re.compile(
@@ -175,8 +178,10 @@ def combine_file_lists(*outputs):
 def include_in_progress_path(path):
     """True when a git path should appear in the recovery file list."""
     normalized = path.replace("\\", "/")
+    if any(normalized.startswith(prefix) for prefix in IN_PROGRESS_EXCLUDED_PREFIXES):
+        return False
     return not any(
-        normalized.startswith(prefix) for prefix in IN_PROGRESS_EXCLUDED_PREFIXES
+        pattern.match(normalized) for pattern in IN_PROGRESS_EXCLUDED_PATTERNS
     )
 
 
