@@ -6,6 +6,8 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-05-15
+
 ### Changed
 
 - Aligned hook and testing documentation with current Claude Code API behavior, including Stop-hook warning output and `PostCompact` documentation caveats.

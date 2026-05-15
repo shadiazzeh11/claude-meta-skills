@@ -86,7 +86,7 @@ Use an explicit ref. For current pre-release tester feedback, the default
 set `SMOKE_REF` to a release tag or commit SHA before running the block.
 
 ```bash
-RELEASE_VERSION="v0.1.5"
+RELEASE_VERSION="v0.1.6"
 SMOKE_REF="${SMOKE_REF:-main}"
 SMOKE_ROOT="$(mktemp -d /tmp/claude-meta-user-smoke.XXXXXX)"
 export RELEASE_VERSION SMOKE_REF SMOKE_ROOT

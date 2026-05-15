@@ -2,7 +2,7 @@
 
 This document is the product and marketplace readiness checklist for `claude-meta-skills`.
 
-Current status: **v0.1.5 technical preview, local install recommended**. The repo has a tested installer/uninstaller, read-only doctor diagnostics, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, tracked new-user smoke protocol, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
+Current status: **v0.1.6 technical preview, local install recommended**. The repo has a tested installer/uninstaller, read-only doctor diagnostics, CI, controlled live-session dogfood evidence for all five hooks, local report export with an evidence scorecard, release checklist, tracked new-user smoke protocol, changelog, and a Claude Code plugin scaffold with local `--plugin-dir` smoke evidence. It also includes a marketplace catalog, isolated marketplace CLI regression, and marketplace-installed live smoke evidence for four hooks. It is not yet publicly listed in a marketplace; the local `install.sh` path remains the recommended path until public marketplace packaging is finished.
 
 ## Current distribution model
 

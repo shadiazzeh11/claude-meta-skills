@@ -35,7 +35,7 @@ pretend to prove everything:
 | Synthetic harness | `make test` and `make test-stop-env` pass `94/94` cases. | Hook logic handles constructed payloads, expected block/allow/warn behavior, privacy assertions, file effects, and edge cases. |
 | CI | GitHub Actions runs the full validation stack on Ubuntu and macOS for PRs and pushes to `main`. | The suite is repeatable off the maintainer's machine on two OS runners. |
 | Installer/doctor | `make test-installer` and `make test-doctor` pass. | Local install, idempotent reinstall, uninstall, drift detection, and diagnostics work in controlled scenarios. |
-| Plugin packaging | `make test-plugin`, `make test-marketplace`, and `make test-release VERSION=v0.1.5` pass. | Plugin metadata, hook command mapping, local marketplace catalog, and release metadata are internally consistent. |
+| Plugin packaging | `make test-plugin`, `make test-marketplace`, and `make test-release VERSION=v0.1.6` pass. | Plugin metadata, hook command mapping, local marketplace catalog, and release metadata are internally consistent. |
 | Live dogfood | `./testing/analyze-log.py --real-only --redact` reports `29` real fires across all five hooks, `10` sessions, and `8` projects. | The hooks have fired in real Claude Code lifecycle sessions and produced the expected actions. |
 
 The evidence does **not** prove production false-positive rate, exhaustive
@@ -121,7 +121,7 @@ make test
 make test-stop-env
 make test-plugin
 make test-marketplace
-make test-release VERSION=v0.1.5
+make test-release VERSION=v0.1.6
 make test-doctor
 make test-installer
 make test-analyzer
