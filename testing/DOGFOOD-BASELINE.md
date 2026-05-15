@@ -14,7 +14,7 @@ After the clean disposable-project pass, LOGOS dogfood, transcript-shape smoke, 
 
 ```text
 Total: 29 fires across 5 hooks
-Evidence scorecard: status=complete; hooks=5/5 real; real_fires=29; real_sessions=10; real_projects=8; non_real_ratio=49.1%
+Evidence scorecard: status=complete; hooks=5/5 real; real_fires=29; real_sessions=10; real_projects=8; non_real_ratio=51.7%
 Missing real-session evidence: (none)
 ```
 
@@ -39,7 +39,7 @@ The active-window projects are:
 - `/tmp/claude-meta-user-project.Ld4kuW`, session `a460a705...`, `1` `completion-verifier` fire from a disposable user-project smoke, at `2026-05-12T21:06:18Z`.
 - `/tmp/claude-meta-v015-self-smoke.yLKQAJ/project`, session `8f56d934...`, `1` `completion-verifier` fire from a tag-pinned `v0.1.5` self-smoke, at `2026-05-13T15:56:30Z`.
 
-The `non_real_ratio=49.1%` comes from 28 historical harness/validation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
+The `non_real_ratio=51.7%` comes from 28 historical harness/validation entries and 3 unknown manual hook-invocation entries still present in the active log. Use `./testing/analyze-log.py --real-only --redact` for the canonical dogfood view.
 
 ## Clean disposable window after v0.1.2
 
@@ -65,7 +65,7 @@ The `edit-drift-detector` entry is a controlled lifecycle proof, not an organic 
 
 ## Historical release snapshot before v0.1.2
 
-The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the 26-fire active window above unless the archived release log is restored.
+The broader release baseline below was collected before the clean post-`v0.1.2` log reset. It remains useful as historical evidence across plugin-path, marketplace-installed, and earlier disposable-project smoke sessions, but the canonical command against the current active log now reports the latest active window above unless the archived release log is restored.
 
 As of that release baseline snapshot:
 

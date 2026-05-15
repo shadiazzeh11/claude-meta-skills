@@ -137,6 +137,8 @@ When in doubt, inspect `/plugin` first.
 | Analyzer top paths are validation fixtures | Raw log contains harness/manual noise | Use `./testing/analyze-log.py --real-only --redact` or `make report-dogfood`. Do not use raw top paths as product evidence. |
 | Plugin install uses old hook behavior after source edits | Plugins are copied into a cache when installed | For source-tree development, use `claude --plugin-dir .`. For installed plugins, run plugin update/reinstall and `/reload-plugins`. |
 | Hook works in harness but not in a live session | Lifecycle reachability differs from constructed stdin tests | Check `/hooks` matcher/source, the real tool name, working directory, and known caveats in the hook README. Add a live smoke before claiming support. |
+| New-user smoke baseline tests fail before hooks are installed | The disposable project was not created cleanly, often because pasted shell text introduced non-ASCII whitespace | Stop before install. Recreate the disposable project from `testing/NEW-USER-SMOKE.md` and include the short baseline failure in the tester report. |
+| New-user smoke uninstall command tries `/claude-meta-skills/install.sh` or an empty target | `PROJECT_DIR` / `SMOKE_ROOT` were lost in a new terminal | Re-export the explicit temp paths printed earlier. Do not run uninstall or cleanup with empty variables. |
 
 ## Hook-specific checks
 

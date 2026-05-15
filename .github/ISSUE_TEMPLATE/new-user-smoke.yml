@@ -1,0 +1,130 @@
+name: New user smoke
+description: Report a disposable new-user smoke test for claude-meta-skills.
+title: "[smoke]: "
+labels: ["smoke", "tester-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only for a disposable run of `testing/NEW-USER-SMOKE.md`.
+        Do not paste private code, raw prompts, raw logs, secrets, customer data,
+        source-file contents, diffs, or unredacted real project paths.
+
+  - type: input
+    id: repo-version
+    attributes:
+      label: Repo tag or commit tested
+      placeholder: v0.1.5 or commit SHA
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-mode
+    attributes:
+      label: Install mode
+      options:
+        - local install.sh
+        - claude --plugin-dir
+        - marketplace/plugin install
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Versions only. Do not include private paths.
+      value: |
+        OS:
+        Shell:
+        Claude Code version:
+        git version:
+        python3 version:
+        jq version:
+        make version:
+    validations:
+      required: true
+
+  - type: textarea
+    id: setup
+    attributes:
+      label: Setup and baseline result
+      value: |
+        Did the precheck pass? yes/no
+        Did clone/tag checkout pass? yes/no
+        Did make test-release pass? yes/no
+        Did make test-plugin pass? yes/no
+        Did the disposable project baseline test pass before installing hooks? yes/no
+        If baseline failed, paste only the short error summary:
+    validations:
+      required: true
+
+  - type: textarea
+    id: install-doctor
+    attributes:
+      label: Install and doctor result
+      value: |
+        Did install.sh complete? yes/no
+        Did doctor.sh report 0 FAIL? yes/no
+        WARN lines, if any:
+        Could you tell what files were installed? yes/no
+        Did anything look surprising or unsafe?
+    validations:
+      required: true
+
+  - type: textarea
+    id: hook-behavior
+    attributes:
+      label: Claude Code hook behavior
+      value: |
+        Did completion-verifier block the intentionally failing-test stop? yes/no
+        Was the hook message understandable? yes/no
+        Did it explain what to do next? yes/no
+        Did it expose anything that felt too private? yes/no
+        Did recovery back to passing tests work? yes/no
+        After recovery, was git diff clean for src/app.py and tests/test_app.py? yes/no
+    validations:
+      required: true
+
+  - type: textarea
+    id: failure-evidence
+    attributes:
+      label: Failure-only hook evidence
+      description: If the completion block did not appear, paste only `/hooks` source/matcher names and short `make test` status. Redact paths and do not paste prompts or source contents.
+      value: |
+        /hooks summary, if no block appeared:
+        make test status, if no block appeared:
+
+  - type: textarea
+    id: uninstall
+    attributes:
+      label: Uninstall and cleanup
+      value: |
+        Did uninstall complete? yes/no
+        Was .claude/hooks/meta-skills removed? yes/no
+        Did any settings backup remain? yes/no/unsure
+        Was it clear that settings backups are expected local artifacts? yes/no
+        Was cleanup clear? yes/no
+    validations:
+      required: true
+
+  - type: textarea
+    id: redacted-evidence
+    attributes:
+      label: Optional redacted evidence
+      description: Paste only redacted analyzer summary output. Do not paste raw ~/.claude/meta-skills-log.jsonl.
+      render: text
+
+  - type: textarea
+    id: trust-feedback
+    attributes:
+      label: Trust and product feedback
+      value: |
+        What was confusing?
+        What felt safe and clear?
+        What felt risky?
+        Would you keep this installed for one week in a real repo? why/why not?
+        What should change before a public marketplace listing?
+    validations:
+      required: true
