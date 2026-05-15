@@ -3,9 +3,9 @@
 This runbook is for a friend, reviewer, or first-time external tester who wants
 to evaluate `claude-meta-skills` in a disposable project.
 
-The goal is to answer a narrow question: can a new tester install the local
-`v0.1.5` release, inspect what was installed, see one useful hook fire, recover
-the project, uninstall cleanly, and report confusing moments?
+The goal is to answer a narrow question: can a new tester install a selected
+`claude-meta-skills` ref, inspect what was installed, see one useful hook fire,
+recover the project, uninstall cleanly, and report confusing moments?
 
 This is not a production trial, a marketplace install proof, or a false-positive
 rate study. Do not run it in a real work repository.
@@ -31,7 +31,8 @@ side effects of those tests belong to the project under test.
 
 This smoke test checks:
 
-- A tag-pinned local checkout of `claude-meta-skills`.
+- An explicit local checkout ref of `claude-meta-skills` (`main`, a release tag,
+  or a commit SHA).
 - Local `install.sh` installation into a disposable project.
 - `doctor.sh` first-run diagnostics.
 - A controlled `completion-verifier` block when tests are intentionally broken.
@@ -80,26 +81,31 @@ report and stop.
 
 ## Step 1: clone the release
 
-Use the release tag, not floating `main`:
+Use an explicit ref. For current pre-release tester feedback, the default
+`main` ref exercises the latest runbook and code. For a released artifact audit,
+set `SMOKE_REF` to a release tag or commit SHA before running the block.
 
 ```bash
-VERSION="v0.1.5"
+RELEASE_VERSION="v0.1.5"
+SMOKE_REF="${SMOKE_REF:-main}"
 SMOKE_ROOT="$(mktemp -d /tmp/claude-meta-user-smoke.XXXXXX)"
-export VERSION SMOKE_ROOT
+export RELEASE_VERSION SMOKE_REF SMOKE_ROOT
+printf 'SMOKE_REF=%s\n' "$SMOKE_REF"
+printf 'SMOKE_ROOT=%s\n' "$SMOKE_ROOT"
 
 cd "$SMOKE_ROOT"
 git clone https://github.com/shadiazzeh11/claude-meta-skills.git
 cd claude-meta-skills
-git checkout "$VERSION"
+git checkout "$SMOKE_REF"
 
-make test-release VERSION="$VERSION"
+make test-release VERSION="$RELEASE_VERSION"
 make test-plugin
 ```
 
 Expected:
 
-- `git checkout "$VERSION"` succeeds.
-- `make test-release VERSION="$VERSION"` passes.
+- `git checkout "$SMOKE_REF"` succeeds.
+- `make test-release VERSION="$RELEASE_VERSION"` passes.
 - `make test-plugin` passes. A warning about repo-root `CLAUDE.md` not being the
   plugin context is acceptable for this repository; plugin context lives in the
   plugin skill.
@@ -109,33 +115,36 @@ Expected:
 ```bash
 PROJECT_DIR="$(mktemp -d /tmp/claude-meta-user-project.XXXXXX)"
 export PROJECT_DIR
+printf 'PROJECT_DIR=%s\n' "$PROJECT_DIR"
 
 cd "$PROJECT_DIR"
 git init
-mkdir -p src tests
-touch src/__init__.py
 
-cat > src/app.py <<'PY'
-def label(value):
-    return f"Price: {value}"
+python3 - <<'PY'
+from pathlib import Path
+
+files = {
+    "src/__init__.py": "",
+    "src/app.py": 'def label(value):\n    return f"Price: {value}"\n',
+    "tests/test_app.py": (
+        "import unittest\n\n"
+        "from src.app import label\n\n\n"
+        "class AppTests(unittest.TestCase):\n"
+        "    def test_label(self):\n"
+        '        self.assertEqual(label(3), "Price: 3")\n\n\n'
+        'if __name__ == "__main__":\n'
+        "    unittest.main()\n"
+    ),
+    "Makefile": "test:\n\tpython3 -m unittest discover -s tests -v\n",
+}
+
+for name, content in files.items():
+    path = Path(name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="ascii")
+    path.read_bytes().decode("ascii")
+    print(f"wrote ASCII {name}")
 PY
-
-cat > tests/test_app.py <<'PY'
-import unittest
-
-from src.app import label
-
-
-class AppTests(unittest.TestCase):
-    def test_label(self):
-        self.assertEqual(label(3), "Price: 3")
-
-
-if __name__ == "__main__":
-    unittest.main()
-PY
-
-printf 'test:\n\tpython3 -m unittest discover -s tests -v\n' > Makefile
 
 git add .
 git -c user.name=Smoke -c user.email=smoke@example.invalid commit -m "initial smoke project"
@@ -153,6 +162,7 @@ Expected:
 ```bash
 META_SKILLS_DIR="$SMOKE_ROOT/claude-meta-skills"
 export META_SKILLS_DIR
+printf 'META_SKILLS_DIR=%s\n' "$META_SKILLS_DIR"
 
 "$META_SKILLS_DIR/install.sh" "$PROJECT_DIR"
 "$META_SKILLS_DIR/doctor.sh" "$PROJECT_DIR"
@@ -238,18 +248,41 @@ Expected:
 
 ## Step 6: uninstall
 
-Run this in a normal terminal. Use the explicit paths printed by the earlier
-steps; do not rely on shell variables if you opened a new terminal.
+Run this in a normal terminal. If you opened a new terminal, first paste the
+explicit `PROJECT_DIR` and `SMOKE_ROOT` values printed by the earlier steps.
+Do not run uninstall with empty variables.
 
 ```bash
-printf 'PROJECT_DIR=%s\nSMOKE_ROOT=%s\n' "$PROJECT_DIR" "$SMOKE_ROOT"
-test -n "${PROJECT_DIR:-}" && test -n "${SMOKE_ROOT:-}" || {
-  echo "PROJECT_DIR or SMOKE_ROOT is empty; paste the explicit paths from earlier steps"
-  exit 1
-}
+: "${PROJECT_DIR:?set PROJECT_DIR to the /tmp/claude-meta-user-project.* path from Step 2}"
+: "${SMOKE_ROOT:?set SMOKE_ROOT to the /tmp/claude-meta-user-smoke.* path from Step 1}"
+META_SKILLS_DIR="${META_SKILLS_DIR:-$SMOKE_ROOT/claude-meta-skills}"
+
+printf 'PROJECT_DIR=%s\nSMOKE_ROOT=%s\nMETA_SKILLS_DIR=%s\n' \
+  "$PROJECT_DIR" "$SMOKE_ROOT" "$META_SKILLS_DIR"
+
+case "$PROJECT_DIR" in
+  /tmp/claude-meta-user-project.*|/private/tmp/claude-meta-user-project.*) ;;
+  *) echo "refusing: PROJECT_DIR is not a disposable smoke path"; exit 1 ;;
+esac
+
+case "$SMOKE_ROOT" in
+  /tmp/claude-meta-user-smoke.*|/private/tmp/claude-meta-user-smoke.*) ;;
+  *) echo "refusing: SMOKE_ROOT is not a disposable smoke path"; exit 1 ;;
+esac
+
+PROJECT_REAL="$(cd "$PROJECT_DIR" && pwd -P)"
+SMOKE_REAL="$(cd "$SMOKE_ROOT" && pwd -P)"
+case "$PROJECT_REAL" in
+  /tmp/claude-meta-user-project.*|/private/tmp/claude-meta-user-project.*) ;;
+  *) echo "refusing: resolved PROJECT_DIR is not a disposable smoke path"; exit 1 ;;
+esac
+case "$SMOKE_REAL" in
+  /tmp/claude-meta-user-smoke.*|/private/tmp/claude-meta-user-smoke.*) ;;
+  *) echo "refusing: resolved SMOKE_ROOT is not a disposable smoke path"; exit 1 ;;
+esac
 
 cd "$PROJECT_DIR"
-"$SMOKE_ROOT/claude-meta-skills/install.sh" "$PROJECT_DIR" --uninstall
+"$META_SKILLS_DIR/install.sh" "$PROJECT_DIR" --uninstall
 
 test ! -d "$PROJECT_DIR/.claude/hooks/meta-skills" && echo "meta-skills hook directory removed"
 git status --short --branch
@@ -274,10 +307,30 @@ absolute paths copied from the earlier output.
 After the report is saved:
 
 ```bash
-test -n "${PROJECT_DIR:-}" && test -n "${SMOKE_ROOT:-}" || {
-  echo "PROJECT_DIR or SMOKE_ROOT is empty; refusing cleanup"
-  exit 1
-}
+: "${PROJECT_DIR:?set PROJECT_DIR before cleanup}"
+: "${SMOKE_ROOT:?set SMOKE_ROOT before cleanup}"
+
+case "$PROJECT_DIR" in
+  /tmp/claude-meta-user-project.*|/private/tmp/claude-meta-user-project.*) ;;
+  *) echo "refusing: PROJECT_DIR is not a disposable smoke path"; exit 1 ;;
+esac
+
+case "$SMOKE_ROOT" in
+  /tmp/claude-meta-user-smoke.*|/private/tmp/claude-meta-user-smoke.*) ;;
+  *) echo "refusing: SMOKE_ROOT is not a disposable smoke path"; exit 1 ;;
+esac
+
+PROJECT_REAL="$(cd "$PROJECT_DIR" && pwd -P)"
+SMOKE_REAL="$(cd "$SMOKE_ROOT" && pwd -P)"
+case "$PROJECT_REAL" in
+  /tmp/claude-meta-user-project.*|/private/tmp/claude-meta-user-project.*) ;;
+  *) echo "refusing: resolved PROJECT_DIR is not a disposable smoke path"; exit 1 ;;
+esac
+case "$SMOKE_REAL" in
+  /tmp/claude-meta-user-smoke.*|/private/tmp/claude-meta-user-smoke.*) ;;
+  *) echo "refusing: resolved SMOKE_ROOT is not a disposable smoke path"; exit 1 ;;
+esac
+
 rm -rf "$PROJECT_DIR" "$SMOKE_ROOT"
 ```
 
@@ -292,9 +345,11 @@ directories.
 | `python3: command not found` | Hooks cannot run | Stop and fix the base environment |
 | `jq: command not found` | Uninstall cannot safely edit settings | Stop and install `jq` before this smoke |
 | `make: command not found` | Base developer tools are missing | Stop and report environment failure |
+| Disposable project baseline test fails before install | Copy/paste introduced non-ASCII whitespace or the shell mangled file creation | Stop. Report the short error and the output of `python3 --version`; do not install hooks into a broken baseline. |
 | `/hooks` shows no meta-skills hooks | Wrong install target, wrong cwd, disabled hooks, or stale Claude session | Run `doctor.sh "$PROJECT_DIR"` and report output |
 | No completion block appears | Test was not broken, hooks were not loaded, or Claude fixed tests before stopping | Run `make test`, `/hooks`, and stop with the output |
 | Completion hook reports command missing | The project test command is unavailable | Report it; do not install extra tooling inside this smoke unless approved |
+| Step 6 prints `PROJECT_DIR: parameter null or not set` | You opened a new terminal and lost the variables | Paste the explicit paths from Step 1 and Step 2 before running uninstall. |
 | Uninstall cannot edit settings | Missing `jq` or invalid settings JSON | Stop; do not manually delete files unless you understand the settings diff |
 | Windows native shell issues | Windows native is untested | Retry in WSL or on macOS/Linux |
 
@@ -313,12 +368,15 @@ environment variable values.
 When sharing feedback, prefer redacted analyzer output:
 
 ```bash
-"$META_SKILLS_DIR/testing/analyze-log.py" --redact
+"$META_SKILLS_DIR/testing/analyze-log.py" --real-only --redact
 ```
 
 Do not paste raw logs unless you have checked paths and project names first.
 
 ## Report template
+
+Prefer the "New user smoke" GitHub issue form or
+`testing/TESTER-FEEDBACK.md`. If you need a plain-text fallback, use this shape:
 
 ```markdown
 ## New-user smoke report
@@ -326,7 +384,7 @@ Do not paste raw logs unless you have checked paths and project names first.
 OS:
 Shell:
 Claude Code version:
-Repo tag tested:
+Repo ref tested:
 Install mode: local install.sh
 
 Prereq checks:
@@ -336,15 +394,24 @@ Prereq checks:
 - jq --version:
 - make --version:
 
+Release/setup:
+- clone/ref checkout completed? yes/no
+- make test-release completed? yes/no
+- make test-plugin completed? yes/no
+- disposable project baseline passed before install? yes/no
+
 Install result:
 - install.sh completed? yes/no
 - doctor summary:
 - any WARN/FAIL lines:
+- could you tell what files were installed?
+- did anything look surprising or unsafe?
 
 Claude Code smoke:
 - did /hooks show meta-skills hooks?
 - did completion-verifier block the intentional failing-test stop?
 - was the hook message understandable?
+- did the message expose anything too private?
 - did the recovery prompt lead to passing tests?
 
 Uninstall:
@@ -355,6 +422,7 @@ Uninstall:
 Confusing, surprising, or unsafe-feeling moments:
 
 Would you keep this installed for one week in a real repo? why/why not:
+What should change before a public marketplace listing:
 ```
 
 ## Pass criteria

@@ -58,7 +58,7 @@ Expected validation caveat: direct plugin-manifest validation with `claude plugi
 | Marketplace catalog | `.claude-plugin/marketplace.json` and `make test-marketplace` validate the local catalog and isolated CLI add/install/uninstall flow. Marketplace-installed live smoke has proved construction-gate, silent-file-verifier, completion-verifier, and context-recovery. |
 | Report export | Analyzer can emit text, JSON, and Markdown reports. |
 | Release docs | `CHANGELOG.md` and `RELEASE.md` define the technical-preview release scope and tag checklist. |
-| New-user smoke | `testing/NEW-USER-SMOKE.md` defines a tag-pinned external tester protocol for local install, one controlled `completion-verifier` proof, recovery, uninstall, privacy expectations, and feedback collection. |
+| New-user smoke | `testing/NEW-USER-SMOKE.md` defines a ref-pinned external tester protocol for local install, one controlled `completion-verifier` proof, recovery, uninstall, privacy expectations, and feedback collection. Caleb's first external smoke exposed two instruction-level UX issues: pasted disposable-project setup can fail before install if non-ASCII whitespace enters generated files, and uninstall variables can be lost in a new terminal. The runbook now guards both cases, and `testing/TESTER-FEEDBACK.md` plus the GitHub issue form make these reports structured. |
 | Privacy boundary | Hook logs store metadata only; no file content, diffs, prompts, assistant responses, or test output. |
 | Stop warning semantics | `completion-verifier` failing-test results block with `decision: "block"` and `reason`; inconclusive timeout / missing-command checks fail open with top-level `systemMessage` warnings because Stop hooks do not support `additionalContext` delivery. |
 
@@ -112,6 +112,7 @@ Before presenting this as a public marketplace/plugin-quality artifact or taggin
 - Keep local plugin loading smoke tests current with `claude --plugin-dir .` in disposable projects.
 - Keep marketplace-installed live hook smoke tests current in disposable projects.
 - Keep `testing/NEW-USER-SMOKE.md` current and run it with at least one external tester before public marketplace submission, or explicitly record environment blockers.
+- Keep `testing/TESTER-FEEDBACK.md` and the "New user smoke" issue form aligned so external tester reports capture environment, install, hook behavior, privacy, and uninstall friction consistently.
 - Keep user-facing copy clear that hooks run local commands with OS-user privileges and that `completion-verifier` runs project tests.
 - Keep the marketplace-installed `edit-drift-detector` caveat unless a future Claude Code lifecycle exposes stale Edit payloads to PreToolUse before built-in `old_string` validation. The current evidence remains non-marketplace controlled live proof plus harness coverage.
 - Keep the uninstall/disable guide current for local installs, plugin installs, and temporary hook disablement.
@@ -131,7 +132,7 @@ make report-dogfood
 
 ## Sources checked
 
-Sources checked on 2026-05-09 and refreshed through 2026-05-13:
+Sources checked on 2026-05-09 and refreshed through 2026-05-15:
 
 - Claude Code hooks reference: https://code.claude.com/docs/en/hooks
 - Claude Code hooks guide: https://code.claude.com/docs/en/hooks-guide

@@ -10,6 +10,9 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 - Aligned hook and testing documentation with current Claude Code API behavior, including Stop-hook warning output and `PostCompact` documentation caveats.
 - Refreshed dogfood evidence documentation after the Step 4 long-session, LOGOS Gamma-audit, and untracked-file smoke runs: the active window now records 29 real fires across all five hooks, 10 sessions, and 8 projects.
+- Added a public evidence brief that explains the five-step verification loop, validation stack, live dogfood evidence, caveats, and reproduction commands.
+- Hardened the ref-pinned new-user smoke runbook after external tester friction by generating disposable project files through Python, requiring explicit uninstall paths, and documenting common paste/variable-loss failures.
+- Added a structured external tester feedback form and GitHub issue template so smoke reports capture environment, install, hook behavior, privacy, and uninstall evidence consistently.
 
 ### Fixed
 
@@ -19,7 +22,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 
 ### Added
 
-- Added a tracked new-user smoke protocol for friends, reviewers, and external testers covering tag-pinned local install, one controlled `completion-verifier` proof, recovery, uninstall, privacy expectations, and feedback collection.
+- Added a tracked new-user smoke protocol for friends, reviewers, and external testers covering ref-pinned local install, one controlled `completion-verifier` proof, recovery, uninstall, privacy expectations, and feedback collection.
 
 ### Changed
 
