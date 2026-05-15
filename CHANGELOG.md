@@ -9,7 +9,7 @@ This project uses a Keep a Changelog-style structure and version numbers intende
 ### Changed
 
 - Aligned hook and testing documentation with current Claude Code API behavior, including Stop-hook warning output and `PostCompact` documentation caveats.
-- Refreshed dogfood evidence documentation after the Step 4 long-session, LOGOS Gamma-audit, and untracked-file smoke runs: the active window now records 26 real fires across all five hooks, 10 sessions, and 8 projects.
+- Refreshed dogfood evidence documentation after the Step 4 long-session, LOGOS Gamma-audit, and untracked-file smoke runs: the active window now records 29 real fires across all five hooks, 10 sessions, and 8 projects.
 
 ### Fixed
 
